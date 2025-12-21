@@ -1,0 +1,14 @@
+.box{
+  margin-top: 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  padding: 12px 14px;
+  background: var(--panel);
+  box-shadow: var(--shadow-1);
+}
+.title{ font-weight: 800; }
+.body{ margin-top: 4px; color: var(--muted); }
+
+.good{ border-color: rgba(61,220,151,.35); background: rgba(61,220,151,.08); }
+.warn{ border-color: rgba(255,204,102,.35); background: rgba(255,204,102,.08); }
+.bad{ border-color: rgba(255,94,98,.35); background: rgba(255,94,98,.08); }

@@ -1,0 +1,14 @@
+.wrap{ padding: 18px var(--pad) 110px; max-width: var(--maxw); margin: 0 auto; }
+.top{ display:flex; justify-content: space-between; gap: 10px; align-items:flex-start; }
+.h1{ margin:0; }
+.sub{ margin: 8px 0 0; color: var(--muted); }
+.ask{
+  border-radius: var(--radius);
+  border: 1px solid rgba(255,153,102,.35);
+  background: linear-gradient(90deg, rgba(255,153,102,.18), rgba(255,94,98,.14));
+  padding: 10px 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.list{ margin-top: 14px; display:flex; flex-direction:column; gap: 12px; }
+.link{ display:block; }

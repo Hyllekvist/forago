@@ -1,0 +1,16 @@
+.section{ margin-top: 16px; }
+.h2{ margin: 0 0 10px; }
+.grid{ display:grid; grid-template-columns: 1fr; gap: 10px; }
+.card{
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--shadow-1);
+  padding: 12px 14px;
+}
+.name{ font-weight: 800; }
+.note{ margin-top: 4px; color: var(--muted); }
+.good{ border-color: rgba(61,220,151,.35); }
+.warn{ border-color: rgba(255,204,102,.35); }
+.bad{ border-color: rgba(255,94,98,.35); }
+@media(min-width: 860px){ .grid{ grid-template-columns: 1fr 1fr; } }

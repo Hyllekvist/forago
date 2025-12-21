@@ -1,0 +1,29 @@
+.wrap{ padding: 18px var(--pad) 110px; max-width: var(--maxw); margin: 0 auto; }
+.hero{
+  display:flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-top: 6px;
+}
+.h1{ margin:0; text-transform: capitalize; }
+.sub{ margin: 8px 0 0; color: var(--muted); max-width: 70ch; }
+.badge{
+  border-radius: 999px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 12px;
+}
+.section{ margin-top: 16px; }
+.h2{ margin: 0 0 10px; }
+.card{
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--shadow-1);
+  padding: 14px;
+}
+.list{ margin:0; padding-left: 16px; }
+.p{ margin: 0; color: var(--muted); }

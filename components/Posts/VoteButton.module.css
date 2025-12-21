@@ -1,0 +1,13 @@
+.off,.on{
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  padding: 10px 12px;
+  font-weight: 800;
+  cursor:pointer;
+}
+.on{
+  border-color: rgba(255,153,102,.45);
+  background: rgba(255,153,102,.12);
+}

@@ -1,0 +1,4 @@
+.wrap{ padding: 18px var(--pad) 120px; max-width: var(--maxw); margin: 0 auto; }
+.h1{ margin:0; }
+.card{ margin-top: 12px; border-radius: var(--radius); border:1px solid var(--line); background: var(--panel); box-shadow: var(--shadow-1); padding: 14px; }
+.p{ margin:0; color: var(--muted); }
