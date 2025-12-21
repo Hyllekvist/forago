@@ -1,0 +1,6 @@
+:root{
+  color-scheme: dark;
+}
+[data-theme="light"]{
+  color-scheme: light;
+}
