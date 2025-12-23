@@ -1,7 +1,8 @@
 @import "../styles/tokens.css";
 @import "../styles/themes.css";
 @import "../styles/typography.css";
-@import "leaflet/dist/leaflet.css";
+
+/* ⛔️ Flyt Leaflet CSS VÆK herfra (load kun på /map) */
 
 * { box-sizing: border-box; }
 html, body { height: 100%; }
@@ -17,11 +18,59 @@ body{
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  overflow-x: hidden;
 }
 
+/* ---------- FORAGO AMBIENT IDENTITY (global) ---------- */
+
+body::before{
+  content:"";
+  position: fixed;
+  inset: -24px;
+  pointer-events:none;
+  z-index: -1;
+  background: var(--g-core), var(--g-warm);
+  opacity: .95;
+  filter: saturate(1.15);
+}
+
+body::after{
+  content:"";
+  position: fixed;
+  inset: 0;
+  pointer-events:none;
+  z-index: -1;
+  /* subtle grain + vignette */
+  background:
+    radial-gradient(1200px 800px at 50% 0%,
+      rgba(0,0,0,0.00),
+      rgba(0,0,0,0.22) 55%,
+      rgba(0,0,0,0.48) 100%),
+    repeating-linear-gradient(0deg,
+      rgba(255,255,255,0.028),
+      rgba(255,255,255,0.028) 1px,
+      transparent 1px,
+      transparent 3px);
+  mix-blend-mode: overlay;
+  opacity: .22;
+}
+
+/* Links / inputs */
 a { color: inherit; text-decoration: none; }
 button { font-family: inherit; }
 input, select, textarea { font-family: inherit; color: inherit; }
 img { max-width: 100%; height: auto; display: block; }
 
-::selection { background: rgba(255,153,102,.35); }
+/* Selection følger ny accent (vibrant) */
+::selection { background: rgba(34, 211, 238, 0.22); }
+
+/* Nice focus ring */
+:focus-visible{
+  outline: none;
+  box-shadow: var(--focus);
+  border-radius: 12px;
+}
+
+/* Optional: smooth scroll */
+html { scroll-behavior: smooth; }
