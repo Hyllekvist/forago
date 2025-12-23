@@ -1,18 +1,16 @@
-.page{ 
-  min-height: 100vh;
+.page{
+  min-height: 100svh;
   background: var(--bg);
   color: var(--ink);
 }
 
-/* Full-bleed stage */
-.stage{
+.mapStage{
   position: relative;
-  height: calc(100vh - 0px);
+  height: 100svh;
   width: 100%;
   overflow: hidden;
 }
 
-/* Leaflet host */
 .mapWrap{
   position: absolute;
   inset: 0;
@@ -24,45 +22,39 @@
   border-radius: 0;
 }
 
-/* -----------------------------
-   HUD (compact top glass card)
------------------------------- */
-.hud{
+/* ----- Top HUD ----- */
+.topBar{
   position: absolute;
   top: 12px;
   left: 12px;
   right: 12px;
-  z-index: 600;
+  z-index: 800;
   pointer-events: none;
 }
 
-.hudCard{
+.topBarInner{
   pointer-events: auto;
-  border-radius: 22px;
+  border-radius: 20px;
   border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--panel) 78%, transparent);
+  background: color-mix(in srgb, var(--panel) 74%, transparent);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   box-shadow: var(--shadow-1);
   padding: 14px 14px 12px;
 }
 
-.hudTop{
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
+.topRow{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
   gap: 12px;
-}
-
-.hudText{
-  min-width: 0;
 }
 
 .h1{
   margin: 0;
-  font-size: 30px;
+  font-size: 34px;
+  letter-spacing: -0.03em;
   line-height: 1.05;
-  letter-spacing: -0.02em;
 }
 
 .sub{
@@ -71,88 +63,54 @@
   line-height: 1.35;
 }
 
-.hudActions{
-  display: flex;
+.topPills{
+  display:flex;
   gap: 10px;
-  flex-shrink: 0;
-}
-
-/* Pills */
-.pill,
-.pillGhost{
-  border-radius: 999px;
-  padding: 10px 12px;
-  font-size: 14px;
-  border: 1px solid var(--line);
-  cursor: pointer;
-  white-space: nowrap;
+  align-items:center;
 }
 
 .pill{
+  border-radius: 999px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel2) 85%, transparent);
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.actions{
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.btn{
+  border-radius: 999px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
   background: var(--panel2);
   color: var(--ink);
-}
-
-.pillGhost{
-  background: transparent;
-  color: var(--ink);
-  opacity: 0.95;
-}
-
-/* -----------------------------
-   Zoom dock (right side)
------------------------------- */
-.zoomDock{
-  position: absolute;
-  left: 12px;
-  top: 120px;
-  z-index: 650;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  pointer-events: none;
-}
-
-.zoomBtn{
-  pointer-events: auto;
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--panel) 82%, transparent);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: var(--shadow-1);
-  color: var(--ink);
-  font-size: 22px;
-  font-weight: 800;
-  line-height: 1;
-  display: grid;
-  place-items: center;
   cursor: pointer;
 }
 
-/* -----------------------------
-   Bottom sheet
------------------------------- */
+.btnGhost{
+  border-radius: 999px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+/* ----- Bottom sheet ----- */
 .sheet{
   position: absolute;
   left: 12px;
   right: 12px;
   bottom: calc(12px + env(safe-area-inset-bottom));
-  z-index: 700;
-  transition: transform 220ms ease, opacity 220ms ease;
-}
-
-.sheetClosed{
-  transform: translateY(140%);
-  opacity: 0;
-  pointer-events: none;
-}
-
-.sheetOpen{
-  transform: translateY(0);
-  opacity: 1;
+  z-index: 900;
 }
 
 .sheetHandle{
@@ -164,42 +122,60 @@
 }
 
 .sheetCard{
-  border-radius: 24px;
+  border-radius: 22px;
   border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  background: color-mix(in srgb, var(--panel) 78%, transparent);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   box-shadow: var(--shadow-1);
-  padding: 14px;
+  padding: 12px;
 }
 
-.sheetHeader{
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.sheetTabs{
+  display:flex;
   gap: 10px;
+  align-items:center;
 }
 
-.sheetTitle{
-  font-weight: 850;
+.tab{
+  border-radius: 999px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.tabActive{
+  background: var(--panel2);
+  color: var(--ink);
+}
+
+.close{
+  margin-left: auto;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+/* Detail view */
+.detail{
+  margin-top: 12px;
+}
+
+.detailTitle{
+  font-weight: 900;
   font-size: 16px;
   letter-spacing: -0.01em;
 }
 
-.closeBtn{
-  width: 40px;
-  height: 36px;
-  border-radius: 14px;
-  border: 1px solid var(--line);
-  background: transparent;
-  color: var(--ink);
-  cursor: pointer;
-}
-
-.sheetMetaRow{
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.detailMetaRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
   gap: 10px;
   margin-top: 10px;
 }
@@ -214,74 +190,111 @@
   white-space: nowrap;
 }
 
-.primaryLink{
+.metaLink{
   font-size: 13px;
   color: var(--ink);
-  opacity: 0.95;
+  opacity: .92;
   text-decoration: none;
-  white-space: nowrap;
 }
 
 .metaMuted{
   font-size: 13px;
   color: var(--muted);
-  white-space: nowrap;
 }
 
-.sheetBody{
-  margin-top: 10px;
-}
-
-.p{
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.55;
-}
-
-.sheetActions{
-  display: flex;
+.detailActions{
+  display:flex;
   gap: 10px;
   margin-top: 12px;
 }
 
-.secondaryBtn,
-.secondaryBtnGhost{
-  flex: 1;
+/* List view */
+.list{
+  margin-top: 12px;
+}
+
+.listHeader{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.listTitle{
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.listHint{
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.listScroller{
+  max-height: 38svh;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 4px;
+}
+
+.listItem{
+  width: 100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+  padding: 12px;
   border-radius: 16px;
-  padding: 10px 12px;
   border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel2) 85%, transparent);
+  color: var(--ink);
   cursor: pointer;
-  font-size: 14px;
+  text-align: left;
+  margin-bottom: 10px;
 }
 
-.secondaryBtn{
-  background: var(--panel2);
-  color: var(--ink);
+.listItemMain{
+  min-width: 0;
 }
 
-.secondaryBtnGhost{
-  background: transparent;
-  color: var(--ink);
-  opacity: 0.95;
+.listItemTitle{
+  font-weight: 850;
+  letter-spacing: -0.01em;
 }
 
-/* -----------------------------
-   Leaflet global tweaks
-   (MUST be scoped with a local class)
------------------------------- */
-.mapWrap :global(.leaflet-control-attribution){
-  font-size: 11px;
-  opacity: 0.75;
+.listItemMeta{
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
+.chev{
+  font-size: 20px;
+  opacity: .7;
+}
+
+.empty{
+  border: 1px dashed var(--line);
+  border-radius: 16px;
+  padding: 14px;
+  color: var(--muted);
+}
+
+/* Leaflet controls (pure selector: skal have lokal klasse før :global) */
 .mapWrap :global(.leaflet-control-zoom){
-  display: none; /* vi bruger vores egen zoomDock */
+  border: none !important;
+  box-shadow: none !important;
 }
 
-/* Mobile tightening */
-@media (max-width: 420px){
-  .h1{ font-size: 28px; }
-  .hudCard{ padding: 12px 12px 10px; }
-  .pill, .pillGhost{ padding: 9px 10px; }
-  .zoomDock{ top: 112px; }
+.mapWrap :global(.leaflet-control-zoom a){
+  border-radius: 12px !important;
+  border: 1px solid var(--line) !important;
+  background: color-mix(in srgb, var(--panel) 70%, transparent) !important;
+  color: var(--ink) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
 }
