@@ -13,9 +13,63 @@ function isLocale(x: string): x is Locale {
   return (SUPPORTED_LOCALES as readonly string[]).includes(x);
 }
 
+const MONTH_NUM_TO_SLUG: Record<number, string> = {
+  1: "january",
+  2: "february",
+  3: "march",
+  4: "april",
+  5: "may",
+  6: "june",
+  7: "july",
+  8: "august",
+  9: "september",
+  10: "october",
+  11: "november",
+  12: "december",
+};
+
+function monthsBetween(from: number, to: number) {
+  const out: number[] = [];
+  if (from <= to) {
+    for (let m = from; m <= to; m++) out.push(m);
+  } else {
+    for (let m = from; m <= 12; m++) out.push(m);
+    for (let m = 1; m <= to; m++) out.push(m);
+  }
+  return out;
+}
+
 function monthName(locale: Locale, m: number) {
-  const dk = ["", "januar", "februar", "marts", "april", "maj", "juni", "juli", "august", "september", "oktober", "november", "december"];
-  const en = ["", "january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+  const dk = [
+    "",
+    "januar",
+    "februar",
+    "marts",
+    "april",
+    "maj",
+    "juni",
+    "juli",
+    "august",
+    "september",
+    "oktober",
+    "november",
+    "december",
+  ];
+  const en = [
+    "",
+    "january",
+    "february",
+    "march",
+    "april",
+    "may",
+    "june",
+    "july",
+    "august",
+    "september",
+    "october",
+    "november",
+    "december",
+  ];
   return (locale === "dk" ? dk : en)[m] ?? String(m);
 }
 
@@ -26,7 +80,7 @@ function currentMonthUTC() {
 
 function isInSeason(month: number, from: number, to: number) {
   if (from <= to) return month >= from && month <= to;
-  return month >= from || month <= to; // wrap-around (Nov->Feb)
+  return month >= from || month <= to; // wrap-around
 }
 
 function seasonLabel(locale: Locale, from: number, to: number) {
@@ -90,7 +144,7 @@ export async function generateMetadata({
     .maybeSingle();
 
   const name = tr?.common_name || slug;
-  const title = locParam === "dk" ? `${name} — Forago` : `${name} — Forago`;
+  const title = `${name} — Forago`;
   const description =
     tr?.short_description ||
     (locParam === "dk"
@@ -115,7 +169,9 @@ export default async function SpeciesPage({
 
   const supabase = supabaseServer();
   const month = currentMonthUTC();
-  const country = locale; // dk -> dk (kan ændres senere)
+
+  // Note: we reuse locale as "country" for now ('dk'/'en').
+  const country = locale;
 
   const { data: sp, error: spErr } = await supabase
     .from("species")
@@ -141,8 +197,8 @@ export default async function SpeciesPage({
   const scientific = sp.scientific_name || "";
   const group = sp.primary_group || "plant";
 
-  // Seasonality (national)
-  const { data: seasonRows, error: seasErr } = await supabase
+  // Seasonality (national: region = '')
+  const { data: seasonRow, error: seasErr } = await supabase
     .from("seasonality")
     .select("month_from, month_to, confidence, notes")
     .eq("species_id", sp.id)
@@ -152,15 +208,14 @@ export default async function SpeciesPage({
 
   if (seasErr) throw seasErr;
 
-  const from = seasonRows?.month_from as number | undefined;
-  const to = seasonRows?.month_to as number | undefined;
-  const conf = (seasonRows?.confidence as number | undefined) ?? null;
+  const from = (seasonRow?.month_from as number | undefined) ?? undefined;
+  const to = (seasonRow?.month_to as number | undefined) ?? undefined;
+  const conf = (seasonRow?.confidence as number | undefined) ?? null;
 
   const inSeasonNow = from && to ? isInSeason(month, from, to) : false;
   const seasonText = from && to ? seasonLabel(locale, from, to) : null;
 
-  // Related species: other species that are also in season now (same country/region),
-  // sorted by confidence desc, limit 6
+  // Related species: other species that are also in season now (same country/region)
   let related: Array<{ slug: string; name: string; confidence: number }> = [];
   if (inSeasonNow) {
     const { data: relSeas } = await supabase
@@ -196,12 +251,16 @@ export default async function SpeciesPage({
 
       const { data: relTr } = await supabase
         .from("species_translations")
-        .select("species_id, common_name, locale")
+        .select("species_id, common_name")
         .eq("locale", locale)
         .in("species_id", ids);
 
-      const trMap = new Map((relTr ?? []).map((t: any) => [t.species_id as string, t.common_name as string]));
-      const slugMap = new Map((relSpecies ?? []).map((s: any) => [s.id as string, s.slug as string]));
+      const trMap = new Map(
+        (relTr ?? []).map((t: any) => [t.species_id as string, t.common_name as string])
+      );
+      const slugMap = new Map(
+        (relSpecies ?? []).map((s: any) => [s.id as string, s.slug as string])
+      );
 
       related = ids
         .map((id) => ({
@@ -274,15 +333,8 @@ export default async function SpeciesPage({
           </p>
         )}
 
-        {/* Season chip */}
-        <div
-          style={{
-            marginTop: 12,
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 8,
-          }}
-        >
+        {/* Season chips */}
+        <div style={{ marginTop: 12, display: "flex", flexWrap: "wrap", gap: 8 }}>
           <span
             style={{
               border: "1px solid rgba(255,255,255,0.12)",
@@ -312,8 +364,8 @@ export default async function SpeciesPage({
                 ? "I sæson nu"
                 : "In season now"
               : locale === "dk"
-                ? "Ikke i sæson nu"
-                : "Not in season now"}
+              ? "Ikke i sæson nu"
+              : "Not in season now"}
             {conf !== null ? ` · ${conf}%` : ""}
           </span>
 
@@ -332,7 +384,69 @@ export default async function SpeciesPage({
           >
             {locale === "dk" ? "Se sæson nu →" : "See season now →"}
           </Link>
+
+          <Link
+            href={`/${locale}/guides/safety-basics`}
+            style={{
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(255,255,255,0.04)",
+              borderRadius: 999,
+              padding: "8px 10px",
+              fontSize: 13,
+              textDecoration: "none",
+              color: "inherit",
+              opacity: 0.95,
+            }}
+          >
+            {locale === "dk" ? "Sikkerhed →" : "Safety →"}
+          </Link>
+
+          <Link
+            href={`/${locale}/guides/lookalikes`}
+            style={{
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(255,255,255,0.04)",
+              borderRadius: 999,
+              padding: "8px 10px",
+              fontSize: 13,
+              textDecoration: "none",
+              color: "inherit",
+              opacity: 0.95,
+            }}
+          >
+            {locale === "dk" ? "Forvekslinger →" : "Look-alikes →"}
+          </Link>
         </div>
+
+        {/* NEW: Month links ("I sæson i:") */}
+        {from && to ? (
+          <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ opacity: 0.78, fontSize: 13 }}>
+              {locale === "dk" ? "I sæson i:" : "In season in:"}
+            </span>
+
+            {monthsBetween(from, to)
+              .slice(0, 8)
+              .map((m) => (
+                <Link
+                  key={m}
+                  href={`/${locale}/season/${MONTH_NUM_TO_SLUG[m]}`}
+                  style={{
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    background: "rgba(255,255,255,0.04)",
+                    borderRadius: 999,
+                    padding: "6px 10px",
+                    fontSize: 13,
+                    textDecoration: "none",
+                    color: "inherit",
+                    opacity: 0.95,
+                  }}
+                >
+                  {monthName(locale, m)}
+                </Link>
+              ))}
+          </div>
+        ) : null}
       </header>
 
       <Section title={locale === "dk" ? "Identifikation" : "Identification"}>
@@ -426,7 +540,6 @@ export default async function SpeciesPage({
         )}
       </section>
 
-      {/* Trust signal */}
       <p style={{ marginTop: 18, opacity: 0.7, fontSize: 13 }}>
         {locale === "dk" ? "Sidst opdateret:" : "Last updated:"}{" "}
         {tr?.updated_at ? new Date(tr.updated_at).toISOString().slice(0, 10) : "—"}
