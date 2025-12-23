@@ -6,75 +6,114 @@
   margin: 0 auto;
 }
 
-/* --- Header / hero --- */
-.hero{
+/* -------------------------
+   Sticky quick bar
+-------------------------- */
+.sticky{
+  position: sticky;
+  top: 10px;
+  z-index: 30;
+
   border-radius: var(--radius);
   border: 1px solid var(--line);
-  background: var(--panel);
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter: blur(10px);
+
   box-shadow: var(--shadow-1);
-  padding: 14px;
+  padding: 12px;
+  margin: 8px 0 14px;
 }
 
-.topRow{
-  display:flex;
-  align-items:center;
+.stickyTop{
+  display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 10px;
 }
 
 .back{
-  display:inline-flex;
-  align-items:center;
+  display: inline-flex;
+  align-items: center;
   gap: 8px;
-  padding: 8px 10px;
+
+  padding: 9px 12px;
   border-radius: 999px;
   border: 1px solid var(--line);
   background: var(--panel2);
-  color: var(--ink);
-  font-size: 13px;
-}
 
-.statusPill{
-  display:inline-flex;
-  align-items:center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--goodLine);
-  background: var(--goodBg);
   color: var(--ink);
   font-size: 13px;
   white-space: nowrap;
 }
 
-/* Chips row */
+.badge{
+  display: inline-flex;
+  align-items: center;
+
+  padding: 9px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+
+  color: var(--ink);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.badgeGood{
+  border-color: var(--goodLine);
+  background: var(--goodBg);
+}
+
 .chips{
-  display:flex;
+  display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 10px;
 }
 
 .chip{
-  display:inline-flex;
-  align-items:center;
-  padding: 8px 10px;
+  display: inline-flex;
+  align-items: center;
+
+  padding: 8px 12px;
   border-radius: 999px;
   border: 1px solid var(--chipLine);
   background: var(--chipBg);
+
   color: var(--ink);
   font-size: 13px;
   white-space: nowrap;
 }
 
 .chipLink{
-  text-decoration:none;
+  display: inline-flex;
+  align-items: center;
+
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--chipLine);
+  background: var(--chipBg);
+
+  color: var(--ink);
+  font-size: 13px;
+  white-space: nowrap;
+  text-decoration: none;
 }
 
-/* Title block */
-.title{
-  margin: 12px 0 6px;
+/* -------------------------
+   Hero
+-------------------------- */
+.hero{
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--shadow-1);
+  padding: 16px;
+}
+
+.h1{
+  margin: 0;
   font-size: 34px;
   line-height: 1.08;
   letter-spacing: -0.03em;
@@ -82,56 +121,62 @@
 }
 
 .meta{
-  display:flex;
+  margin-top: 8px;
+  display: flex;
   flex-wrap: wrap;
   gap: 10px;
   align-items: baseline;
+
   color: var(--muted);
   font-size: 14px;
-  margin-bottom: 10px;
 }
 
-.scientific{
-  font-style: italic;
+.dot{
+  opacity: 0.6;
+}
+
+.sub{
+  margin: 12px 0 0;
   color: var(--muted);
+  line-height: 1.7;
+  max-width: 72ch;
 }
 
-.desc{
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.65;
-  max-width: 70ch;
-}
-
-/* Month chips */
+/* Month row */
 .monthRow{
-  display:flex;
-  flex-wrap: wrap;
-  gap: 8px;
   margin-top: 14px;
 }
 
 .monthLabel{
-  width: 100%;
   color: var(--muted);
   font-size: 13px;
-  margin-bottom: 2px;
+  margin-bottom: 8px;
+}
+
+.monthChips{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .monthChip{
-  display:inline-flex;
-  align-items:center;
+  display: inline-flex;
+  align-items: center;
+
   padding: 8px 12px;
   border-radius: 999px;
   border: 1px solid var(--chipLine);
   background: var(--chipBg);
+
   color: var(--ink);
   font-size: 13px;
-  text-decoration:none;
+  text-decoration: none;
   white-space: nowrap;
 }
 
-/* --- Sections --- */
+/* -------------------------
+   Sections / cards
+-------------------------- */
 .section{
   margin-top: 16px;
 }
@@ -140,6 +185,7 @@
   margin: 0 0 10px;
   font-size: 16px;
   letter-spacing: -0.01em;
+  font-weight: 800;
 }
 
 .card{
@@ -150,26 +196,28 @@
   padding: 14px;
 }
 
-.p{
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.65;
+.cardWarn{
+  border-color: var(--warnLine);
+  background: var(--warnBg);
+}
+
+.textBlock{
   white-space: pre-wrap;
+  line-height: 1.7;
+  color: var(--ink);
 }
 
-.list{
+.pMuted{
   margin: 0;
-  padding-left: 18px;
   color: var(--muted);
+  line-height: 1.7;
 }
 
-.list li{
-  margin: 6px 0;
-}
-
-/* Related */
+/* -------------------------
+   Related grid
+-------------------------- */
 .relatedGrid{
-  display:grid;
+  display: grid;
   grid-template-columns: 1fr;
   gap: 10px;
 }
@@ -184,8 +232,8 @@
   color: inherit;
 }
 
-.relatedTitle{
-  font-weight: 800;
+.relatedName{
+  font-weight: 900;
   margin-bottom: 6px;
 }
 
@@ -194,18 +242,20 @@
   font-size: 13px;
 }
 
-/* Footer meta */
+/* Footer */
 .updated{
   margin-top: 18px;
   color: var(--muted);
   font-size: 13px;
 }
 
-/* --- Responsive: only go “row-ish” on larger screens --- */
+/* -------------------------
+   Desktop tweaks
+-------------------------- */
 @media (min-width: 900px){
   .wrap{ padding: 22px var(--pad) 120px; }
 
-  .title{ font-size: 40px; }
+  .h1{ font-size: 42px; }
 
   .relatedGrid{
     grid-template-columns: repeat(3, minmax(0, 1fr));
