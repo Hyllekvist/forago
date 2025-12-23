@@ -1,6 +1,7 @@
 @import "../styles/tokens.css";
 @import "../styles/themes.css";
 @import "../styles/typography.css";
+@import "leaflet/dist/leaflet.css";
 
 * { box-sizing: border-box; }
 html, body { height: 100%; }
