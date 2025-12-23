@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useCallback, useEffect } from "react";
+import { useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import styles from "./MapPage.module.css";
@@ -12,6 +12,11 @@ type Spot = {
   title?: string | null;
   species_slug?: string | null;
   created_at?: string | null;
+};
+
+type LeafletLikeMap = {
+  zoomIn: () => void;
+  zoomOut: () => void;
 };
 
 const LeafletMap = dynamic(() => import("./LeafletMap"), { ssr: false });
@@ -27,6 +32,7 @@ export default function MapClient({
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(
     null
   );
+  const [mapRef, setMapRef] = useState<LeafletLikeMap | null>(null);
 
   const selected = useMemo(
     () => spots.find((s) => s.id === selectedId) ?? null,
@@ -42,54 +48,79 @@ export default function MapClient({
       (pos) => {
         setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude });
       },
-      () => {
-        // no-op (du kan toast’e senere)
-      },
+      () => {},
       { enableHighAccuracy: true, timeout: 8000 }
     );
   }, []);
 
-  // Auto-close sheet hvis du skifter route (mobile back feeling)
-  useEffect(() => {
-    // keep simple
-  }, []);
-
   return (
     <main className={styles.page}>
-      {/* Full-bleed map canvas */}
-   <div className={styles.mapStage}>
-  <div className={styles.mapWrap}>
-    <LeafletMap
-      spots={spots}
-      userPos={userPos}
-      onSelect={onSelect}
-      selectedId={selectedId}
-    />
-  </div>
+      <div className={styles.mapStage}>
+        <LeafletMap
+          spots={spots}
+          userPos={userPos}
+          onSelect={onSelect}
+          selectedId={selectedId}
+          onMapReady={(m: LeafletLikeMap) => setMapRef(m)}
+        />
 
-        {/* Floating controls */}
-        <div className={styles.topBar}>
-          <div className={styles.topBarInner}>
-            <h1 className={styles.h1}>{locale === "dk" ? "Kort" : "Map"}</h1>
-            <p className={styles.sub}>
-              {locale === "dk"
-                ? "Tryk på et spot for detaljer og arter."
-                : "Tap a spot for details and species."}
-            </p>
+        {/* Top HUD (compact glass) */}
+        <div className={styles.topHud}>
+          <div className={styles.topHudInner}>
+            <div className={styles.topRow}>
+              <div>
+                <h1 className={styles.h1}>{locale === "dk" ? "Kort" : "Map"}</h1>
+                <p className={styles.sub}>
+                  {locale === "dk"
+                    ? "Tryk på et spot for detaljer."
+                    : "Tap a spot for details."}
+                </p>
+              </div>
 
-            <div className={styles.actions}>
-              <button className={styles.btn} onClick={locate} type="button">
-                {locale === "dk" ? "Find mig" : "Locate me"}
-              </button>
+              <span className={styles.pill}>
+                {locale === "dk" ? "Spots" : "Spots"} · {spots.length}
+              </span>
+            </div>
 
-              <Link className={styles.btnGhost} href={`/${locale}/species`}>
-                {locale === "dk" ? "Arter" : "Species"}
-              </Link>
+            <div className={styles.hint}>
+              <div className={styles.actions}>
+                <button className={styles.btn} onClick={locate} type="button">
+                  {locale === "dk" ? "Find mig" : "Locate me"}
+                </button>
+
+                <Link className={styles.btnGhost} href={`/${locale}/species`}>
+                  {locale === "dk" ? "Arter" : "Species"}
+                </Link>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Bottom sheet card */}
+        {/* Floating controls */}
+        <div className={styles.controls} aria-hidden={!mapRef}>
+          <div className={styles.ctrlStack}>
+            <button
+              className={styles.ctrlBtn}
+              type="button"
+              onClick={() => mapRef?.zoomIn()}
+              aria-label="Zoom in"
+              title="Zoom in"
+            >
+              +
+            </button>
+            <button
+              className={styles.ctrlBtn}
+              type="button"
+              onClick={() => mapRef?.zoomOut()}
+              aria-label="Zoom out"
+              title="Zoom out"
+            >
+              −
+            </button>
+          </div>
+        </div>
+
+        {/* Bottom sheet */}
         <div
           className={`${styles.sheet} ${
             selected ? styles.sheetOpen : styles.sheetClosed
@@ -131,8 +162,8 @@ export default function MapClient({
               <div className={styles.sheetBody}>
                 <p className={styles.p}>
                   {locale === "dk"
-                    ? "Næste: vis art, sæson og et lille foto-preview her."
-                    : "Next: show species, season and a photo preview here."}
+                    ? "Næste: mini-preview (foto), sæson og “gem spot”."
+                    : "Next: photo preview, season and “save spot”."}
                 </p>
               </div>
             </div>
