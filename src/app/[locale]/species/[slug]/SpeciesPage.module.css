@@ -242,3 +242,36 @@
     font-size: 38px;
   }
 }
+
+/* ---------- Rich text formatting ---------- */
+
+.paragraph {
+  margin: 0;
+  color: rgba(255,255,255,0.88);
+}
+
+.paragraph + .paragraph {
+  margin-top: 10px;
+}
+
+.ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.li {
+  margin: 0;
+  color: rgba(255,255,255,0.88);
+  line-height: 1.55;
+}
+
+.li + .li {
+  margin-top: 8px;
+}
+
+.callout {
+  border-radius: 14px;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  background: rgba(245, 158, 11, 0.08);
+  padding: 12px;
+}
