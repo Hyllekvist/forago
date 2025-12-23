@@ -1,0 +1,25 @@
+.wrap{ padding: 18px var(--pad) 88px; max-width: var(--maxw); margin: 0 auto; }
+.header{ margin-top: 8px; }
+.h1{ margin: 0; font-size: 26px; }
+.sub{ margin: 6px 0 0; color: var(--muted); max-width: 60ch; }
+
+.grid{
+  margin-top: 16px;
+  display:grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+.card{
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  padding: 14px;
+  box-shadow: var(--shadow-1);
+}
+.kicker{ font-size: 12px; color: var(--muted); }
+.title{ margin-top: 6px; font-weight: 700; }
+.desc{ margin-top: 4px; color: var(--muted); }
+
+@media(min-width: 860px){
+  .grid{ grid-template-columns: 1fr 1fr; }
+}
