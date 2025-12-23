@@ -1,20 +1,22 @@
 /* src/app/[locale]/species/[slug]/SpeciesPage.module.css */
 
 .wrap { padding: 18px var(--pad) 110px; max-width: 920px; margin: 0 auto; }
-
-/* Header / hero */
 .header { margin-bottom: 12px; }
 
-.back {
+/* Links */
+.back,
+.backDesktop {
   display: inline-block;
   text-decoration: none;
   color: inherit;
   opacity: 0.9;
-  margin-bottom: 10px;
 }
 
-.hero {
-  display: flex;
+.backDesktop { margin-bottom: 10px; }
+
+/* Hero (desktop/full) */
+.hero{
+  display:flex;
   justify-content: space-between;
   gap: 14px;
   align-items: flex-start;
@@ -24,14 +26,14 @@
 .heroMain { min-width: 0; }
 .heroSide { display: flex; align-items: flex-start; }
 
-.h1 {
-  margin: 0;
+.h1{
+  margin: 10px 0 0;
   text-transform: capitalize;
   letter-spacing: -0.02em;
   line-height: 1.12;
 }
 
-.meta {
+.meta{
   margin-top: 8px;
   color: var(--muted);
   font-size: 14px;
@@ -45,15 +47,15 @@
 .dot { opacity: 0.6; }
 .group { text-transform: lowercase; }
 
-.sub {
+.sub{
   margin: 10px 0 0;
   color: var(--muted);
   max-width: 72ch;
   line-height: 1.55;
 }
 
-/* Chips row */
-.chips {
+/* Chips */
+.chips{
   margin-top: 12px;
   display: flex;
   flex-wrap: wrap;
@@ -62,7 +64,7 @@
 
 .chip,
 .chipLink,
-.monthChip {
+.monthChip{
   border-radius: 999px;
   padding: 8px 10px;
   border: 1px solid var(--line);
@@ -73,17 +75,17 @@
 }
 
 .chipLink,
-.monthChip {
+.monthChip{
   text-decoration: none;
 }
 
 .chipLink:hover,
-.monthChip:hover {
+.monthChip:hover{
   border-color: rgba(255,255,255,0.18);
   box-shadow: var(--shadow-1);
 }
 
-.badge {
+.badge{
   border-radius: 999px;
   padding: 8px 10px;
   border: 1px solid var(--line);
@@ -93,14 +95,14 @@
   white-space: nowrap;
 }
 
-.badgeSeason {
+.badgeSeason{
   border-color: rgba(34,197,94,0.35);
   background: rgba(34,197,94,0.14);
   color: rgba(255,255,255,0.92);
 }
 
 /* Month chips row */
-.monthRow {
+.monthRow{
   margin-top: 10px;
   display: flex;
   gap: 10px;
@@ -108,11 +110,16 @@
   align-items: center;
 }
 
-.monthLabel { opacity: 0.75; font-size: 13px; }
-.monthChips { display: flex; gap: 8px; flex-wrap: wrap; }
+.monthLabel{ opacity: 0.75; font-size: 13px; }
+
+.monthChips{
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 
 /* Sections / cards */
-.section { margin-top: 14px; }
+.section{ margin-top: 14px; }
 
 .card{
   border-radius: 16px;
@@ -128,30 +135,36 @@
   letter-spacing: -0.01em;
 }
 
-.body { opacity: 0.92; line-height: 1.6; }
+.body{ opacity: 0.92; line-height: 1.6; }
 
-.pre { white-space: pre-wrap; }
+.pre{ white-space: pre-wrap; }
 
-.p { margin: 0; color: var(--muted); line-height: 1.55; }
+.p{ margin: 0; color: var(--muted); line-height: 1.55; }
 
 /* Safety highlight */
-.safety {
+.safety{
   padding: 12px;
   border-radius: 14px;
   border: 1px solid rgba(245,158,11,0.25);
   background: rgba(245,158,11,0.08);
 }
 
-/* Related grid */
-.relatedHeader { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-.relatedGrid {
+/* Related */
+.relatedHeader{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.relatedGrid{
   margin-top: 10px;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 10px;
 }
 
-.relatedCard {
+.relatedCard{
   text-decoration: none;
   color: inherit;
   border-radius: 14px;
@@ -161,19 +174,64 @@
   transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
 }
 
-.relatedCard:hover {
+.relatedCard:hover{
   transform: translateY(-1px);
   box-shadow: 0 10px 26px rgba(0,0,0,0.22);
   border-color: rgba(255,255,255,0.16);
 }
 
-.relatedName { font-weight: 850; margin-bottom: 6; }
-.relatedMeta { opacity: 0.78; font-size: 13px; }
+.relatedName{ font-weight: 850; margin-bottom: 6px; }
+.relatedMeta{ opacity: 0.78; font-size: 13px; }
 
 /* Updated */
-.updated { margin-top: 18px; opacity: 0.7; font-size: 13px; }
+.updated{ margin-top: 18px; opacity: 0.7; font-size: 13px; }
 
-/* Skeleton */
+/* ---------------- Sticky (mobile) ---------------- */
+.sticky{
+  position: sticky;
+  top: 72px;              /* under global header */
+  z-index: 40;
+
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(10,12,16,0.72);
+  backdrop-filter: blur(14px);
+
+  border-radius: 16px;
+  padding: 10px;
+  box-shadow: var(--shadow-1);
+}
+
+.stickyRow{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stickySpacer{ flex: 1; }
+
+.stickyChips{
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+}
+
+.stickyChips::-webkit-scrollbar{ display: none; }
+
+/* Sticky kun på mobil */
+@media (min-width: 820px){
+  .sticky{ display: none; }
+}
+
+/* Mobile: skjul desktop-back + hero-chips så det ikke bliver dobbelt */
+@media (max-width: 819px){
+  .backDesktop{ display: none; }
+  .chips{ display: none; }
+}
+
+/* ---------------- Skeleton ---------------- */
 .skelTitle, .skelMeta, .skelP, .skelChip, .skelH2 {
   border-radius: 12px;
   border: 1px solid rgba(255,255,255,0.08);
@@ -205,85 +263,4 @@
 @keyframes shimmer {
   0% { transform: translateX(-60%); }
   100% { transform: translateX(60%); }
-}
-
-/* Sticky header */
-.sticky {
-  position: sticky;
-  top: 0;
-  z-index: 40;
-
-  border: 1px solid rgba(255,255,255,0.10);
-  background: rgba(10,12,16,0.72);
-  backdrop-filter: blur(14px);
-
-  border-radius: 16px;
-  padding: 10px 10px 10px;
-  box-shadow: var(--shadow-1);
-}
-
-/* Row: back + title + tiny icon */
-.stickyRow {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 10px;
-  align-items: center;
-}
-
-.stickyTitleWrap { min-width: 0; }
-.stickyTitle {
-  font-weight: 850;
-  letter-spacing: -0.01em;
-  line-height: 1.15;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.stickyMeta {
-  margin-top: 2px;
-  font-size: 12px;
-  opacity: 0.78;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.stickyIcon {
-  text-decoration: none;
-  color: inherit;
-  opacity: 0.85;
-  border-radius: 12px;
-  padding: 8px 10px;
-  border: 1px solid rgba(255,255,255,0.10);
-  background: rgba(255,255,255,0.04);
-}
-
-.stickyChips {
-  margin-top: 10px;
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 2px;
-}
-
-.stickyChips::-webkit-scrollbar { display: none; }
-
-/* Mobile behavior */
-@media (min-width: 820px) {
-  .sticky { display: none; }
-}
-
-@media (max-width: 819px) {
-  /* vi viser sticky, og skærer hero ned */
-  .heroSide { display: none; }
-  .sub { display: none; }
-  .chips { display: none; } /* den gamle chips-row */
-  .header { margin-bottom: 12px; }
-}
-
-/* Lidt luft så sticky ikke føles klemt */
-@media (max-width: 819px) {
-  .wrap { padding-top: 14px; }
 }
