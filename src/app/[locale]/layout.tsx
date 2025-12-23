@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { LOCALES, isLocale } from "@/lib/i18n/locales";
 import { buildHreflangs } from "@/lib/i18n/hreflang";
-import { Shell } from "@/components/Shell/Shell";
+import Shell from "@/components/Shell/Shell";
 import { baseMetadata } from "@/lib/seo/metadata";
 
 type Props = { children: React.ReactNode; params: { locale: string } };
