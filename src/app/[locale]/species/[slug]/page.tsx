@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 import Script from "next/script";
 import { supabaseServer } from "@/lib/supabase/server";
+
 import styles from "./SpeciesPage.module.css";
 import { SpeciesHeader } from "./SpeciesHeader";
 import { StickySpeciesBar } from "./StickySpeciesBar";
+import { RichText } from "./RichText";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 3600;
@@ -76,7 +78,7 @@ function monthName(locale: Locale, m: number) {
 }
 
 function currentMonthUTC() {
-  return new Date().getUTCMonth() + 1;
+  return new Date().getUTCMonth() + 1; // 1-12
 }
 
 function isInSeason(month: number, from: number, to: number) {
@@ -97,6 +99,7 @@ export async function generateMetadata({
   if (!isLocale(params.locale)) return { title: "Forago" };
 
   const supabase = supabaseServer();
+
   const { data: sp } = await supabase
     .from("species")
     .select("id, slug")
@@ -132,17 +135,19 @@ export default async function SpeciesPage({
 }) {
   if (!isLocale(params.locale)) return notFound();
   const locale = params.locale;
+
   const supabase = supabaseServer();
 
-  const { data: sp } = await supabase
+  const { data: sp, error: spErr } = await supabase
     .from("species")
     .select("id, slug, scientific_name, primary_group, created_at")
     .eq("slug", params.slug)
     .maybeSingle();
 
+  if (spErr) throw spErr;
   if (!sp) return notFound();
 
-  const { data: tr } = await supabase
+  const { data: tr, error: trErr } = await supabase
     .from("species_translations")
     .select(
       "common_name, short_description, identification, lookalikes, usage_notes, safety_notes, updated_at"
@@ -151,9 +156,12 @@ export default async function SpeciesPage({
     .eq("locale", locale)
     .maybeSingle();
 
+  if (trErr) throw trErr;
+
   const name = tr?.common_name || sp.slug;
 
-  const { data: seas } = await supabase
+  // Seasonality (country = locale, region = '')
+  const { data: seas, error: seasErr } = await supabase
     .from("seasonality")
     .select("month_from, month_to, confidence")
     .eq("species_id", sp.id)
@@ -161,9 +169,11 @@ export default async function SpeciesPage({
     .eq("region", "")
     .maybeSingle();
 
-  const from = seas?.month_from;
-  const to = seas?.month_to;
-  const confidence = seas?.confidence ?? null;
+  if (seasErr) throw seasErr;
+
+  const from = (seas?.month_from as number | undefined) ?? undefined;
+  const to = (seas?.month_to as number | undefined) ?? undefined;
+  const confidence = (seas?.confidence as number | null | undefined) ?? null;
 
   const monthNow = currentMonthUTC();
   const inSeasonNow =
@@ -226,7 +236,9 @@ export default async function SpeciesPage({
           {locale === "dk" ? "Identifikation" : "Identification"}
         </h2>
         <div className={styles.card}>
-          {tr?.identification || (
+          {tr?.identification ? (
+            <RichText text={tr.identification} />
+          ) : (
             <p className={styles.p}>
               {locale === "dk"
                 ? "Tilføj identifikation i databasen."
@@ -241,22 +253,22 @@ export default async function SpeciesPage({
           {locale === "dk" ? "Forvekslinger" : "Look-alikes"}
         </h2>
         <div className={styles.card}>
-          {tr?.lookalikes || (
+          {tr?.lookalikes ? (
+            <RichText text={tr.lookalikes} />
+          ) : (
             <p className={styles.p}>
-              {locale === "dk"
-                ? "Tilføj forvekslinger."
-                : "Add look-alikes."}
+              {locale === "dk" ? "Tilføj forvekslinger." : "Add look-alikes."}
             </p>
           )}
         </div>
       </section>
 
       <section className={styles.section}>
-        <h2 className={styles.h2}>
-          {locale === "dk" ? "Brug" : "Use"}
-        </h2>
+        <h2 className={styles.h2}>{locale === "dk" ? "Brug" : "Use"}</h2>
         <div className={styles.card}>
-          {tr?.usage_notes || (
+          {tr?.usage_notes ? (
+            <RichText text={tr.usage_notes} />
+          ) : (
             <p className={styles.p}>
               {locale === "dk" ? "Tilføj brug." : "Add usage."}
             </p>
@@ -269,7 +281,9 @@ export default async function SpeciesPage({
           {locale === "dk" ? "Sikkerhed" : "Safety"}
         </h2>
         <div className={styles.card}>
-          {tr?.safety_notes || (
+          {tr?.safety_notes ? (
+            <RichText text={tr.safety_notes} variant="callout" />
+          ) : (
             <p className={styles.p}>
               {locale === "dk"
                 ? "Tilføj sikkerhedsnoter."
@@ -278,6 +292,11 @@ export default async function SpeciesPage({
           )}
         </div>
       </section>
+
+      <p className={styles.updated}>
+        {locale === "dk" ? "Sidst opdateret:" : "Last updated:"}{" "}
+        {tr?.updated_at ? new Date(tr.updated_at).toISOString().slice(0, 10) : "—"}
+      </p>
     </main>
   );
 }
