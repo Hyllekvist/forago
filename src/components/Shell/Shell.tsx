@@ -1,6 +1,6 @@
 import styles from "./Shell.module.css";
 
-export default function Shell({ children }: { children: React.ReactNode }) {
+export function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className={styles.shell}>
       <div className={styles.fog} />
