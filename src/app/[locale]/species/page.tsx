@@ -10,7 +10,7 @@ type Locale = (typeof SUPPORTED_LOCALES)[number];
 function isLocale(x: string): x is Locale {
   return (SUPPORTED_LOCALES as readonly string[]).includes(x);
 }
-
+ 
 export async function generateMetadata({ params }: { params: { locale: string } }) {
   const locale = params.locale;
   const title = locale === "dk" ? "Arter — Forago" : "Species — Forago";
