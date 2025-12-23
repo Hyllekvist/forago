@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
-import MapClient from "./MapClient";
+import MapClient from "./MapClient"; 
 
 export const dynamic = "force-dynamic";
 export const revalidate = 300;
