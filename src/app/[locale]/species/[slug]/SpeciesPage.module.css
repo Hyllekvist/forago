@@ -1,282 +1,30 @@
-/* src/app/[locale]/species/[slug]/SpeciesPage.module.css */
- 
+/* SpeciesPage.module.css
+   Mobile-first, Apple Health-ish: clean typography, soft panels, tight spacing.
+*/
+
 .wrap {
-  padding: 18px var(--pad) 110px;
-  max-width: 920px;
+  padding: 16px var(--pad, 16px) 110px;
+  max-width: var(--maxw, 920px);
   margin: 0 auto;
 }
 
-.header {
-  margin-bottom: 12px;
-}
-
-/* ---------------- Links ---------------- */
-
-.back,
-.backDesktop {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  text-decoration: none;
-  color: inherit;
-  opacity: 0.9;
-}
-
-.backDesktop {
-  margin-bottom: 10px;
-}
-
-/* ---------------- Hero ---------------- */
-
-.hero {
-  display: flex;
-  justify-content: space-between;
-  gap: 14px;
-  align-items: flex-start;
-  margin-top: 6px;
-}
-
-.heroMain {
-  min-width: 0;
-}
-
-.heroSide {
-  display: flex;
-  align-items: flex-start;
-}
-
-.h1 {
-  margin: 10px 0 0;
-  text-transform: capitalize;
-  letter-spacing: -0.02em;
-  line-height: 1.12;
-}
-
-.meta {
-  margin-top: 8px;
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1.35;
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  align-items: baseline;
-}
-
-.dot {
-  opacity: 0.6;
-}
-
-.group {
-  text-transform: lowercase;
-}
-
-.sub {
-  margin: 10px 0 0;
-  color: var(--muted);
-  max-width: 72ch;
-  line-height: 1.55;
-}
-
-/* ---------------- Chips (GLOBAL FIX) ---------------- */
-/* Kernen: chips må ALDRIG wrappe eller blive “høje piller/ovaler” */
-
-.chips {
-  margin-top: 12px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.chip,
-.chipLink,
-.monthChip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  flex: 0 0 auto;
-  white-space: nowrap;
-
-  height: 34px;
-  padding: 0 12px;
-
-  line-height: 1;
-  border-radius: 999px;
-
-  border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.04);
-
-  font-size: 13px;
-  color: inherit;
-  opacity: 0.95;
-}
-
-.chipLink,
-.monthChip {
-  text-decoration: none;
-}
-
-.chipLink:hover,
-.monthChip:hover {
-  border-color: rgba(255, 255, 255, 0.18);
-  box-shadow: var(--shadow-1);
-}
-
-/* ---------------- Badge ---------------- */
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-
-  height: 34px;
-  padding: 0 12px;
-
-  border-radius: 999px;
-  border: 1px solid var(--line);
-
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--muted);
-
-  font-size: 12px;
-  white-space: nowrap;
-  line-height: 1;
-}
-
-.badgeSeason {
-  border-color: rgba(34, 197, 94, 0.35);
-  background: rgba(34, 197, 94, 0.14);
-  color: rgba(255, 255, 255, 0.92);
-}
-
-/* ---------------- Month row ---------------- */
-
-.monthRow {
-  margin-top: 10px;
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.monthLabel {
-  opacity: 0.75;
-  font-size: 13px;
-}
-
-.monthChips {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-/* ---------------- Sections / Cards ---------------- */
-
-.section {
-  margin-top: 14px;
-}
-
-.card {
-  border-radius: 16px;
-  border: 1px solid var(--line);
-  background: var(--panel);
-  box-shadow: var(--shadow-1);
-  padding: 14px;
-}
-
-.h2 {
-  margin: 0 0 10px;
-  font-size: 16px;
-  letter-spacing: -0.01em;
-}
-
-.body {
-  opacity: 0.92;
-  line-height: 1.6;
-}
-
-.pre {
-  white-space: pre-wrap;
-}
-
-.p {
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.55;
-}
-
-/* Safety highlight */
-.safety {
-  padding: 12px;
-  border-radius: 14px;
-  border: 1px solid rgba(245, 158, 11, 0.25);
-  background: rgba(245, 158, 11, 0.08);
-}
-
-/* ---------------- Related ---------------- */
-
-.relatedHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-}
-
-.relatedGrid {
-  margin-top: 10px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 10px;
-}
-
-.relatedCard {
-  text-decoration: none;
-  color: inherit;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  background: rgba(255, 255, 255, 0.03);
-  padding: 12px;
-  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
-}
-
-.relatedCard:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
-  border-color: rgba(255, 255, 255, 0.16);
-}
-
-.relatedName {
-  font-weight: 850;
-  margin-bottom: 6px;
-}
-
-.relatedMeta {
-  opacity: 0.78;
-  font-size: 13px;
-}
-
-/* ---------------- Updated ---------------- */
-
-.updated {
-  margin-top: 18px;
-  opacity: 0.7;
-  font-size: 13px;
-}
-
-/* ---------------- Sticky (mobile) ---------------- */
+/* ---------- Sticky bar (top) ---------- */
 
 .sticky {
   position: sticky;
-  top: 72px; /* under global header */
-  z-index: 40;
+  top: 0;
+  z-index: 30;
+  padding-top: 10px;
+  padding-bottom: 10px;
 
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  background: rgba(10, 12, 16, 0.72);
-  backdrop-filter: blur(14px);
-
-  border-radius: 18px;
-  padding: 10px;
-  box-shadow: var(--shadow-1);
+  /* subtle blur like iOS */
+  background: linear-gradient(
+    to bottom,
+    rgba(10, 12, 16, 0.92),
+    rgba(10, 12, 16, 0.72),
+    rgba(10, 12, 16, 0)
+  );
+  backdrop-filter: blur(10px);
 }
 
 .stickyRow {
@@ -289,18 +37,13 @@
   flex: 1;
 }
 
-/* Sticky chips: NEVER wrap; horizontal scroll; no tall ovals */
 .stickyChips {
-  margin-top: 10px;
-
   display: flex;
   gap: 10px;
-
   overflow-x: auto;
-  overflow-y: hidden;
-  flex-wrap: nowrap;
-
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-top: 10px;
   padding-bottom: 2px;
 }
 
@@ -308,103 +51,194 @@
   display: none;
 }
 
-.stickyChips > * {
-  flex: 0 0 auto;
+/* ---------- Header ---------- */
+
+.header {
+  margin-top: 6px;
+  padding: 14px;
+  border-radius: calc(var(--radius, 18px) + 2px);
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.10));
+  background: var(--panel, rgba(255, 255, 255, 0.03));
+  box-shadow: var(--shadow-1, 0 10px 30px rgba(0, 0, 0, 0.35));
 }
 
-/* Sticky only on mobile */
-@media (min-width: 820px) {
-  .sticky {
-    display: none;
-  }
-}
-
-/* Mobile: avoid duplicates */
-@media (max-width: 819px) {
-  .backDesktop {
-    display: none !important;
-  }
-  .chips {
-    display: none !important;
-  }
-}
-
-/* ---------------- Skeleton ---------------- */
-
-.skelTitle,
-.skelMeta,
-.skelP,
-.skelChip,
-.skelH2 {
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.05);
-  position: relative;
-  overflow: hidden;
-}
-
-.skelTitle {
-  height: 22px;
-  width: 62%;
-}
-.skelMeta {
-  height: 14px;
-  width: 48%;
-  margin-top: 10px;
-}
-.skelP {
-  height: 14px;
-  width: 100%;
-  margin-top: 10px;
-  opacity: 0.9;
-}
-.skelH2 {
-  height: 18px;
-  width: 40%;
-  margin-top: 14px;
-}
-.skelRow {
+.heroTop {
   display: flex;
-  gap: 8px;
-  margin-top: 14px;
-}
-.skelChip {
-  height: 28px;
-  width: 120px;
-  border-radius: 999px;
-}
-
-.skelTitle::after,
-.skelMeta::after,
-.skelP::after,
-.skelChip::after,
-.skelH2::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  transform: translateX(-40%);
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.08),
-    transparent
-  );
-  animation: shimmer 1.1s infinite;
-}
-
-@keyframes shimmer {
-  0% {
-    transform: translateX(-60%);
-  }
-  100% {
-    transform: translateX(60%);
-  }
-}
-
-.heroTop{
-  display:flex;
-  align-items:center;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 6px;
+  margin-bottom: 10px;
+}
+
+/* ---------- Typography ---------- */
+
+.h1 {
+  margin: 6px 0 6px;
+  font-size: 34px;
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+}
+
+.meta {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  color: var(--muted, rgba(255, 255, 255, 0.72));
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.dot {
+  opacity: 0.6;
+}
+
+.group {
+  text-transform: lowercase;
+  opacity: 0.92;
+}
+
+.sub {
+  margin: 10px 0 0;
+  color: var(--muted, rgba(255, 255, 255, 0.72));
+  line-height: 1.55;
+  max-width: 70ch;
+}
+
+/* ---------- Links + Chips ---------- */
+
+.back {
+  text-decoration: none;
+  color: inherit;
+  opacity: 0.9;
+  font-size: 14px;
+  border-radius: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.10));
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.back:active {
+  transform: translateY(0.5px);
+}
+
+.badge {
+  border-radius: 999px;
+  padding: 8px 10px;
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.10));
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.badgeSeason {
+  border-color: rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.16);
+}
+
+.chips {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  margin-top: 14px;
+  padding-bottom: 2px;
+}
+
+.chips::-webkit-scrollbar {
+  display: none;
+}
+
+.chip,
+.chipLink {
+  border-radius: 999px;
+  padding: 9px 12px;
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.10));
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.86);
+  white-space: nowrap;
+}
+
+.chipLink {
+  text-decoration: none;
+}
+
+.chipLink:active {
+  transform: translateY(0.5px);
+}
+
+/* ---------- Month row ---------- */
+
+.monthRow {
+  margin-top: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.monthLabel {
+  font-size: 13px;
+  color: var(--muted, rgba(255, 255, 255, 0.72));
+}
+
+.monthChips {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.monthChips::-webkit-scrollbar {
+  display: none;
+}
+
+.monthChip {
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.86);
+  border-radius: 999px;
+  padding: 9px 12px;
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.10));
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* ---------- Sections ---------- */
+
+.section {
+  margin-top: 16px;
+}
+
+.h2 {
+  margin: 0 0 10px;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+
+.card {
+  border-radius: var(--radius, 18px);
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.10));
+  background: var(--panel, rgba(255, 255, 255, 0.03));
+  box-shadow: var(--shadow-1, 0 10px 30px rgba(0, 0, 0, 0.35));
+  padding: 14px;
+  line-height: 1.6;
+}
+
+.p {
+  margin: 0;
+  color: var(--muted, rgba(255, 255, 255, 0.72));
+}
+
+/* ---------- Desktop tweaks ---------- */
+
+@media (min-width: 768px) {
+  .wrap {
+    padding-top: 18px;
+  }
+  .h1 {
+    font-size: 38px;
+  }
 }
