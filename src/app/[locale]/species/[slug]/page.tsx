@@ -206,7 +206,7 @@ export default async function SpeciesPage({
   const inSeasonNow = from && to ? isInSeason(month, from, to) : false;
   const seasonText = from && to ? seasonLabel(locale, from, to) : null;
 
-  // Related species: other species also in season now
+  // Related species (in season now)
   let related: Array<{ slug: string; name: string; confidence: number }> = [];
   if (inSeasonNow) {
     const { data: relSeas } = await supabase
@@ -287,11 +287,20 @@ export default async function SpeciesPage({
     ],
   };
 
-  const shortMissing =
-    !tr?.short_description &&
+  const shortText =
+    tr?.short_description ??
     (locale === "dk"
       ? "Tilføj short_description i species_translations for at gøre siden rankable."
       : "Add short_description in species_translations to make this page rankable.");
+
+  const seasonBadgeText =
+    (inSeasonNow
+      ? locale === "dk"
+        ? "I sæson nu"
+        : "In season now"
+      : locale === "dk"
+      ? "Ikke i sæson"
+      : "Not in season") + (conf !== null ? ` · ${conf}%` : "");
 
   return (
     <main className={styles.wrap}>
@@ -299,107 +308,116 @@ export default async function SpeciesPage({
         {JSON.stringify(jsonLd)}
       </Script>
 
-<header className={styles.header}>
-  {/* Sticky top (mobile-first) */}
-  <div className={styles.sticky}>
-    <div className={styles.stickyRow}>
-      <Link className={styles.back} href={`/${locale}/species`}>
-        ← {locale === "dk" ? "Arter" : "Species"}
-      </Link>
-
-      <div className={styles.stickyTitleWrap}>
-        <div className={styles.stickyTitle}>{name}</div>
-        <div className={styles.stickyMeta}>
-          {inSeasonNow
-            ? locale === "dk"
-              ? "I sæson nu"
-              : "In season now"
-            : locale === "dk"
-            ? "Ikke i sæson"
-            : "Not in season"}
-          {conf !== null ? ` · ${conf}%` : ""}
-        </div>
-      </div>
-
-      <Link className={styles.stickyIcon} href={`/${locale}/season`} aria-label="Season">
-        ↗
-      </Link>
-    </div>
-
-    <div className={styles.stickyChips}>
-      <span className={styles.chip}>
-        {locale === "dk" ? "Sæson:" : "Season:"}{" "}
-        {seasonText ? seasonText : locale === "dk" ? "ukendt" : "unknown"}
-      </span>
-
-      <Link className={styles.chipLink} href={`/${locale}/guides/safety-basics`}>
-        {locale === "dk" ? "Sikkerhed" : "Safety"}
-      </Link>
-
-      <Link className={styles.chipLink} href={`/${locale}/guides/lookalikes`}>
-        {locale === "dk" ? "Forvekslinger" : "Look-alikes"}
-      </Link>
-    </div>
-  </div>
-
-  {/* Non-sticky hero (desktop / full) */}
-  <div className={styles.hero}>
-    <div className={styles.heroMain}>
-      <h1 className={styles.h1}>{name}</h1>
-
-      <div className={styles.meta}>
-        {scientific ? <em>{scientific}</em> : null}
-        {scientific ? <span className={styles.dot}>·</span> : null}
-        <span className={styles.group}>{group}</span>
-      </div>
-
-      <p className={styles.sub}>
-        {tr?.short_description
-          ? tr.short_description
-          : locale === "dk"
-          ? "Tilføj short_description i species_translations for at gøre siden rankable."
-          : "Add short_description in species_translations to make this page rankable."}
-      </p>
-    </div>
-
-    <div className={styles.heroSide}>
-      {inSeasonNow ? (
-        <span className={`${styles.badge} ${styles.badgeSeason}`}>
-          {locale === "dk" ? "I sæson nu" : "In season now"}
-          {conf !== null ? ` · ${conf}%` : ""}
-        </span>
-      ) : (
-        <span className={styles.badge}>
-          {locale === "dk" ? "Ikke i sæson" : "Not in season"}
-          {conf !== null ? ` · ${conf}%` : ""}
-        </span>
-      )}
-    </div>
-  </div>
-
-  {/* Month chips (ikke sticky) */}
-  {from && to ? (
-    <div className={styles.monthRow}>
-      <span className={styles.monthLabel}>
-        {locale === "dk" ? "I sæson i:" : "In season in:"}
-      </span>
-
-      <div className={styles.monthChips}>
-        {monthsBetween(from, to)
-          .slice(0, 8)
-          .map((m) => (
-            <Link
-              key={m}
-              className={styles.monthChip}
-              href={`/${locale}/season/${MONTH_NUM_TO_SLUG[m]}`}
-            >
-              {monthName(locale, m)}
+      <header className={styles.header}>
+        {/* Sticky (mobile) – compact toolbar */}
+        <div className={styles.sticky}>
+          <div className={styles.stickyRow}>
+            <Link className={styles.back} href={`/${locale}/species`}>
+              ← {locale === "dk" ? "Arter" : "Species"}
             </Link>
-          ))}
-      </div>
-    </div>
-  ) : null}
-</header>
+
+            <div className={styles.stickySpacer} />
+
+            <span
+              className={`${styles.badge} ${
+                inSeasonNow ? styles.badgeSeason : ""
+              }`}
+            >
+              {seasonBadgeText}
+            </span>
+          </div>
+
+          <div className={styles.stickyChips}>
+            <span className={styles.chip}>
+              {locale === "dk" ? "Sæson:" : "Season:"}{" "}
+              {seasonText ? seasonText : locale === "dk" ? "ukendt" : "unknown"}
+            </span>
+
+            <Link className={styles.chipLink} href={`/${locale}/season`}>
+              {locale === "dk" ? "Sæson" : "Season"}
+            </Link>
+
+            <Link className={styles.chipLink} href={`/${locale}/guides/safety-basics`}>
+              {locale === "dk" ? "Sikkerhed" : "Safety"}
+            </Link>
+
+            <Link className={styles.chipLink} href={`/${locale}/guides/lookalikes`}>
+              {locale === "dk" ? "Forvekslinger" : "Look-alikes"}
+            </Link>
+          </div>
+        </div>
+
+        {/* Full hero (desktop + general) */}
+        <div className={styles.hero}>
+          <div className={styles.heroMain}>
+            <Link className={styles.backDesktop} href={`/${locale}/species`}>
+              ← {locale === "dk" ? "Arter" : "Species"}
+            </Link>
+
+            <h1 className={styles.h1}>{name}</h1>
+
+            <div className={styles.meta}>
+              {scientific ? <em>{scientific}</em> : null}
+              {scientific ? <span className={styles.dot}>·</span> : null}
+              <span className={styles.group}>{group}</span>
+            </div>
+
+            <p className={styles.sub}>{shortText}</p>
+
+            <div className={styles.chips}>
+              <span className={styles.chip}>
+                {locale === "dk" ? "Sæson:" : "Season:"}{" "}
+                {seasonText ? seasonText : locale === "dk" ? "ukendt" : "unknown"}
+              </span>
+
+              <Link className={styles.chipLink} href={`/${locale}/season`}>
+                {locale === "dk" ? "Se sæson nu →" : "See season now →"}
+              </Link>
+
+              <Link className={styles.chipLink} href={`/${locale}/guides/safety-basics`}>
+                {locale === "dk" ? "Sikkerhed →" : "Safety →"}
+              </Link>
+
+              <Link className={styles.chipLink} href={`/${locale}/guides/lookalikes`}>
+                {locale === "dk" ? "Forvekslinger →" : "Look-alikes →"}
+              </Link>
+            </div>
+          </div>
+
+          <div className={styles.heroSide}>
+            <span
+              className={`${styles.badge} ${
+                inSeasonNow ? styles.badgeSeason : ""
+              }`}
+            >
+              {seasonBadgeText}
+            </span>
+          </div>
+        </div>
+
+        {/* Month chips */}
+        {from && to ? (
+          <div className={styles.monthRow}>
+            <span className={styles.monthLabel}>
+              {locale === "dk" ? "I sæson i:" : "In season in:"}
+            </span>
+
+            <div className={styles.monthChips}>
+              {monthsBetween(from, to)
+                .slice(0, 12)
+                .map((m) => (
+                  <Link
+                    key={m}
+                    className={styles.monthChip}
+                    href={`/${locale}/season/${MONTH_NUM_TO_SLUG[m]}`}
+                  >
+                    {monthName(locale, m)}
+                  </Link>
+                ))}
+            </div>
+          </div>
+        ) : null}
+      </header>
 
       <Section title={locale === "dk" ? "Identifikation" : "Identification"}>
         {tr?.identification ? (
@@ -476,9 +494,7 @@ export default async function SpeciesPage({
             </div>
           ) : (
             <p className={styles.p}>
-              {locale === "dk"
-                ? "Ingen relaterede arter endnu."
-                : "No related species yet."}
+              {locale === "dk" ? "Ingen relaterede arter endnu." : "No related species yet."}
             </p>
           )}
         </div>
