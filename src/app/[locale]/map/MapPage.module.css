@@ -4,158 +4,143 @@
   color: var(--ink);
 }
 
-/* Full-bleed map under alt */
-.mapStage{
-  position: fixed;
-  inset: 0;
+/* Full-bleed stage */
+.stage{
+  position: relative;
+  height: calc(100vh - 0px);
   width: 100%;
-  height: 100%;
+  overflow: hidden;
 }
 
-/* Leaflet canvas wrapper */
+/* Leaflet host */
 .mapWrap{
   position: absolute;
   inset: 0;
 }
 
 .map{
-  width: 100%;
   height: 100%;
+  width: 100%;
+  border-radius: 0;
 }
 
-/* ---- Top HUD (compact) ---- */
-.topHud{
+/* -----------------------------
+   HUD (compact top glass card)
+------------------------------ */
+.hud{
   position: absolute;
-  top: calc(10px + env(safe-area-inset-top));
+  top: 12px;
   left: 12px;
   right: 12px;
-  z-index: 800;
+  z-index: 600;
   pointer-events: none;
 }
 
-.topHudInner{
+.hudCard{
   pointer-events: auto;
-  display: grid;
-  gap: 10px;
-  padding: 12px;
   border-radius: 22px;
-  border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
-  background: color-mix(in srgb, var(--bg) 84%, transparent);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 78%, transparent);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
   box-shadow: var(--shadow-1);
+  padding: 14px 14px 12px;
 }
 
-.topRow{
+.hudTop{
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 12px;
 }
 
+.hudText{
+  min-width: 0;
+}
+
 .h1{
   margin: 0;
-  font-size: 26px;
+  font-size: 30px;
+  line-height: 1.05;
   letter-spacing: -0.02em;
-  line-height: 1.1;
 }
 
 .sub{
-  margin: 2px 0 0;
+  margin: 6px 0 0;
   color: var(--muted);
-  font-size: 14px;
   line-height: 1.35;
 }
 
-.hint{
+.hudActions{
   display: flex;
   gap: 10px;
-  align-items: center;
-  justify-content: space-between;
+  flex-shrink: 0;
 }
 
-.pill{
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
+/* Pills */
+.pill,
+.pillGhost{
   border-radius: 999px;
+  padding: 10px 12px;
+  font-size: 14px;
   border: 1px solid var(--line);
-  background: var(--panel2);
-  color: var(--muted);
-  font-size: 12px;
+  cursor: pointer;
   white-space: nowrap;
 }
 
-.actions{
-  display: flex;
-  gap: 10px;
-}
-
-.btn{
-  border-radius: 999px;
-  padding: 10px 14px;
-  border: 1px solid var(--line);
+.pill{
   background: var(--panel2);
   color: var(--ink);
-  cursor: pointer;
 }
 
-.btnGhost{
-  border-radius: 999px;
-  padding: 10px 14px;
-  border: 1px solid var(--line);
+.pillGhost{
   background: transparent;
   color: var(--ink);
+  opacity: 0.95;
 }
 
-/* ---- Floating map controls (right) ---- */
-.controls{
+/* -----------------------------
+   Zoom dock (right side)
+------------------------------ */
+.zoomDock{
   position: absolute;
-  right: 12px;
-  top: calc(92px + env(safe-area-inset-top));
-  z-index: 820;
-  display: grid;
+  left: 12px;
+  top: 120px;
+  z-index: 650;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
+  pointer-events: none;
 }
 
-.ctrlStack{
-  display: grid;
-  overflow: hidden;
-  border-radius: 16px;
-  border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
-  background: color-mix(in srgb, var(--bg) 86%, transparent);
+.zoomBtn{
+  pointer-events: auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 82%, transparent);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   box-shadow: var(--shadow-1);
-}
-
-.ctrlBtn{
-  width: 44px;
-  height: 44px;
+  color: var(--ink);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
   display: grid;
   place-items: center;
-  border: 0;
-  background: transparent;
-  color: var(--ink);
   cursor: pointer;
 }
 
-.ctrlBtn + .ctrlBtn{
-  border-top: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
-}
-
-.ctrlBtn:active{
-  transform: translateY(1px);
-}
-
-/* ---- Bottom sheet ---- */
+/* -----------------------------
+   Bottom sheet
+------------------------------ */
 .sheet{
   position: absolute;
   left: 12px;
   right: 12px;
   bottom: calc(12px + env(safe-area-inset-bottom));
-  z-index: 900;
+  z-index: 700;
   transition: transform 220ms ease, opacity 220ms ease;
 }
 
@@ -171,17 +156,17 @@
 }
 
 .sheetHandle{
-  width: 56px;
-  height: 6px;
+  width: 54px;
+  height: 5px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--muted) 28%, transparent);
+  background: color-mix(in srgb, var(--muted) 25%, transparent);
   margin: 0 auto 10px;
 }
 
 .sheetCard{
-  border-radius: 26px;
-  border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
-  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  border-radius: 24px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   box-shadow: var(--shadow-1);
@@ -196,21 +181,22 @@
 }
 
 .sheetTitle{
-  font-weight: 800;
+  font-weight: 850;
   font-size: 16px;
   letter-spacing: -0.01em;
 }
 
-.close{
-  border-radius: 999px;
+.closeBtn{
+  width: 40px;
+  height: 36px;
+  border-radius: 14px;
   border: 1px solid var(--line);
   background: transparent;
   color: var(--ink);
-  padding: 6px 10px;
   cursor: pointer;
 }
 
-.sheetMeta{
+.sheetMetaRow{
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -228,15 +214,18 @@
   white-space: nowrap;
 }
 
-.metaLink{
+.primaryLink{
   font-size: 13px;
   color: var(--ink);
-  opacity: .92;
+  opacity: 0.95;
+  text-decoration: none;
+  white-space: nowrap;
 }
 
 .metaMuted{
   font-size: 13px;
   color: var(--muted);
+  white-space: nowrap;
 }
 
 .sheetBody{
@@ -249,12 +238,50 @@
   line-height: 1.55;
 }
 
-/* Safety: Leaflet tiles can “shine through” in light mode,
-   so keep overlays readable on very bright maps */
-@supports not (backdrop-filter: blur(10px)) {
-  .topHudInner,
-  .ctrlStack,
-  .sheetCard{
-    background: color-mix(in srgb, var(--bg) 94%, transparent);
-  }
+.sheetActions{
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.secondaryBtn,
+.secondaryBtnGhost{
+  flex: 1;
+  border-radius: 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.secondaryBtn{
+  background: var(--panel2);
+  color: var(--ink);
+}
+
+.secondaryBtnGhost{
+  background: transparent;
+  color: var(--ink);
+  opacity: 0.95;
+}
+
+/* -----------------------------
+   Leaflet global tweaks
+   (MUST be scoped with a local class)
+------------------------------ */
+.mapWrap :global(.leaflet-control-attribution){
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+.mapWrap :global(.leaflet-control-zoom){
+  display: none; /* vi bruger vores egen zoomDock */
+}
+
+/* Mobile tightening */
+@media (max-width: 420px){
+  .h1{ font-size: 28px; }
+  .hudCard{ padding: 12px 12px 10px; }
+  .pill, .pillGhost{ padding: 9px 10px; }
+  .zoomDock{ top: 112px; }
 }
