@@ -16,8 +16,8 @@ const MONTH_NUM_TO_SLUG: Record<number, string> = {
   12: "december",
 };
 
-const LOCALES = ["dk"] as const; // hold den til DK indtil I åbner internationalt
-const MONTH_THRESHOLD = 6; // ✅ sænket fra 10 → 6
+const LOCALES = ["dk"] as const;
+const MONTH_THRESHOLD = 6;
 
 function baseUrl() {
   const explicit = process.env.NEXT_PUBLIC_SITE_URL;
@@ -30,7 +30,11 @@ function baseUrl() {
 function supabasePublic() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  if (!url || !key) {
+    throw new Error(
+      "Missing NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY"
+    );
+  }
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
@@ -51,32 +55,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = baseUrl();
   const sb = supabasePublic();
 
-  // 1) Species slugs
+  // ✅ species has created_at (not updated_at)
   const { data: species, error: spErr } = await sb
     .from("species")
-    .select("slug, updated_at")
+    .select("slug, created_at")
     .order("slug", { ascending: true });
 
   if (spErr) throw spErr;
 
-  // 2) Season month intros (optional, men nice)
   const { data: monthPages, error: mpErr } = await sb
     .from("season_month_pages")
     .select("locale, month, updated_at");
 
   if (mpErr) throw mpErr;
 
-  // 3) Seasonality (bruges til at afgøre hvilke måneder der har nok arter)
   const { data: seas, error: seasErr } = await sb
     .from("seasonality")
-    .select("species_id, country, region, month_from, month_to");
+    .select("country, region, month_from, month_to");
 
   if (seasErr) throw seasErr;
 
   const out: MetadataRoute.Sitemap = [];
 
   for (const locale of LOCALES) {
-    // Core pages
     out.push(
       { url: `${base}/${locale}`, lastModified: new Date() },
       { url: `${base}/${locale}/species`, lastModified: new Date() },
@@ -86,15 +87,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       { url: `${base}/${locale}/guides/lookalikes`, lastModified: new Date() }
     );
 
-    // Species pages
     for (const s of species ?? []) {
       out.push({
         url: `${base}/${locale}/species/${s.slug}`,
-        lastModified: s.updated_at ? new Date(s.updated_at) : new Date(),
+        lastModified: s.created_at ? new Date(s.created_at) : new Date(),
       });
     }
 
-    // Month counts (arter per måned)
+    // month counts from seasonality (country = locale, region = '')
     const monthCount = new Map<number, number>();
     const rows = (seas ?? []).filter(
       (r: any) => r.country === locale && (r.region ?? "") === ""
@@ -108,7 +108,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }
     }
 
-    // Add month pages if count >= threshold OR if month page exists in DB
+    // include month page if threshold met OR intro exists in DB
     const dbMonths = new Set<number>(
       (monthPages ?? [])
         .filter((p: any) => p.locale === locale)
