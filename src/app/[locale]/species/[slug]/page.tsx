@@ -1,8 +1,9 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import Script from "next/script";
 import { supabaseServer } from "@/lib/supabase/server";
 import styles from "./SpeciesPage.module.css";
+import { SpeciesHeader } from "./SpeciesHeader";
+import { StickySpeciesBar } from "./StickySpeciesBar";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 3600;
@@ -75,8 +76,7 @@ function monthName(locale: Locale, m: number) {
 }
 
 function currentMonthUTC() {
-  const now = new Date();
-  return now.getUTCMonth() + 1;
+  return new Date().getUTCMonth() + 1;
 }
 
 function isInSeason(month: number, from: number, to: number) {
@@ -89,46 +89,18 @@ function seasonLabel(locale: Locale, from: number, to: number) {
   return `${monthName(locale, from)} – ${monthName(locale, to)}`;
 }
 
-function siteUrl() {
-  const explicit = process.env.NEXT_PUBLIC_SITE_URL;
-  if (explicit) return explicit.replace(/\/$/, "");
-  const vercel = process.env.VERCEL_URL;
-  if (vercel) return `https://${vercel}`.replace(/\/$/, "");
-  return "http://localhost:3000";
-}
-
-function Section({
-  id,
-  title,
-  children,
-}: {
-  id: string;
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section id={id} className={styles.section}>
-      <div className={styles.card}>
-        <h2 className={styles.h2}>{title}</h2>
-        <div className={styles.body}>{children}</div>
-      </div>
-    </section>
-  );
-}
-
 export async function generateMetadata({
   params,
 }: {
   params: { locale: string; slug: string };
 }) {
-  const { locale: locParam, slug } = params;
-  if (!isLocale(locParam)) return { title: "Forago" };
+  if (!isLocale(params.locale)) return { title: "Forago" };
 
   const supabase = supabaseServer();
   const { data: sp } = await supabase
     .from("species")
     .select("id, slug")
-    .eq("slug", slug)
+    .eq("slug", params.slug)
     .maybeSingle();
 
   if (!sp) return { title: "Forago" };
@@ -137,21 +109,19 @@ export async function generateMetadata({
     .from("species_translations")
     .select("common_name, short_description")
     .eq("species_id", sp.id)
-    .eq("locale", locParam)
+    .eq("locale", params.locale)
     .maybeSingle();
 
-  const name = tr?.common_name || slug;
-  const title = `${name} — Forago`;
-  const description =
-    tr?.short_description ||
-    (locParam === "dk"
-      ? `Lær at genkende og bruge ${name}. Sæson, forvekslinger og sikkerhed.`
-      : `Learn how to identify and use ${name}. Season, look-alikes and safety.`);
+  const name = tr?.common_name || sp.slug;
 
   return {
-    title,
-    description,
-    alternates: { canonical: `/${locParam}/species/${slug}` },
+    title: `${name} — Forago`,
+    description:
+      tr?.short_description ||
+      (params.locale === "dk"
+        ? `Lær at genkende og bruge ${name}.`
+        : `Learn how to identify and use ${name}.`),
+    alternates: { canonical: `/${params.locale}/species/${sp.slug}` },
   };
 }
 
@@ -160,24 +130,19 @@ export default async function SpeciesPage({
 }: {
   params: { locale: string; slug: string };
 }) {
-  const { locale: locParam, slug } = params;
-  if (!isLocale(locParam)) return notFound();
-  const locale = locParam;
-
+  if (!isLocale(params.locale)) return notFound();
+  const locale = params.locale;
   const supabase = supabaseServer();
-  const month = currentMonthUTC();
-  const country = locale; // midlertidigt
 
-  const { data: sp, error: spErr } = await supabase
+  const { data: sp } = await supabase
     .from("species")
-    .select("id, slug, primary_group, scientific_name, created_at")
-    .eq("slug", slug)
+    .select("id, slug, scientific_name, primary_group, created_at")
+    .eq("slug", params.slug)
     .maybeSingle();
 
-  if (spErr) throw spErr;
   if (!sp) return notFound();
 
-  const { data: tr, error: trErr } = await supabase
+  const { data: tr } = await supabase
     .from("species_translations")
     .select(
       "common_name, short_description, identification, lookalikes, usage_notes, safety_notes, updated_at"
@@ -186,41 +151,133 @@ export default async function SpeciesPage({
     .eq("locale", locale)
     .maybeSingle();
 
-  if (trErr) throw trErr;
-
   const name = tr?.common_name || sp.slug;
-  const scientific = sp.scientific_name || "";
-  const group = sp.primary_group || "plant";
 
-  const { data: seasonRow, error: seasErr } = await supabase
+  const { data: seas } = await supabase
     .from("seasonality")
-    .select("month_from, month_to, confidence, notes")
+    .select("month_from, month_to, confidence")
     .eq("species_id", sp.id)
-    .eq("country", country)
+    .eq("country", locale)
     .eq("region", "")
     .maybeSingle();
 
-  if (seasErr) throw seasErr;
+  const from = seas?.month_from;
+  const to = seas?.month_to;
+  const confidence = seas?.confidence ?? null;
 
-  const from = (seasonRow?.month_from as number | undefined) ?? undefined;
-  const to = (seasonRow?.month_to as number | undefined) ?? undefined;
-  const conf = (seasonRow?.confidence as number | undefined) ?? null;
+  const monthNow = currentMonthUTC();
+  const inSeasonNow =
+    typeof from === "number" && typeof to === "number"
+      ? isInSeason(monthNow, from, to)
+      : false;
 
-  const inSeasonNow = from && to ? isInSeason(month, from, to) : false;
-  const seasonText = from && to ? seasonLabel(locale, from, to) : null;
+  const seasonText =
+    typeof from === "number" && typeof to === "number"
+      ? seasonLabel(locale, from, to)
+      : null;
 
-  // Related (kun hvis vi er i sæson nu)
-  let related: Array<{ slug: string; name: string; confidence: number }> = [];
-  if (inSeasonNow) {
-    const { data: relSeas } = await supabase
-      .from("seasonality")
-      .select("species_id, confidence, month_from, month_to")
-      .eq("country", country)
-      .eq("region", "");
+  const monthLinks =
+    typeof from === "number" && typeof to === "number"
+      ? monthsBetween(from, to).map((m) => ({
+          label: monthName(locale, m),
+          href: `/${locale}/season/${MONTH_NUM_TO_SLUG[m]}`,
+        }))
+      : [];
 
-    const candidates =
-      (relSeas ?? [])
-        .filter((r: any) => isInSeason(month, r.month_from as number, r.month_to as number))
-        .map((r: any) => ({
-          species_id: r.species_id as string,
-          confidence: (r.confidence as
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: name,
+    author: { "@type": "Organization", name: "Forago" },
+    publisher: { "@type": "Organization", name: "Forago" },
+    datePublished: sp.created_at,
+    dateModified: tr?.updated_at || sp.created_at,
+  };
+
+  return (
+    <main className={styles.wrap}>
+      <Script id="species-jsonld" type="application/ld+json">
+        {JSON.stringify(jsonLd)}
+      </Script>
+
+      <StickySpeciesBar
+        locale={locale}
+        backHref={`/${locale}/species`}
+        inSeasonNow={inSeasonNow}
+        confidence={confidence}
+        seasonText={seasonText}
+      />
+
+      <SpeciesHeader
+        locale={locale}
+        backHref={`/${locale}/species`}
+        name={name}
+        scientific={sp.scientific_name || ""}
+        group={sp.primary_group || "plant"}
+        shortDescription={tr?.short_description || ""}
+        seasonText={seasonText}
+        inSeasonNow={inSeasonNow}
+        confidence={confidence}
+        monthLinks={monthLinks}
+      />
+
+      <section className={styles.section}>
+        <h2 className={styles.h2}>
+          {locale === "dk" ? "Identifikation" : "Identification"}
+        </h2>
+        <div className={styles.card}>
+          {tr?.identification || (
+            <p className={styles.p}>
+              {locale === "dk"
+                ? "Tilføj identifikation i databasen."
+                : "Add identification in database."}
+            </p>
+          )}
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.h2}>
+          {locale === "dk" ? "Forvekslinger" : "Look-alikes"}
+        </h2>
+        <div className={styles.card}>
+          {tr?.lookalikes || (
+            <p className={styles.p}>
+              {locale === "dk"
+                ? "Tilføj forvekslinger."
+                : "Add look-alikes."}
+            </p>
+          )}
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.h2}>
+          {locale === "dk" ? "Brug" : "Use"}
+        </h2>
+        <div className={styles.card}>
+          {tr?.usage_notes || (
+            <p className={styles.p}>
+              {locale === "dk" ? "Tilføj brug." : "Add usage."}
+            </p>
+          )}
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.h2}>
+          {locale === "dk" ? "Sikkerhed" : "Safety"}
+        </h2>
+        <div className={styles.card}>
+          {tr?.safety_notes || (
+            <p className={styles.p}>
+              {locale === "dk"
+                ? "Tilføj sikkerhedsnoter."
+                : "Add safety notes."}
+            </p>
+          )}
+        </div>
+      </section>
+    </main>
+  );
+}
