@@ -27,3 +27,42 @@
 }
 .list{ margin:0; padding-left: 16px; }
 .p{ margin: 0; color: var(--muted); }
+
+/* Skeleton */
+.skelTitle, .skelMeta, .skelP, .skelChip, .skelH2 {
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.skelTitle { height: 22px; width: 62%; }
+.skelMeta { height: 14px; width: 48%; margin-top: 10px; }
+.skelP { height: 14px; width: 100%; margin-top: 10px; opacity: 0.9; }
+.skelH2 { height: 18px; width: 40%; margin-top: 14px; }
+.skelRow { display: flex; gap: 8px; margin-top: 14px; }
+.skelChip { height: 28px; width: 120px; border-radius: 999px; }
+
+.skelTitle::after,
+.skelMeta::after,
+.skelP::after,
+.skelChip::after,
+.skelH2::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-40%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255,255,255,0.08),
+    transparent
+  );
+  animation: shimmer 1.1s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-60%); }
+  100% { transform: translateX(60%); }
+}
