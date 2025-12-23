@@ -175,9 +175,9 @@
 }
 
 /* Leaflet controls: gør dem lidt mere “iOS” */
-:global(.leaflet-control-zoom a){
+.mapWrap :global(.leaflet-control-zoom a){
   border-radius: 12px !important;
   border: 1px solid var(--line) !important;
-  background: color-mix(in srgb, var(--panel) 80%, transparent) !important;
+  background: var(--panel) !important;
   color: var(--ink) !important;
 }
