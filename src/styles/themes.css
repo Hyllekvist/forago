@@ -1,6 +1,25 @@
-:root{
-  color-scheme: dark;
-}
-[data-theme="light"]{
-  color-scheme: light;
+/* DARK er default fra tokens.css */
+
+/* LIGHT */
+html[data-theme="light"],
+:root[data-theme="light"],
+body[data-theme="light"] {
+  --bg: #f4f5f7;
+  --ink: rgba(15,23,42,0.92);
+  --muted: rgba(15,23,42,0.66);
+
+  --panel: rgba(15,23,42,0.04);
+  --panel2: rgba(15,23,42,0.06);
+  --line: rgba(15,23,42,0.10);
+
+  --chipBg: rgba(15,23,42,0.04);
+  --chipLine: rgba(15,23,42,0.12);
+
+  --goodBg: rgba(34,197,94,0.12);
+  --goodLine: rgba(34,197,94,0.28);
+
+  --warnBg: rgba(245,158,11,0.10);
+  --warnLine: rgba(245,158,11,0.22);
+
+  --shadow-1: 0 12px 28px rgba(15,23,42,0.10);
 }
