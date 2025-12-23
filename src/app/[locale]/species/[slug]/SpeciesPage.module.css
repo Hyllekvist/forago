@@ -400,3 +400,11 @@
     transform: translateX(60%);
   }
 }
+
+.heroTop{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
