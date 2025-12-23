@@ -17,6 +17,7 @@ type Spot = {
 type LeafletLikeMap = {
   zoomIn: () => void;
   zoomOut: () => void;
+  flyTo: (lat: number, lng: number, zoom?: number) => void;
 };
 
 const LeafletMap = dynamic(() => import("./LeafletMap"), { ssr: false });
@@ -32,7 +33,7 @@ export default function MapClient({
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(
     null
   );
-  const [mapRef, setMapRef] = useState<LeafletLikeMap | null>(null);
+  const [mapApi, setMapApi] = useState<LeafletLikeMap | null>(null);
 
   const selected = useMemo(
     () => spots.find((s) => s.id === selectedId) ?? null,
@@ -46,29 +47,34 @@ export default function MapClient({
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setUserPos(p);
+        mapApi?.flyTo(p.lat, p.lng, 13);
       },
       () => {},
       { enableHighAccuracy: true, timeout: 8000 }
     );
-  }, []);
+  }, [mapApi]);
+
+  const zoomIn = useCallback(() => mapApi?.zoomIn(), [mapApi]);
+  const zoomOut = useCallback(() => mapApi?.zoomOut(), [mapApi]);
 
   return (
     <main className={styles.page}>
-      <div className={styles.mapStage}>
+      <div className={styles.stage}>
         <LeafletMap
           spots={spots}
           userPos={userPos}
           onSelect={onSelect}
           selectedId={selectedId}
-          onMapReady={(m: LeafletLikeMap) => setMapRef(m)}
+          onMapReady={(m: LeafletLikeMap) => setMapApi(m)}
         />
 
-        {/* Top HUD (compact glass) */}
-        <div className={styles.topHud}>
-          <div className={styles.topHudInner}>
-            <div className={styles.topRow}>
-              <div>
+        {/* HUD (compact glass card) */}
+        <div className={styles.hud} aria-label="Map controls">
+          <div className={styles.hudCard}>
+            <div className={styles.hudTop}>
+              <div className={styles.hudText}>
                 <h1 className={styles.h1}>{locale === "dk" ? "Kort" : "Map"}</h1>
                 <p className={styles.sub}>
                   {locale === "dk"
@@ -77,18 +83,12 @@ export default function MapClient({
                 </p>
               </div>
 
-              <span className={styles.pill}>
-                {locale === "dk" ? "Spots" : "Spots"} · {spots.length}
-              </span>
-            </div>
-
-            <div className={styles.hint}>
-              <div className={styles.actions}>
-                <button className={styles.btn} onClick={locate} type="button">
-                  {locale === "dk" ? "Find mig" : "Locate me"}
+              <div className={styles.hudActions}>
+                <button className={styles.pill} onClick={locate} type="button">
+                  {locale === "dk" ? "Find mig" : "Locate"}
                 </button>
 
-                <Link className={styles.btnGhost} href={`/${locale}/species`}>
+                <Link className={styles.pillGhost} href={`/${locale}/species`}>
                   {locale === "dk" ? "Arter" : "Species"}
                 </Link>
               </div>
@@ -96,28 +96,14 @@ export default function MapClient({
           </div>
         </div>
 
-        {/* Floating controls */}
-        <div className={styles.controls} aria-hidden={!mapRef}>
-          <div className={styles.ctrlStack}>
-            <button
-              className={styles.ctrlBtn}
-              type="button"
-              onClick={() => mapRef?.zoomIn()}
-              aria-label="Zoom in"
-              title="Zoom in"
-            >
-              +
-            </button>
-            <button
-              className={styles.ctrlBtn}
-              type="button"
-              onClick={() => mapRef?.zoomOut()}
-              aria-label="Zoom out"
-              title="Zoom out"
-            >
-              −
-            </button>
-          </div>
+        {/* Zoom controls (own pills) */}
+        <div className={styles.zoomDock} aria-label="Zoom">
+          <button className={styles.zoomBtn} onClick={zoomIn} type="button">
+            +
+          </button>
+          <button className={styles.zoomBtn} onClick={zoomOut} type="button">
+            –
+          </button>
         </div>
 
         {/* Bottom sheet */}
@@ -128,18 +114,20 @@ export default function MapClient({
           aria-hidden={!selected}
         >
           <div className={styles.sheetHandle} />
+
           {selected ? (
             <div className={styles.sheetCard}>
               <div className={styles.sheetHeader}>
                 <div className={styles.sheetTitle}>
                   {selected.title || (locale === "dk" ? "Spot" : "Spot")}
                 </div>
-                <button className={styles.close} onClick={onClose} type="button">
+
+                <button className={styles.closeBtn} onClick={onClose} type="button">
                   ✕
                 </button>
               </div>
 
-              <div className={styles.sheetMeta}>
+              <div className={styles.sheetMetaRow}>
                 <span className={styles.metaPill}>
                   {locale === "dk" ? "Koordinat" : "Coordinates"} ·{" "}
                   {selected.lat.toFixed(4)}, {selected.lng.toFixed(4)}
@@ -147,7 +135,7 @@ export default function MapClient({
 
                 {selected.species_slug ? (
                   <Link
-                    className={styles.metaLink}
+                    className={styles.primaryLink}
                     href={`/${locale}/species/${selected.species_slug}`}
                   >
                     {locale === "dk" ? "Se art →" : "View species →"}
@@ -162,9 +150,18 @@ export default function MapClient({
               <div className={styles.sheetBody}>
                 <p className={styles.p}>
                   {locale === "dk"
-                    ? "Næste: mini-preview (foto), sæson og “gem spot”."
-                    : "Next: photo preview, season and “save spot”."}
+                    ? "Næste: foto + sæson + ‘gem spot’."
+                    : "Next: photo + season + ‘save spot’."}
                 </p>
+              </div>
+
+              <div className={styles.sheetActions}>
+                <button className={styles.secondaryBtn} type="button">
+                  {locale === "dk" ? "Gem spot" : "Save spot"}
+                </button>
+                <button className={styles.secondaryBtnGhost} type="button">
+                  {locale === "dk" ? "Rapportér" : "Report"}
+                </button>
               </div>
             </div>
           ) : null}
