@@ -1,120 +1,130 @@
 import type { MetadataRoute } from "next";
 import { createClient } from "@supabase/supabase-js";
 
-const SUPPORTED_LOCALES = ["dk", "en"] as const;
-const MONTH_SLUGS = [
-  "",
-  "january",
-  "february",
-  "march",
-  "april",
-  "may",
-  "june",
-  "july",
-  "august",
-  "september",
-  "october",
-  "november",
-  "december",
-] as const;
+const MONTH_NUM_TO_SLUG: Record<number, string> = {
+  1: "january",
+  2: "february",
+  3: "march",
+  4: "april",
+  5: "may",
+  6: "june",
+  7: "july",
+  8: "august",
+  9: "september",
+  10: "october",
+  11: "november",
+  12: "december",
+};
 
-const MIN_SPECIES_PER_MONTH = 10;
+const LOCALES = ["dk"] as const; // hold den til DK indtil I åbner internationalt
+const MONTH_THRESHOLD = 6; // ✅ sænket fra 10 → 6
 
-function siteUrl() {
+function baseUrl() {
   const explicit = process.env.NEXT_PUBLIC_SITE_URL;
   if (explicit) return explicit.replace(/\/$/, "");
-
   const vercel = process.env.VERCEL_URL;
   if (vercel) return `https://${vercel}`.replace(/\/$/, "");
-
   return "http://localhost:3000";
 }
 
-function supabaseAnon() {
+function supabasePublic() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) throw new Error("Missing Supabase env vars for sitemap.");
+  if (!url || !key) throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY");
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
-function inMonth(month: number, from: number, to: number) {
-  if (from <= to) return month >= from && month <= to;
-  // wrap-around season (e.g. Nov->Feb)
-  return month >= from || month <= to;
+function monthsBetween(from: number, to: number) {
+  const out: number[] = [];
+  if (from <= to) {
+    for (let m = from; m <= to; m++) out.push(m);
+  } else {
+    for (let m = from; m <= 12; m++) out.push(m);
+    for (let m = 1; m <= to; m++) out.push(m);
+  }
+  return out;
 }
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = siteUrl();
-  const supabase = supabaseAnon();
+export const revalidate = 3600;
 
-  const { data: species, error: spErr } = await supabase
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const base = baseUrl();
+  const sb = supabasePublic();
+
+  // 1) Species slugs
+  const { data: species, error: spErr } = await sb
     .from("species")
-    .select("slug, created_at")
+    .select("slug, updated_at")
     .order("slug", { ascending: true });
 
   if (spErr) throw spErr;
 
-  const entries: MetadataRoute.Sitemap = [];
+  // 2) Season month intros (optional, men nice)
+  const { data: monthPages, error: mpErr } = await sb
+    .from("season_month_pages")
+    .select("locale, month, updated_at");
 
-  entries.push({
-    url: `${base}/`,
-    lastModified: new Date(),
-    changeFrequency: "weekly",
-    priority: 0.6,
-  });
+  if (mpErr) throw mpErr;
 
-  // Pull all seasonality once, then compute month coverage per locale (country=locale)
-  const { data: seas, error: seasErr } = await supabase
+  // 3) Seasonality (bruges til at afgøre hvilke måneder der har nok arter)
+  const { data: seas, error: seasErr } = await sb
     .from("seasonality")
-    .select("country, region, species_id, month_from, month_to, confidence")
-    .eq("region", ""); // national only for now
+    .select("species_id, country, region, month_from, month_to");
 
   if (seasErr) throw seasErr;
 
-  for (const locale of SUPPORTED_LOCALES) {
-    // Core pages
-    const core = [`/${locale}`, `/${locale}/species`, `/${locale}/season`, `/${locale}/guides`, `/${locale}/feed`];
+  const out: MetadataRoute.Sitemap = [];
 
-    for (const path of core) {
-      entries.push({
-        url: `${base}${path}`,
-        lastModified: new Date(),
-        changeFrequency: "weekly",
-        priority: path === `/${locale}` ? 0.8 : 0.7,
-      });
-    }
+  for (const locale of LOCALES) {
+    // Core pages
+    out.push(
+      { url: `${base}/${locale}`, lastModified: new Date() },
+      { url: `${base}/${locale}/species`, lastModified: new Date() },
+      { url: `${base}/${locale}/season`, lastModified: new Date() },
+      { url: `${base}/${locale}/guides`, lastModified: new Date() },
+      { url: `${base}/${locale}/guides/safety-basics`, lastModified: new Date() },
+      { url: `${base}/${locale}/guides/lookalikes`, lastModified: new Date() }
+    );
 
     // Species pages
-    for (const sp of species ?? []) {
-      entries.push({
-        url: `${base}/${locale}/species/${sp.slug}`,
-        lastModified: sp.created_at ? new Date(sp.created_at) : new Date(),
-        changeFrequency: "monthly",
-        priority: 0.8,
+    for (const s of species ?? []) {
+      out.push({
+        url: `${base}/${locale}/species/${s.slug}`,
+        lastModified: s.updated_at ? new Date(s.updated_at) : new Date(),
       });
     }
 
-    // Smart month pages (only if month has enough species)
-    const relevant = (seas ?? []).filter((r) => (r.country as string) === locale);
+    // Month counts (arter per måned)
+    const monthCount = new Map<number, number>();
+    const rows = (seas ?? []).filter(
+      (r: any) => r.country === locale && (r.region ?? "") === ""
+    );
+
+    for (const r of rows) {
+      const from = Number(r.month_from);
+      const to = Number(r.month_to);
+      for (const m of monthsBetween(from, to)) {
+        monthCount.set(m, (monthCount.get(m) ?? 0) + 1);
+      }
+    }
+
+    // Add month pages if count >= threshold OR if month page exists in DB
+    const dbMonths = new Set<number>(
+      (monthPages ?? [])
+        .filter((p: any) => p.locale === locale)
+        .map((p: any) => Number(p.month))
+    );
 
     for (let m = 1; m <= 12; m++) {
-      const set = new Set<string>();
-      for (const r of relevant) {
-        const from = r.month_from as number;
-        const to = r.month_to as number;
-        if (inMonth(m, from, to)) set.add(r.species_id as string);
-      }
-
-      if (set.size >= MIN_SPECIES_PER_MONTH) {
-        entries.push({
-          url: `${base}/${locale}/season/${MONTH_SLUGS[m]}`,
+      const count = monthCount.get(m) ?? 0;
+      if (count >= MONTH_THRESHOLD || dbMonths.has(m)) {
+        out.push({
+          url: `${base}/${locale}/season/${MONTH_NUM_TO_SLUG[m]}`,
           lastModified: new Date(),
-          changeFrequency: "weekly",
-          priority: 0.65,
         });
       }
     }
   }
 
-  return entries;
+  return out;
 }
