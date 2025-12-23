@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from "react";
 import styles from "./LoginPanel.module.css";
-import { supabaseBrowser } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 
 export function LoginPanel() {
-  const supabase = useMemo(() => supabaseBrowser(), []);
+const supabase = useMemo(() => createClient(), []);
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
