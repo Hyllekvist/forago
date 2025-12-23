@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { supabaseServer } from "@/lib/supabase/server";
 
 export const revalidate = 3600;
 
@@ -14,43 +15,41 @@ export async function generateMetadata({ params }: { params: { locale: string } 
   const localeParam = params.locale;
   if (!isLocale(localeParam)) return { title: "Forago" };
 
-  const title = localeParam === "dk" ? "Guides — Forago" : "Guides — Forago";
-  const description =
-    localeParam === "dk"
-      ? "Sikker sankning: identifikation, forvekslinger, udstyr og første ture."
-      : "Safe foraging: identification, look-alikes, gear, and first trips.";
-
   return {
-    title,
-    description,
+    title: localeParam === "dk" ? "Guides — Forago" : "Guides — Forago",
+    description:
+      localeParam === "dk"
+        ? "Sikker sankning: identifikation, forvekslinger, udstyr og første ture."
+        : "Safe foraging: identification, look-alikes, gear, and first trips.",
     alternates: { canonical: `/${localeParam}/guides` },
   };
 }
 
 export default async function GuidesPage({ params }: { params: { locale: string } }) {
-  const localeParam = params.locale;
-  if (!isLocale(localeParam)) return notFound();
-  const locale = localeParam;
+  if (!isLocale(params.locale)) return notFound();
+  const locale = params.locale;
 
-  // Start som “editorial hub” (evergreen). Senere kan vi DB’e guides.
-  const guides =
-    locale === "dk"
-      ? [
-          { slug: "safety-basics", title: "Sikkerhed først: 10 regler", desc: "Den hurtigste måde at undgå dumme fejl." },
-          { slug: "identification", title: "Identifikation: sådan tænker du", desc: "Kendetegn, habitat og sæson — i den rækkefølge." },
-          { slug: "lookalikes", title: "Forvekslinger (og hvorfor de sker)", desc: "Når naturen prøver at troll’e dig." },
-          { slug: "first-trip", title: "Din første sanketur", desc: "En enkel rute: hvad du leder efter, og hvad du ignorerer." },
-          { slug: "gear", title: "Udstyr: det du faktisk bruger", desc: "Kniv, kurv, poser, bog — ingen grej-hype." },
-          { slug: "ethics", title: "Etik: pluk med omtanke", desc: "Bæredygtighed uden moralshow." },
-        ]
-      : [
-          { slug: "safety-basics", title: "Safety first: 10 rules", desc: "The fastest way to avoid dumb mistakes." },
-          { slug: "identification", title: "Identification: how to think", desc: "Features, habitat, season — in that order." },
-          { slug: "lookalikes", title: "Look-alikes (and why it happens)", desc: "Nature loves to trick you." },
-          { slug: "first-trip", title: "Your first forage trip", desc: "A simple route: what to seek, what to ignore." },
-          { slug: "gear", title: "Gear: what you actually use", desc: "Knife, basket, bags, a field guide — no hype." },
-          { slug: "ethics", title: "Ethics: forage responsibly", desc: "Sustainability without virtue signaling." },
-        ];
+  const supabase = supabaseServer();
+
+  const { data, error } = await supabase
+    .from("guides")
+    .select("slug, is_published, guide_translations(title, excerpt, locale)")
+    .eq("is_published", true)
+    .order("slug", { ascending: true });
+
+  if (error) throw error;
+
+  const items =
+    (data ?? [])
+      .map((g: any) => {
+        const t = (g.guide_translations ?? []).find((x: any) => x.locale === locale);
+        return {
+          slug: g.slug as string,
+          title: (t?.title as string) || g.slug,
+          excerpt: (t?.excerpt as string) || "",
+        };
+      })
+      .filter(Boolean) ?? [];
 
   return (
     <main style={{ padding: 16, maxWidth: 980, margin: "0 auto" }}>
@@ -70,7 +69,7 @@ export default async function GuidesPage({ params }: { params: { locale: string 
           gap: 12,
         }}
       >
-        {guides.map((g) => (
+        {items.map((g) => (
           <Link
             key={g.slug}
             href={`/${locale}/guides/${g.slug}`}
@@ -84,23 +83,18 @@ export default async function GuidesPage({ params }: { params: { locale: string 
             }}
           >
             <div style={{ fontWeight: 800, marginBottom: 6 }}>{g.title}</div>
-            <div style={{ opacity: 0.85, fontSize: 14, lineHeight: 1.35 }}>{g.desc}</div>
+            <div style={{ opacity: 0.85, fontSize: 14, lineHeight: 1.35 }}>
+              {g.excerpt || (locale === "dk" ? "Tilføj excerpt i DB." : "Add excerpt in DB.")}
+            </div>
           </Link>
         ))}
       </section>
 
-      <div style={{ marginTop: 18, opacity: 0.85 }}>
-        <p style={{ margin: 0 }}>
-          {locale === "dk" ? "Start her:" : "Start here:"}{" "}
-          <Link href={`/${locale}/species`} style={{ textDecoration: "none" }}>
-            {locale === "dk" ? "Arter" : "Species"}
-          </Link>{" "}
-          ·{" "}
-          <Link href={`/${locale}/season`} style={{ textDecoration: "none" }}>
-            {locale === "dk" ? "Sæson" : "Season"}
-          </Link>
+      {items.length === 0 ? (
+        <p style={{ marginTop: 18, opacity: 0.8 }}>
+          {locale === "dk" ? "Ingen publicerede guides endnu." : "No published guides yet."}
         </p>
-      </div>
+      ) : null}
     </main>
   );
 }
