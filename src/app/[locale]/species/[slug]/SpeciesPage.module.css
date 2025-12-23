@@ -1,263 +1,284 @@
-/* SpeciesPage.module.css */
+/* SpeciesPage.module.css
+   Locked layout contract for species pages
+*/
 
-.wrap{
+.wrap {
   padding: 18px var(--pad) 110px;
   max-width: var(--maxw);
   margin: 0 auto;
 }
 
-/* -------------------------
-   Sticky quick bar
--------------------------- */
-.sticky{
+/* ---------------- Sticky quick bar ---------------- */
+
+.sticky {
   position: sticky;
-  top: 10px;
+  top: 76px; /* under GlobalHeader */
   z-index: 30;
 
-  border-radius: var(--radius);
+  border-radius: 18px;
   border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--bg) 86%, transparent);
-  backdrop-filter: blur(10px);
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 
-  box-shadow: var(--shadow-1);
   padding: 12px;
-  margin: 8px 0 14px;
+  box-shadow: var(--shadow-1);
+  margin: 10px 0 14px;
 }
 
-.stickyTop{
+.stickyTop {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
 }
 
-.back{
+.back {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-
-  padding: 9px 12px;
+  padding: 10px 12px;
   border-radius: 999px;
-  border: 1px solid var(--line);
-  background: var(--panel2);
-
+  border: 1px solid var(--chipLine);
+  background: var(--chipBg);
   color: var(--ink);
-  font-size: 13px;
+  font-weight: 600;
   white-space: nowrap;
 }
 
-.badge{
+.badge {
   display: inline-flex;
   align-items: center;
-
-  padding: 9px 12px;
+  gap: 6px;
+  padding: 10px 12px;
   border-radius: 999px;
-  border: 1px solid var(--line);
-  background: var(--panel);
-
-  color: var(--ink);
+  border: 1px solid var(--chipLine);
+  background: var(--chipBg);
+  color: var(--muted);
   font-size: 13px;
   white-space: nowrap;
 }
 
-.badgeGood{
+.badgeGood {
   border-color: var(--goodLine);
   background: var(--goodBg);
+  color: color-mix(in srgb, var(--ink) 82%, #0a0);
 }
 
-.chips{
+/* chips row */
+.chips {
+  margin-top: 10px;
+
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 10px;
+
+  /* IMPORTANT: prevent “weird columns” on iOS */
+  align-items: center;
 }
 
-.chip{
+.chip {
   display: inline-flex;
   align-items: center;
 
-  padding: 8px 12px;
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--chipLine);
+  background: var(--chipBg);
+  color: var(--muted);
+
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.chipLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 10px 12px;
   border-radius: 999px;
   border: 1px solid var(--chipLine);
   background: var(--chipBg);
 
   color: var(--ink);
+  font-weight: 600;
   font-size: 13px;
+  line-height: 1;
   white-space: nowrap;
 }
 
-.chipLink{
-  display: inline-flex;
-  align-items: center;
-
-  padding: 8px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--chipLine);
-  background: var(--chipBg);
-
-  color: var(--ink);
-  font-size: 13px;
-  white-space: nowrap;
-  text-decoration: none;
+.chipLink:active {
+  transform: translateY(1px);
 }
 
-/* -------------------------
-   Hero
--------------------------- */
-.hero{
-  border-radius: var(--radius);
+/* ---------------- Hero ---------------- */
+
+.hero {
+  border-radius: 18px;
   border: 1px solid var(--line);
   background: var(--panel);
   box-shadow: var(--shadow-1);
-  padding: 16px;
+
+  padding: 16px 16px 14px;
 }
 
-.h1{
+.h1 {
   margin: 0;
   font-size: 34px;
-  line-height: 1.08;
-  letter-spacing: -0.03em;
-  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 
-.meta{
+.meta {
   margin-top: 8px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
   align-items: baseline;
-
+  gap: 10px;
   color: var(--muted);
   font-size: 14px;
 }
 
-.dot{
-  opacity: 0.6;
+.dot {
+  opacity: 0.55;
 }
 
-.sub{
+.sub {
   margin: 12px 0 0;
   color: var(--muted);
-  line-height: 1.7;
-  max-width: 72ch;
+  line-height: 1.65;
+  max-width: 70ch;
 }
 
-/* Month row */
-.monthRow{
+.monthRow {
   margin-top: 14px;
+  display: grid;
+  gap: 10px;
 }
 
-.monthLabel{
+.monthLabel {
   color: var(--muted);
   font-size: 13px;
-  margin-bottom: 8px;
 }
 
-.monthChips{
+.monthChips {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.monthChip{
+.monthChip {
   display: inline-flex;
   align-items: center;
 
-  padding: 8px 12px;
+  padding: 9px 12px;
   border-radius: 999px;
   border: 1px solid var(--chipLine);
   background: var(--chipBg);
 
   color: var(--ink);
   font-size: 13px;
-  text-decoration: none;
   white-space: nowrap;
 }
 
-/* -------------------------
-   Sections / cards
--------------------------- */
-.section{
+/* ---------------- Sections ---------------- */
+
+.section {
   margin-top: 16px;
 }
 
-.h2{
+.h2 {
   margin: 0 0 10px;
-  font-size: 16px;
+  font-size: 18px;
   letter-spacing: -0.01em;
-  font-weight: 800;
 }
 
-.card{
-  border-radius: var(--radius);
+.card {
+  border-radius: 18px;
   border: 1px solid var(--line);
   background: var(--panel);
   box-shadow: var(--shadow-1);
+
   padding: 14px;
+  overflow: hidden;
 }
 
-.cardWarn{
+/* Safety must be visually distinct */
+.cardWarn {
   border-color: var(--warnLine);
   background: var(--warnBg);
 }
 
-.textBlock{
+.textBlock {
   white-space: pre-wrap;
   line-height: 1.7;
   color: var(--ink);
 }
 
-.pMuted{
+/* If you output bullet text as plain lines, keep it readable */
+.textBlock :global(ul),
+.textBlock :global(ol) {
   margin: 0;
-  color: var(--muted);
-  line-height: 1.7;
+  padding-left: 18px;
 }
 
-/* -------------------------
-   Related grid
--------------------------- */
-.relatedGrid{
+.textBlock :global(li) {
+  margin: 6px 0;
+}
+
+.pMuted {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+/* ---------------- Related ---------------- */
+
+.relatedGrid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 10px;
 }
 
-.relatedCard{
-  border-radius: var(--radius);
+.relatedCard {
+  border-radius: 18px;
   border: 1px solid var(--line);
   background: var(--panel);
   box-shadow: var(--shadow-1);
   padding: 12px;
-  text-decoration: none;
-  color: inherit;
 }
 
-.relatedName{
-  font-weight: 900;
+.relatedName {
+  font-weight: 800;
+  color: var(--ink);
   margin-bottom: 6px;
 }
 
-.relatedMeta{
+.relatedMeta {
   color: var(--muted);
   font-size: 13px;
 }
 
-/* Footer */
-.updated{
+.updated {
   margin-top: 18px;
   color: var(--muted);
   font-size: 13px;
 }
 
-/* -------------------------
-   Desktop tweaks
--------------------------- */
-@media (min-width: 900px){
-  .wrap{ padding: 22px var(--pad) 120px; }
+/* ---------------- Mobile ---------------- */
 
-  .h1{ font-size: 42px; }
+@media (max-width: 640px) {
+  .sticky {
+    top: 66px;
+    padding: 10px;
+  }
 
-  .relatedGrid{
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .hero {
+    padding: 14px;
+  }
+
+  .h1 {
+    font-size: 30px;
   }
 }
