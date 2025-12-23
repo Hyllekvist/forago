@@ -1,49 +1,61 @@
 :root {
   /* layout */
-  --maxw: 980px;
+  --maxw: 1040px;
   --pad: 16px;
   --radius: 18px;
 
-  /* Brand core (nature + vibrant) */
-  --accent: #22d3ee;        /* cyan */
-  --accent2: #a3ff4e;       /* electric moss */
-  --accent3: #ff4fd8;       /* neon bloom (sparsomt) */
+  /* ---------- BRAND CORE ---------- */
 
-  /* semantic surfaces */
-  --bg: #070b10;
-  --ink: rgba(255,255,255,0.92);
-  --muted: rgba(255,255,255,0.72);
+  /* Primary accent (bioluminescent green → amber) */
+  --accent-1: #22c55e;   /* leaf green */
+  --accent-2: #84cc16;   /* moss */
+  --accent-3: #f59e0b;   /* amber / fungi */
 
-  --panel: rgba(255,255,255,0.05);
-  --panel2: rgba(255,255,255,0.08);
+  /* Gradients */
+  --accent-grad: linear-gradient(
+    135deg,
+    var(--accent-1),
+    var(--accent-2) 45%,
+    var(--accent-3)
+  );
+
+  /* ---------- SURFACES ---------- */
+
+  --bg: #0b0f14;          /* night forest */
+  --bg-soft: #0f1520;
+
+  --panel: rgba(255,255,255,0.045);
+  --panel2: rgba(255,255,255,0.065);
+
   --line: rgba(255,255,255,0.14);
+
+  /* ---------- TEXT ---------- */
+
+  --ink: rgba(255,255,255,0.94);
+  --muted: rgba(255,255,255,0.68);
+  --faint: rgba(255,255,255,0.45);
+
+  /* ---------- CHIPS / UI ---------- */
 
   --chipBg: rgba(255,255,255,0.06);
   --chipLine: rgba(255,255,255,0.16);
 
+  /* ---------- SEMANTIC ---------- */
+
   --goodBg: rgba(34,197,94,0.18);
-  --goodLine: rgba(34,197,94,0.35);
+  --goodLine: rgba(34,197,94,0.45);
 
-  --warnBg: rgba(245,158,11,0.12);
-  --warnLine: rgba(245,158,11,0.32);
+  --warnBg: rgba(245,158,11,0.14);
+  --warnLine: rgba(245,158,11,0.45);
 
-  /* shadows */
-  --shadow-1: 0 10px 30px rgba(0,0,0,0.40);
-  --shadow-2: 0 18px 60px rgba(0,0,0,0.52);
-  --focus: 0 0 0 3px rgba(34,211,238,0.22), 0 0 0 1px rgba(34,211,238,0.28);
+  --dangerBg: rgba(239,68,68,0.14);
+  --dangerLine: rgba(239,68,68,0.45);
 
-  /* Ambient identity layers (bruges i themes/globals) */
-  --g-core: radial-gradient(900px 650px at 18% 10%,
-      rgba(34,211,238,0.22),
-      rgba(34,211,238,0.00) 60%),
-    radial-gradient(900px 650px at 85% 18%,
-      rgba(163,255,78,0.18),
-      rgba(163,255,78,0.00) 62%),
-    radial-gradient(1000px 900px at 55% 85%,
-      rgba(255,79,216,0.10),
-      rgba(255,79,216,0.00) 60%);
+  /* ---------- EFFECTS ---------- */
 
-  --g-warm: radial-gradient(800px 650px at 40% -10%,
-      rgba(255,163,87,0.10),
-      rgba(255,163,87,0.00) 60%);
+  --shadow-1: 0 12px 32px rgba(0,0,0,0.45);
+  --shadow-2: 0 18px 48px rgba(0,0,0,0.55);
+
+  --glow-accent: 0 0 0 transparent;
+  --glow-soft: 0 0 24px rgba(34,197,94,0.25);
 }
