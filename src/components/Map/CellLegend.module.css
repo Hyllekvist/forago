@@ -1,0 +1,5 @@
+.row{ display:flex; gap: 10px; flex-wrap: wrap; color: var(--muted); font-size: 12px; }
+.item{ display:flex; gap: 6px; align-items:center; padding: 8px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+.dot,.dot2,.dot3{ width: 10px; height: 10px; border-radius: 999px; background: rgba(255,255,255,.20); }
+.dot2{ background: rgba(255,153,102,.55); }
+.dot3{ background: rgba(255,94,98,.75); }

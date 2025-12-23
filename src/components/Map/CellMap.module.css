@@ -1,0 +1,19 @@
+.wrap{ margin-top: 12px; }
+.grid{
+  margin-top: 10px;
+  display:grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  max-width: 420px;
+}
+.cell{
+  aspect-ratio: 1/1;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.06);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.count{ font-weight: 900; }
+.note{ margin-top: 10px; color: var(--muted); max-width: 68ch; }

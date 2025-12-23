@@ -1,0 +1,13 @@
+{
+  "nav": {
+    "feed": "Feed",
+    "season": "Season",
+    "log": "Log",
+    "map": "Map",
+    "me": "Me"
+  },
+  "cta": {
+    "ask": "Ask",
+    "log": "Log find"
+  }
+}

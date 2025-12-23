@@ -1,0 +1,13 @@
+{
+  "nav": {
+    "feed": "Feed",
+    "season": "Sæson",
+    "log": "Log",
+    "map": "Kort",
+    "me": "Mig"
+  },
+  "cta": {
+    "ask": "Stil spørgsmål",
+    "log": "Log fund"
+  }
+}

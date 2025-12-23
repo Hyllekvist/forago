@@ -1,0 +1,33 @@
+.header{
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(14px);
+  background: color-mix(in oklab, var(--bg) 80%, transparent);
+}
+.inner{
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 12px var(--pad);
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.brand{ display:flex; align-items:center; gap: 10px; }
+.mark{
+  width: 28px; height: 28px;
+  border-radius: 10px;
+  background: radial-gradient(120% 120% at 0% 0%, var(--accent1), var(--accent2));
+  box-shadow: var(--shadow-1);
+}
+.word{ font-weight: 800; letter-spacing: -0.02em; }
+.right{ display:flex; gap: 10px; align-items:center; }
+.link{
+  font-size: 13px;
+  color: var(--muted);
+  padding: 8px 8px;
+  border-radius: 12px;
+}
+.link:hover{ background: var(--panel); color: var(--ink); }
+.hairline{ height: 1px; background: var(--line); }
