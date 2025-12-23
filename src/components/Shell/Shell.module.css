@@ -1,2 +1,35 @@
-.page{ min-height: 100vh; background: var(--bg); color: var(--ink); }
-.main{ width: 100%; }
+.shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(900px 600px at 20% -10%, rgba(34,197,94,0.18), transparent 55%),
+    radial-gradient(900px 600px at 90% 10%, rgba(245,158,11,0.14), transparent 55%),
+    radial-gradient(900px 700px at 60% 120%, rgba(132,204,22,0.12), transparent 60%),
+    var(--bg);
+  color: var(--ink);
+}
+
+.main {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 14px var(--pad) 110px;
+}
+
+/* subtle “vibrant fog” layer */
+.fog {
+  pointer-events: none;
+  position: fixed;
+  inset: -20%;
+  opacity: 0.55;
+  filter: blur(28px);
+  background:
+    radial-gradient(closest-side at 18% 10%, rgba(34,197,94,0.22), transparent 60%),
+    radial-gradient(closest-side at 85% 18%, rgba(245,158,11,0.16), transparent 60%),
+    radial-gradient(closest-side at 55% 90%, rgba(132,204,22,0.14), transparent 60%);
+  mix-blend-mode: screen;
+  z-index: 0;
+}
+
+.stack {
+  position: relative;
+  z-index: 1;
+}
