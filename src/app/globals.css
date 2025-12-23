@@ -63,7 +63,9 @@ input, select, textarea { font-family: inherit; color: inherit; }
 img { max-width: 100%; height: auto; display: block; }
 
 /* Selection følger ny accent (vibrant) */
-::selection { background: rgba(34, 211, 238, 0.22); }
+::selection {
+  background: color-mix(in srgb, var(--accent-1) 35%, transparent);
+}
 
 /* Nice focus ring */
 :focus-visible{
