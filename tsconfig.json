@@ -1,24 +1,43 @@
 {
   "compilerOptions": {
+    /* Target & runtime */
     "target": "ES2022",
     "lib": ["dom", "dom.iterable", "es2022"],
-    "allowJs": false,
-    "skipLibCheck": true,
-    "strict": true,
-    "noEmit": true,
-    "esModuleInterop": true,
+
+    /* Next / bundler */
     "module": "esnext",
     "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
     "jsx": "preserve",
+    "isolatedModules": true,
+    "noEmit": true,
+
+    /* Type safety */
+    "strict": true,
+    "skipLibCheck": true,
+
+    /* Interop (vigtigt for Leaflet) */
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+
+    /* DX */
     "incremental": true,
-    "types": ["node"],
+    "resolveJsonModule": true,
+
+    /* Paths */
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
     }
+
+    /* ⚠️ INTET "types": [] her */
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+
   "exclude": ["node_modules"]
 }
