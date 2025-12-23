@@ -1,101 +1,436 @@
-import styles from "./SpeciesPage.module.css";
-import { SafetyCallout } from "@/components/Species/SafetyCallout";
-import { Lookalikes } from "@/components/Species/Lookalikes";
-import { BreadcrumbsJsonLd } from "@/components/SEO/BreadcrumbsJsonLd";
-import { FAQJsonLd } from "@/components/SEO/FAQJsonLd";
-import { HowToJsonLd } from "@/components/SEO/HowToJsonLd";
-import { baseMetadata } from "@/lib/seo/metadata";
-import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import Script from "next/script";
+import { supabaseServer } from "@/lib/supabase/server";
 
-type Props = { params: { locale: string; slug: string } };
+export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  const url = `${base}/${params.locale}/species/${params.slug}`;
+const SUPPORTED_LOCALES = ["dk", "en"] as const;
+type Locale = (typeof SUPPORTED_LOCALES)[number];
 
-  const title = `${params.slug.replace(/-/g, " ")} · Species · Forago`;
-  return baseMetadata({
-    title,
-    description: "Identification, look-alikes, seasonality, and safe use.",
-    url,
-    locale: params.locale,
-    hreflangs: [],
-  });
+function isLocale(x: string): x is Locale {
+  return (SUPPORTED_LOCALES as readonly string[]).includes(x);
 }
 
-export default function SpeciesPage({ params }: Props) {
-  const slug = params.slug;
+function monthName(locale: Locale, m: number) {
+  const dk = ["", "januar", "februar", "marts", "april", "maj", "juni", "juli", "august", "september", "oktober", "november", "december"];
+  const en = ["", "january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+  return (locale === "dk" ? dk : en)[m] ?? String(m);
+}
 
-  const faqs = [
-    { q: "How do I identify this safely?", a: "Use multiple traits, habitat, and look-alikes. Never rely on one photo." },
-    { q: "Do you share exact spots?", a: "No. Forago stores only coarse cells to protect nature and community trust." },
-  ];
+function currentMonthUTC() {
+  const now = new Date();
+  return now.getUTCMonth() + 1; // 1-12
+}
 
-  const howtoSteps = [
-    { name: "Check season", text: "Confirm month window in your country/region." },
-    { name: "Verify traits", text: "Use 3+ identifying traits (not just color)." },
-    { name: "Compare look-alikes", text: "Actively rule out poisonous/confusing species." },
-    { name: "Start small", text: "If edible, try a small amount first and follow local guidance." },
-  ];
+function isInSeason(month: number, from: number, to: number) {
+  if (from <= to) return month >= from && month <= to;
+  return month >= from || month <= to; // wrap-around (Nov->Feb)
+}
+
+function seasonLabel(locale: Locale, from: number, to: number) {
+  if (from === to) return monthName(locale, from);
+  return `${monthName(locale, from)} – ${monthName(locale, to)}`;
+}
+
+function siteUrl() {
+  const explicit = process.env.NEXT_PUBLIC_SITE_URL;
+  if (explicit) return explicit.replace(/\/$/, "");
+  const vercel = process.env.VERCEL_URL;
+  if (vercel) return `https://${vercel}`.replace(/\/$/, "");
+  return "http://localhost:3000";
+}
+
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section
+      style={{
+        border: "1px solid rgba(255,255,255,0.10)",
+        borderRadius: 14,
+        padding: 14,
+        background: "rgba(255,255,255,0.03)",
+        marginTop: 12,
+      }}
+    >
+      <h2 style={{ margin: "0 0 10px", fontSize: 16 }}>{title}</h2>
+      <div style={{ opacity: 0.92, lineHeight: 1.55 }}>{children}</div>
+    </section>
+  );
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { locale: string; slug: string };
+}) {
+  const { locale: locParam, slug } = params;
+  if (!isLocale(locParam)) return { title: "Forago" };
+
+  const supabase = supabaseServer();
+  const { data: sp } = await supabase
+    .from("species")
+    .select("id, slug")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (!sp) return { title: "Forago" };
+
+  const { data: tr } = await supabase
+    .from("species_translations")
+    .select("common_name, short_description")
+    .eq("species_id", sp.id)
+    .eq("locale", locParam)
+    .maybeSingle();
+
+  const name = tr?.common_name || slug;
+  const title = locParam === "dk" ? `${name} — Forago` : `${name} — Forago`;
+  const description =
+    tr?.short_description ||
+    (locParam === "dk"
+      ? `Lær at genkende og bruge ${name}. Sæson, forvekslinger og sikkerhed.`
+      : `Learn how to identify and use ${name}. Season, look-alikes and safety.`);
+
+  return {
+    title,
+    description,
+    alternates: { canonical: `/${locParam}/species/${slug}` },
+  };
+}
+
+export default async function SpeciesPage({
+  params,
+}: {
+  params: { locale: string; slug: string };
+}) {
+  const { locale: locParam, slug } = params;
+  if (!isLocale(locParam)) return notFound();
+  const locale = locParam;
+
+  const supabase = supabaseServer();
+  const month = currentMonthUTC();
+  const country = locale; // dk -> dk (kan ændres senere)
+
+  const { data: sp, error: spErr } = await supabase
+    .from("species")
+    .select("id, slug, primary_group, scientific_name, created_at")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (spErr) throw spErr;
+  if (!sp) return notFound();
+
+  const { data: tr, error: trErr } = await supabase
+    .from("species_translations")
+    .select(
+      "common_name, short_description, identification, lookalikes, usage_notes, safety_notes, updated_at"
+    )
+    .eq("species_id", sp.id)
+    .eq("locale", locale)
+    .maybeSingle();
+
+  if (trErr) throw trErr;
+
+  const name = tr?.common_name || sp.slug;
+  const scientific = sp.scientific_name || "";
+  const group = sp.primary_group || "plant";
+
+  // Seasonality (national)
+  const { data: seasonRows, error: seasErr } = await supabase
+    .from("seasonality")
+    .select("month_from, month_to, confidence, notes")
+    .eq("species_id", sp.id)
+    .eq("country", country)
+    .eq("region", "")
+    .maybeSingle();
+
+  if (seasErr) throw seasErr;
+
+  const from = seasonRows?.month_from as number | undefined;
+  const to = seasonRows?.month_to as number | undefined;
+  const conf = (seasonRows?.confidence as number | undefined) ?? null;
+
+  const inSeasonNow = from && to ? isInSeason(month, from, to) : false;
+  const seasonText = from && to ? seasonLabel(locale, from, to) : null;
+
+  // Related species: other species that are also in season now (same country/region),
+  // sorted by confidence desc, limit 6
+  let related: Array<{ slug: string; name: string; confidence: number }> = [];
+  if (inSeasonNow) {
+    const { data: relSeas } = await supabase
+      .from("seasonality")
+      .select("species_id, confidence, month_from, month_to")
+      .eq("country", country)
+      .eq("region", "");
+
+    const relIds =
+      (relSeas ?? [])
+        .filter((r: any) => {
+          const a = r.month_from as number;
+          const b = r.month_to as number;
+          return isInSeason(month, a, b);
+        })
+        .map((r: any) => ({
+          species_id: r.species_id as string,
+          confidence: (r.confidence as number) ?? 0,
+        })) ?? [];
+
+    const uniq = new Map<string, number>();
+    for (const r of relIds) {
+      if (r.species_id === sp.id) continue;
+      uniq.set(r.species_id, Math.max(uniq.get(r.species_id) ?? 0, r.confidence));
+    }
+
+    const ids = Array.from(uniq.keys());
+    if (ids.length) {
+      const { data: relSpecies } = await supabase
+        .from("species")
+        .select("id, slug")
+        .in("id", ids);
+
+      const { data: relTr } = await supabase
+        .from("species_translations")
+        .select("species_id, common_name, locale")
+        .eq("locale", locale)
+        .in("species_id", ids);
+
+      const trMap = new Map((relTr ?? []).map((t: any) => [t.species_id as string, t.common_name as string]));
+      const slugMap = new Map((relSpecies ?? []).map((s: any) => [s.id as string, s.slug as string]));
+
+      related = ids
+        .map((id) => ({
+          slug: slugMap.get(id) || "",
+          name: trMap.get(id) || slugMap.get(id) || "unknown",
+          confidence: uniq.get(id) || 0,
+        }))
+        .filter((x) => x.slug)
+        .sort((a, b) => b.confidence - a.confidence)
+        .slice(0, 6);
+    }
+  }
+
+  const base = siteUrl();
+  const canonical = `${base}/${locale}/species/${sp.slug}`;
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        "@id": canonical,
+        url: canonical,
+        name: `${name} — Forago`,
+        inLanguage: locale,
+      },
+      {
+        "@type": "Article",
+        headline: name,
+        about: scientific ? [{ "@type": "Thing", name: scientific }] : undefined,
+        author: { "@type": "Organization", name: "Forago" },
+        publisher: { "@type": "Organization", name: "Forago" },
+        mainEntityOfPage: canonical,
+        datePublished: sp.created_at,
+        dateModified: tr?.updated_at || sp.created_at,
+      },
+    ],
+  };
 
   return (
-    <div className={styles.wrap}>
-      <BreadcrumbsJsonLd
-        items={[
-          { name: "Forago", url: `/${params.locale}` },
-          { name: "Species", url: `/${params.locale}/species` },
-          { name: slug, url: `/${params.locale}/species/${slug}` },
-        ]}
-      />
-      <FAQJsonLd items={faqs} />
-      <HowToJsonLd
-        name={`How to identify ${slug}`}
-        steps={howtoSteps}
-      />
+    <main style={{ padding: 16, maxWidth: 920, margin: "0 auto" }}>
+      <Script id="species-jsonld" type="application/ld+json">
+        {JSON.stringify(jsonLd)}
+      </Script>
 
-      <div className={styles.hero}>
-        <div>
-          <h1 className={styles.h1}>{slug.replace(/-/g, " ")}</h1>
-          <p className={styles.sub}>
-            Canonical species page (SEO-first). Replace demo text with Supabase content.
+      <header style={{ marginBottom: 10 }}>
+        <p style={{ margin: 0 }}>
+          <Link href={`/${locale}/species`} style={{ textDecoration: "none" }}>
+            ← {locale === "dk" ? "Arter" : "Species"}
+          </Link>
+        </p>
+
+        <h1 style={{ margin: "10px 0 6px" }}>{name}</h1>
+
+        <div style={{ opacity: 0.78, fontSize: 14, lineHeight: 1.35 }}>
+          {scientific ? <em>{scientific}</em> : null}
+          {scientific ? " · " : null}
+          <span>{group}</span>
+        </div>
+
+        {tr?.short_description ? (
+          <p style={{ margin: "10px 0 0", opacity: 0.9, lineHeight: 1.55 }}>
+            {tr.short_description}
           </p>
-        </div>
-        <div className={styles.badge}>DK-ready</div>
-      </div>
+        ) : (
+          <p style={{ margin: "10px 0 0", opacity: 0.75 }}>
+            {locale === "dk"
+              ? "Tilføj short_description i species_translations for at gøre siden rankable."
+              : "Add short_description in species_translations to make this page rankable."}
+          </p>
+        )}
 
-      <SafetyCallout
-        level="warn"
-        title="Safety-first"
-        body="Always rule out look-alikes. When in doubt, don’t consume."
-      />
+        {/* Season chip */}
+        <div
+          style={{
+            marginTop: 12,
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 8,
+          }}
+        >
+          <span
+            style={{
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(255,255,255,0.04)",
+              borderRadius: 999,
+              padding: "8px 10px",
+              fontSize: 13,
+              opacity: 0.95,
+            }}
+          >
+            {locale === "dk" ? "Sæson:" : "Season:"}{" "}
+            {seasonText ? seasonText : locale === "dk" ? "ukendt" : "unknown"}
+          </span>
 
-      <section className={styles.section}>
-        <h2 className={styles.h2}>Key traits</h2>
-        <div className={styles.card}>
-          <ul className={styles.list}>
-            <li>Trait 1: shape / underside</li>
-            <li>Trait 2: smell / bruising</li>
-            <li>Trait 3: habitat / season window</li>
-          </ul>
+          <span
+            style={{
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: inSeasonNow ? "rgba(34,197,94,0.18)" : "rgba(255,255,255,0.04)",
+              borderRadius: 999,
+              padding: "8px 10px",
+              fontSize: 13,
+              opacity: 0.95,
+            }}
+          >
+            {inSeasonNow
+              ? locale === "dk"
+                ? "I sæson nu"
+                : "In season now"
+              : locale === "dk"
+                ? "Ikke i sæson nu"
+                : "Not in season now"}
+            {conf !== null ? ` · ${conf}%` : ""}
+          </span>
+
+          <Link
+            href={`/${locale}/season`}
+            style={{
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(255,255,255,0.04)",
+              borderRadius: 999,
+              padding: "8px 10px",
+              fontSize: 13,
+              textDecoration: "none",
+              color: "inherit",
+              opacity: 0.95,
+            }}
+          >
+            {locale === "dk" ? "Se sæson nu →" : "See season now →"}
+          </Link>
         </div>
+      </header>
+
+      <Section title={locale === "dk" ? "Identifikation" : "Identification"}>
+        {tr?.identification ? (
+          <div style={{ whiteSpace: "pre-wrap" }}>{tr.identification}</div>
+        ) : (
+          <p style={{ margin: 0, opacity: 0.75 }}>
+            {locale === "dk"
+              ? "Tilføj identification i species_translations (bullet-liste med kendetegn + habitat)."
+              : "Add identification in species_translations (bullets: features + habitat)."}
+          </p>
+        )}
+      </Section>
+
+      <Section title={locale === "dk" ? "Forvekslinger" : "Look-alikes"}>
+        {tr?.lookalikes ? (
+          <div style={{ whiteSpace: "pre-wrap" }}>{tr.lookalikes}</div>
+        ) : (
+          <p style={{ margin: 0, opacity: 0.75 }}>
+            {locale === "dk"
+              ? "Tilføj lookalikes (det er en af jeres største SEO-vindere)."
+              : "Add look-alikes (one of your biggest SEO wins)."}
+          </p>
+        )}
+      </Section>
+
+      <Section title={locale === "dk" ? "Brug" : "Use"}>
+        {tr?.usage_notes ? (
+          <div style={{ whiteSpace: "pre-wrap" }}>{tr.usage_notes}</div>
+        ) : (
+          <p style={{ margin: 0, opacity: 0.75 }}>
+            {locale === "dk"
+              ? "Tilføj usage_notes (3–5 konkrete anvendelser + tilberedning)."
+              : "Add usage_notes (3–5 concrete uses + prep)."}
+          </p>
+        )}
+      </Section>
+
+      <Section title={locale === "dk" ? "Sikkerhed" : "Safety"}>
+        {tr?.safety_notes ? (
+          <div style={{ whiteSpace: "pre-wrap" }}>{tr.safety_notes}</div>
+        ) : (
+          <p style={{ margin: 0, opacity: 0.75 }}>
+            {locale === "dk"
+              ? "Tilføj safety_notes. Vær tydelig: aldrig spise noget man ikke kan identificere 100%."
+              : "Add safety_notes. Be explicit: never eat what you can’t ID with certainty."}
+          </p>
+        )}
+      </Section>
+
+      {/* Related */}
+      <section style={{ marginTop: 18 }}>
+        <h2 style={{ margin: "0 0 10px", fontSize: 16 }}>
+          {locale === "dk" ? "Relaterede arter (i sæson nu)" : "Related species (in season now)"}
+        </h2>
+
+        {related.length ? (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+              gap: 10,
+            }}
+          >
+            {related.map((r) => (
+              <Link
+                key={r.slug}
+                href={`/${locale}/species/${r.slug}`}
+                style={{
+                  textDecoration: "none",
+                  color: "inherit",
+                  border: "1px solid rgba(255,255,255,0.10)",
+                  borderRadius: 14,
+                  padding: 12,
+                  background: "rgba(255,255,255,0.03)",
+                }}
+              >
+                <div style={{ fontWeight: 800, marginBottom: 6 }}>{r.name}</div>
+                <div style={{ opacity: 0.78, fontSize: 13 }}>
+                  {locale === "dk" ? "Sæson match" : "Season match"} · {r.confidence}%
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <p style={{ margin: 0, opacity: 0.75 }}>
+            {locale === "dk"
+              ? "Ingen relaterede arter endnu (tilføj flere seasonality-rækker for denne måned)."
+              : "No related species yet (add more seasonality rows for this month)."}
+          </p>
+        )}
       </section>
 
-      <Lookalikes
-        items={[
-          { name: "Look-alike A", risk: "bad", note: "Poisonous in some cases." },
-          { name: "Look-alike B", risk: "warn", note: "Common confusion; learn differences." },
-        ]}
-      />
-
-      <section className={styles.section}>
-        <h2 className={styles.h2}>How to use</h2>
-        <div className={styles.card}>
-          <p className={styles.p}>
-            Keep culinary guidance calm and practical. Provide 2–3 safe starter uses and
-            preparation notes.
-          </p>
-        </div>
-      </section>
-    </div>
+      {/* Trust signal */}
+      <p style={{ marginTop: 18, opacity: 0.7, fontSize: 13 }}>
+        {locale === "dk" ? "Sidst opdateret:" : "Last updated:"}{" "}
+        {tr?.updated_at ? new Date(tr.updated_at).toISOString().slice(0, 10) : "—"}
+      </p>
+    </main>
   );
 }
