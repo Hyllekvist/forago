@@ -51,7 +51,8 @@ function ClusterEngine({
   const [tick, setTick] = useState(0);
 
   const index = useMemo(() => {
-    const sc = new Supercluster<{ spotId?: string }>({
+// supercluster er untyped via .d.ts, så vi må ikke give type args her
+const sc = new Supercluster({
       radius: 60,
       maxZoom: 17,
     });
