@@ -57,13 +57,15 @@ export default function MapClient({
   return (
     <main className={styles.page}>
       {/* Full-bleed map canvas */}
-      <div className={styles.mapStage}>
-        <LeafletMap
-          spots={spots}
-          userPos={userPos}
-          onSelect={onSelect}
-          selectedId={selectedId}
-        />
+   <div className={styles.mapStage}>
+  <div className={styles.mapWrap}>
+    <LeafletMap
+      spots={spots}
+      userPos={userPos}
+      onSelect={onSelect}
+      selectedId={selectedId}
+    />
+  </div>
 
         {/* Floating controls */}
         <div className={styles.topBar}>
