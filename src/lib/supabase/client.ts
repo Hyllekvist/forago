@@ -1,10 +1,11 @@
 import { createBrowserClient } from "@supabase/ssr";
 
 /**
- * Browser-side Supabase client
- * Bruges i client components (fx LoginPanel)
+ * Browser-side Supabase client.
+ * Standardnavn: createClient()
+ * (Vi eksporterer også supabaseBrowser() så ældre imports ikke knækker.)
  */
-export function supabaseBrowser() {
+export function createClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -15,4 +16,8 @@ export function supabaseBrowser() {
   }
 
   return createBrowserClient(url, key);
+}
+
+export function supabaseBrowser() {
+  return createClient();
 }
