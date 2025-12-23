@@ -1,6 +1,6 @@
 import Link from "next/link";
 import styles from "./SpeciesPage.module.css";
-
+ 
 type Props = {
   locale: "dk" | "en";
   backHref: string;
