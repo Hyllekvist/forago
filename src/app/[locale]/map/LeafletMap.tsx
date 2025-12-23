@@ -1,21 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  useMapEvents,
-} from "react-leaflet";
+import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import type { Map as LeafletMapType } from "leaflet";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// supercluster (untyped)
 const Supercluster = require("supercluster") as any;
 
 import styles from "./MapPage.module.css";
 
-type Spot = {
+export type Spot = {
   id: string;
   lat: number;
   lng: number;
@@ -36,24 +31,16 @@ function bboxFromLeaflet(map: LeafletMapType): [number, number, number, number] 
   return [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()];
 }
 
-/** Fix Leaflet default marker icons in Next */
+/** Fix Leaflet default marker icons (robust: CDN, ingen import.meta.url) */
 function ensureLeafletIcons() {
-  const iconRetinaUrl = new URL(
-    "leaflet/dist/images/marker-icon-2x.png",
-    import.meta.url
-  ).toString();
-  const iconUrl = new URL(
-    "leaflet/dist/images/marker-icon.png",
-    import.meta.url
-  ).toString();
-  const shadowUrl = new URL(
-    "leaflet/dist/images/marker-shadow.png",
-    import.meta.url
-  ).toString();
-
   // @ts-expect-error private
   delete L.Icon.Default.prototype._getIconUrl;
-  L.Icon.Default.mergeOptions({ iconRetinaUrl, iconUrl, shadowUrl });
+
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  });
 }
 
 function inBbox(s: Spot, bbox: [number, number, number, number]) {
@@ -61,48 +48,42 @@ function inBbox(s: Spot, bbox: [number, number, number, number]) {
   return s.lng >= w && s.lng <= e && s.lat >= south && s.lat <= n;
 }
 
-function SpotIcon({ selected }: { selected: boolean }) {
-  // DivIcon som “app marker”
+function spotIcon(selected: boolean) {
+  const size = selected ? 30 : 24;
+  const dot = selected ? 10 : 8;
+
   return L.divIcon({
     className: "",
     html: `
       <div style="
-        width:${selected ? 28 : 22}px;
-        height:${selected ? 28 : 22}px;
-        border-radius:999px;
-        background:${selected ? "rgba(16,185,129,0.95)" : "rgba(2,6,23,0.85)"};
-        border:1px solid rgba(255,255,255,0.30);
-        box-shadow:${selected ? "0 14px 34px rgba(16,185,129,0.35)" : "0 12px 28px rgba(0,0,0,0.35)"};
+        width:${size}px;height:${size}px;border-radius:999px;
+        background:${selected ? "rgba(16,185,129,0.92)" : "rgba(2,6,23,0.85)"};
+        border:1px solid rgba(255,255,255,0.28);
+        box-shadow:${selected ? "0 16px 36px rgba(16,185,129,0.28)" : "0 14px 34px rgba(0,0,0,0.35)"};
         backdrop-filter: blur(10px);
         display:flex;align-items:center;justify-content:center;
       ">
-        <div style="
-          width:${selected ? 10 : 8}px;
-          height:${selected ? 10 : 8}px;
-          border-radius:999px;
-          background:rgba(255,255,255,0.92);
-          opacity:0.95;
-        "></div>
+        <div style="width:${dot}px;height:${dot}px;border-radius:999px;background:rgba(255,255,255,0.92)"></div>
       </div>
     `,
-    iconSize: [selected ? 28 : 22, selected ? 28 : 22],
-    iconAnchor: [selected ? 14 : 11, selected ? 14 : 11],
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
   });
 }
 
 function clusterIcon(count: number) {
-  const size = count >= 100 ? 46 : count >= 20 ? 42 : 38;
+  const size = count >= 100 ? 48 : count >= 20 ? 44 : 40;
   return L.divIcon({
     className: "",
     html: `
       <div style="
         min-width:${size}px;height:${size}px;border-radius:999px;
         background:rgba(2,6,23,0.82);
-        border:1px solid rgba(255,255,255,0.24);
+        border:1px solid rgba(255,255,255,0.22);
         color:rgba(255,255,255,0.92);
         display:flex;align-items:center;justify-content:center;
-        font-weight:800;
-        box-shadow: 0 12px 28px rgba(0,0,0,0.35);
+        font-weight:850;
+        box-shadow: 0 14px 34px rgba(0,0,0,0.35);
         backdrop-filter: blur(10px);
         padding:0 10px;
       ">${count}</div>
@@ -130,18 +111,10 @@ function ClusterLayer({
   const map = useMapEvents({
     moveend: () => setTick((t) => t + 1),
     zoomend: () => setTick((t) => t + 1),
-    click: () => {
-      // click outside markers = close sheet feeling (valgfrit)
-      // onSelectSpot("") // nej – lad MapClient styre close
-    },
   });
 
   const index = useMemo(() => {
-    const sc = new Supercluster({
-      radius: 60,
-      maxZoom: 17,
-    });
-
+    const sc = new Supercluster({ radius: 60, maxZoom: 17 });
     sc.load(
       points.map((s) => ({
         type: "Feature",
@@ -149,7 +122,6 @@ function ClusterLayer({
         geometry: { type: "Point", coordinates: [s.lng, s.lat] },
       }))
     );
-
     return sc;
   }, [points]);
 
@@ -159,14 +131,14 @@ function ClusterLayer({
       zoomIn: () => map.zoomIn(),
       zoomOut: () => map.zoomOut(),
       flyTo: (lat, lng, zoom = 12) =>
-        map.flyTo([lat, lng], zoom, { animate: true, duration: 0.45 }),
+        map.flyTo([lat, lng], zoom, { animate: true, duration: 0.5 }),
       getZoom: () => map.getZoom(),
       getBoundsBbox: () => bboxFromLeaflet(map),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // visible spots list (for bottom sheet list)
+  // update visible list on pan/zoom
   useEffect(() => {
     if (!onVisibleChange) return;
     const bbox = bboxFromLeaflet(map);
@@ -198,11 +170,8 @@ function ClusterLayer({
               icon={clusterIcon(count)}
               eventHandlers={{
                 click: () => {
-                  const nextZoom = Math.min(
-                    index.getClusterExpansionZoom(clusterId),
-                    17
-                  );
-                  map.flyTo([lat, lng], nextZoom, { animate: true, duration: 0.45 });
+                  const nextZoom = Math.min(index.getClusterExpansionZoom(clusterId), 17);
+                  map.flyTo([lat, lng], nextZoom, { animate: true, duration: 0.5 });
                 },
               }}
             />
@@ -216,12 +185,12 @@ function ClusterLayer({
           <Marker
             key={`s-${spotId}`}
             position={[lat, lng]}
-            icon={SpotIcon({ selected })}
+            icon={spotIcon(selected)}
             eventHandlers={{
               click: () => {
-                // Smooth zoom-on-tap til et “detail zoom”
+                // smooth zoom on tap (til mindst 14)
                 const targetZoom = Math.max(map.getZoom(), 14);
-                map.flyTo([lat, lng], targetZoom, { animate: true, duration: 0.45 });
+                map.flyTo([lat, lng], targetZoom, { animate: true, duration: 0.5 });
                 onSelectSpot(spotId);
               },
             }}
@@ -253,22 +222,12 @@ export default function LeafletMap({
 
   const center = useMemo<[number, number]>(() => {
     if (userPos) return [userPos.lat, userPos.lng];
-    return [56.1, 10.2]; // DK-ish fallback
+    return [56.1, 10.2]; // DK fallback
   }, [userPos]);
 
   return (
     <div className={styles.mapWrap}>
-      <MapContainer
-        className={styles.map}
-        center={center}
-        zoom={6}
-        zoomControl={false}
-        attributionControl={true}
-        whenReady={() => {
-          // Ingen hård setView her – lad bruger pos være “gentle”
-          // (MapClient kan kalde flyTo via onMapReady)
-        }}
-      >
+      <MapContainer className={styles.map} center={center} zoom={6} zoomControl={false}>
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         <ClusterLayer
           points={spots}
