@@ -14,6 +14,11 @@ type Spot = {
   species_slug?: string | null;
 };
 
+type LeafletLikeMap = {
+  zoomIn: () => void;
+  zoomOut: () => void;
+};
+
 export default function LeafletMap({
   spots,
   userPos,
@@ -23,12 +28,12 @@ export default function LeafletMap({
 }: {
   spots: Spot[];
   userPos: { lat: number; lng: number } | null;
-  onSelect: (id: string) => void;
   selectedId: string | null;
-  onMapReady?: (m: { zoomIn: () => void; zoomOut: () => void }) => void;
+  onSelect: (id: string) => void;
+  onMapReady?: (m: LeafletLikeMap) => void; // ✅ vigtigt
 }) {
-  // Fix default marker icon paths (Leaflet + bundlers)
   useEffect(() => {
+    // Fix default marker icon paths (Leaflet + bundlers)
     // @ts-expect-error leaflet internals
     delete L.Icon.Default.prototype._getIconUrl;
     L.Icon.Default.mergeOptions({
@@ -41,8 +46,7 @@ export default function LeafletMap({
 
   const center = useMemo<[number, number]>(() => {
     if (userPos) return [userPos.lat, userPos.lng];
-    // DK-ish fallback
-    return [56.1, 10.2];
+    return [56.1, 10.2]; // DK-ish fallback
   }, [userPos]);
 
   const userIcon = useMemo(() => {
@@ -65,18 +69,14 @@ export default function LeafletMap({
         className={styles.map}
         center={center}
         zoom={6}
-        zoomControl={false}         // 👈 vi bruger egne controls (mere app-feel)
+        zoomControl={false}
         attributionControl={true}
         whenCreated={(map) => {
           onMapReady?.({ zoomIn: () => map.zoomIn(), zoomOut: () => map.zoomOut() });
-          // Hvis userPos findes, zoom tættere ind
           if (userPos) map.setView([userPos.lat, userPos.lng], 12, { animate: false });
         }}
       >
-        <TileLayer
-          // Du kan senere skifte til en mere “premium” stil (Carto, Stadia, Mapbox etc.)
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
         {userPos ? (
           <Marker position={[userPos.lat, userPos.lng]} icon={userIcon} />
@@ -86,9 +86,7 @@ export default function LeafletMap({
           <Marker
             key={s.id}
             position={[s.lat, s.lng]}
-            eventHandlers={{
-              click: () => onSelect(s.id),
-            }}
+            eventHandlers={{ click: () => onSelect(s.id) }}
           />
         ))}
       </MapContainer>
