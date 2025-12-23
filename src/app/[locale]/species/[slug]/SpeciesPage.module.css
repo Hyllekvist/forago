@@ -1,32 +1,177 @@
-.wrap{ padding: 18px var(--pad) 110px; max-width: var(--maxw); margin: 0 auto; }
-.hero{
-  display:flex;
+/* src/app/[locale]/species/[slug]/SpeciesPage.module.css */
+
+.wrap { padding: 18px var(--pad) 110px; max-width: 920px; margin: 0 auto; }
+
+/* Header / hero */
+.header { margin-bottom: 12px; }
+
+.back {
+  display: inline-block;
+  text-decoration: none;
+  color: inherit;
+  opacity: 0.9;
+  margin-bottom: 10px;
+}
+
+.hero {
+  display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 14px;
   align-items: flex-start;
   margin-top: 6px;
 }
-.h1{ margin:0; text-transform: capitalize; }
-.sub{ margin: 8px 0 0; color: var(--muted); max-width: 70ch; }
-.badge{
+
+.heroMain { min-width: 0; }
+.heroSide { display: flex; align-items: flex-start; }
+
+.h1 {
+  margin: 0;
+  text-transform: capitalize;
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+}
+
+.meta {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.35;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+
+.dot { opacity: 0.6; }
+.group { text-transform: lowercase; }
+
+.sub {
+  margin: 10px 0 0;
+  color: var(--muted);
+  max-width: 72ch;
+  line-height: 1.55;
+}
+
+/* Chips row */
+.chips {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip,
+.chipLink,
+.monthChip {
+  border-radius: 999px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  font-size: 13px;
+  opacity: 0.95;
+  color: inherit;
+}
+
+.chipLink,
+.monthChip {
+  text-decoration: none;
+}
+
+.chipLink:hover,
+.monthChip:hover {
+  border-color: rgba(255,255,255,0.18);
+  box-shadow: var(--shadow-1);
+}
+
+.badge {
   border-radius: 999px;
   padding: 8px 10px;
   border: 1px solid var(--line);
   background: var(--panel);
   color: var(--muted);
   font-size: 12px;
+  white-space: nowrap;
 }
-.section{ margin-top: 16px; }
-.h2{ margin: 0 0 10px; }
+
+.badgeSeason {
+  border-color: rgba(34,197,94,0.35);
+  background: rgba(34,197,94,0.14);
+  color: rgba(255,255,255,0.92);
+}
+
+/* Month chips row */
+.monthRow {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.monthLabel { opacity: 0.75; font-size: 13px; }
+.monthChips { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Sections / cards */
+.section { margin-top: 14px; }
+
 .card{
-  border-radius: var(--radius);
+  border-radius: 16px;
   border: 1px solid var(--line);
   background: var(--panel);
   box-shadow: var(--shadow-1);
   padding: 14px;
 }
-.list{ margin:0; padding-left: 16px; }
-.p{ margin: 0; color: var(--muted); }
+
+.h2{
+  margin: 0 0 10px;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+
+.body { opacity: 0.92; line-height: 1.6; }
+
+.pre { white-space: pre-wrap; }
+
+.p { margin: 0; color: var(--muted); line-height: 1.55; }
+
+/* Safety highlight */
+.safety {
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(245,158,11,0.25);
+  background: rgba(245,158,11,0.08);
+}
+
+/* Related grid */
+.relatedHeader { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.relatedGrid {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.relatedCard {
+  text-decoration: none;
+  color: inherit;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.03);
+  padding: 12px;
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+}
+
+.relatedCard:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 26px rgba(0,0,0,0.22);
+  border-color: rgba(255,255,255,0.16);
+}
+
+.relatedName { font-weight: 850; margin-bottom: 6; }
+.relatedMeta { opacity: 0.78; font-size: 13px; }
+
+/* Updated */
+.updated { margin-top: 18px; opacity: 0.7; font-size: 13px; }
 
 /* Skeleton */
 .skelTitle, .skelMeta, .skelP, .skelChip, .skelH2 {
@@ -53,12 +198,7 @@
   position: absolute;
   inset: 0;
   transform: translateX(-40%);
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255,255,255,0.08),
-    transparent
-  );
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
   animation: shimmer 1.1s infinite;
 }
 
