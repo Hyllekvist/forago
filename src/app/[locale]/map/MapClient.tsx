@@ -4,22 +4,10 @@ import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import styles from "./MapPage.module.css";
-import type { LeafletLikeMap } from "./LeafletMap";
 
-type Spot = {
-  id: string;
-  lat: number;
-  lng: number;
-  title?: string | null;
-  species_slug?: string | null;
-  created_at?: string | null;
-};
+import type { Spot, LeafletLikeMap } from "./LeafletMap";
 
 const LeafletMap = dynamic(() => import("./LeafletMap"), { ssr: false });
-
-function safeTitle(s: Spot, locale: "dk" | "en") {
-  return s.title?.trim() || (locale === "dk" ? "Spot" : "Spot");
-}
 
 export default function MapClient({
   locale,
@@ -31,62 +19,58 @@ export default function MapClient({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [mapApi, setMapApi] = useState<LeafletLikeMap | null>(null);
+
+  // “scannable list” baseret på synlige spots i viewport
   const [visibleIds, setVisibleIds] = useState<string[]>([]);
-  const [q, setQ] = useState("");
+  const [sheetMode, setSheetMode] = useState<"list" | "detail">("list");
 
   const selected = useMemo(
-    () => spots.find((s) => s.id === selectedId) ?? null,
+    () => (selectedId ? spots.find((s) => s.id === selectedId) ?? null : null),
     [spots, selectedId]
   );
 
   const visibleSpots = useMemo(() => {
-    const base =
-      visibleIds.length > 0
-        ? spots.filter((s) => visibleIds.includes(s.id))
-        : spots;
-
-    const query = q.trim().toLowerCase();
-    const filtered = query
-      ? base.filter((s) => safeTitle(s, locale).toLowerCase().includes(query))
-      : base;
-
-    // “Scannable”: korte labels, stabil sort
-    return filtered
-      .slice()
-      .sort((a, b) => safeTitle(a, locale).localeCompare(safeTitle(b, locale)))
-      .slice(0, 80);
-  }, [spots, visibleIds, q, locale]);
-
-  const onSelect = useCallback((id: string) => {
-    setSelectedId(id);
-  }, []);
-
-  const onClose = useCallback(() => setSelectedId(null), []);
+    const set = new Set(visibleIds);
+    const arr = spots.filter((s) => set.has(s.id));
+    // mere “app-feel”: title først, ellers fallback
+    return arr.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+  }, [spots, visibleIds]);
 
   const locate = useCallback(() => {
     if (!navigator.geolocation) return;
+
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setUserPos(p);
-        mapApi?.flyTo(p.lat, p.lng, 12);
+        // fly to bruger
+        mapApi?.flyTo(p.lat, p.lng, 13);
       },
-      () => {
-        // no-op
-      },
+      () => {},
       { enableHighAccuracy: true, timeout: 8000 }
     );
   }, [mapApi]);
 
-  const jumpToSpot = useCallback(
+  const onSelect = useCallback((id: string) => {
+    setSelectedId(id);
+    setSheetMode("detail");
+  }, []);
+
+  const closeDetail = useCallback(() => {
+    setSelectedId(null);
+    setSheetMode("list");
+  }, []);
+
+  const openList = useCallback(() => setSheetMode("list"), []);
+
+  const tapSpotFromList = useCallback(
     (s: Spot) => {
-      mapApi?.flyTo(s.lat, s.lng, 14);
       setSelectedId(s.id);
+      setSheetMode("detail");
+      mapApi?.flyTo(s.lat, s.lng, 14);
     },
     [mapApi]
   );
-
-  const sheetOpen = Boolean(selected) || q.trim().length > 0;
 
   return (
     <main className={styles.page}>
@@ -100,15 +84,26 @@ export default function MapClient({
           onVisibleChange={(ids) => setVisibleIds(ids)}
         />
 
-        {/* Top HUD */}
+        {/* Compact top HUD */}
         <div className={styles.topBar}>
           <div className={styles.topBarInner}>
-            <h1 className={styles.h1}>{locale === "dk" ? "Kort" : "Map"}</h1>
-            <p className={styles.sub}>
-              {locale === "dk"
-                ? "Tryk på et spot for detaljer. Klynger zoomer ind."
-                : "Tap a spot for details. Clusters zoom in."}
-            </p>
+            <div className={styles.topRow}>
+              <div>
+                <h1 className={styles.h1}>{locale === "dk" ? "Kort" : "Map"}</h1>
+                <p className={styles.sub}>
+                  {locale === "dk"
+                    ? "Tryk på et spot — eller scan listen."
+                    : "Tap a spot — or scan the list."}
+                </p>
+              </div>
+
+              <div className={styles.topPills}>
+                <span className={styles.pill}>
+                  {locale === "dk" ? "Synlige" : "Visible"}:{" "}
+                  <strong>{visibleSpots.length}</strong>
+                </span>
+              </div>
+            </div>
 
             <div className={styles.actions}>
               <button className={styles.btn} onClick={locate} type="button">
@@ -118,122 +113,129 @@ export default function MapClient({
               <Link className={styles.btnGhost} href={`/${locale}/species`}>
                 {locale === "dk" ? "Arter" : "Species"}
               </Link>
+
+              <button className={styles.btnGhost} onClick={openList} type="button">
+                {locale === "dk" ? "Liste" : "List"}
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Bottom Sheet: selected + scannable list */}
+        {/* Bottom sheet */}
         <div
-          className={`${styles.sheet} ${sheetOpen ? styles.sheetOpen : styles.sheetClosed}`}
-          aria-hidden={!sheetOpen}
+          className={`${styles.sheet} ${
+            sheetMode === "detail" && selected ? styles.sheetOpen : styles.sheetOpen
+          }`}
         >
           <div className={styles.sheetHandle} />
 
           <div className={styles.sheetCard}>
-            <div className={styles.sheetHeader}>
-              <div className={styles.sheetTitle}>
-                {selected ? safeTitle(selected, locale) : locale === "dk" ? "Spots" : "Spots"}
-              </div>
-              <button className={styles.close} onClick={onClose} type="button">
-                ✕
+            {/* Tabs */}
+            <div className={styles.sheetTabs}>
+              <button
+                className={`${styles.tab} ${sheetMode === "list" ? styles.tabActive : ""}`}
+                type="button"
+                onClick={() => setSheetMode("list")}
+              >
+                {locale === "dk" ? "Liste" : "List"}
               </button>
+              <button
+                className={`${styles.tab} ${sheetMode === "detail" ? styles.tabActive : ""}`}
+                type="button"
+                onClick={() => selected && setSheetMode("detail")}
+                disabled={!selected}
+              >
+                {locale === "dk" ? "Valgt" : "Selected"}
+              </button>
+
+              {selected ? (
+                <button className={styles.close} onClick={closeDetail} type="button">
+                  ✕
+                </button>
+              ) : null}
             </div>
 
-            {selected ? (
-              <div className={styles.sheetMeta}>
-                <span className={styles.metaPill}>
-                  {locale === "dk" ? "Koordinat" : "Coordinates"} ·{" "}
-                  {selected.lat.toFixed(4)}, {selected.lng.toFixed(4)}
-                </span>
-
-                {selected.species_slug ? (
-                  <Link
-                    className={styles.metaLink}
-                    href={`/${locale}/species/${selected.species_slug}`}
-                  >
-                    {locale === "dk" ? "Se art →" : "View species →"}
-                  </Link>
-                ) : (
-                  <span className={styles.metaMuted}>
-                    {locale === "dk" ? "Ingen art endnu" : "No species yet"}
-                  </span>
-                )}
-              </div>
-            ) : null}
-
-            {/* Search */}
-            <div style={{ marginTop: 10 }}>
-              <input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder={locale === "dk" ? "Søg i spots…" : "Search spots…"}
-                style={{
-                  width: "100%",
-                  borderRadius: 14,
-                  padding: "10px 12px",
-                  border: "1px solid var(--line)",
-                  background: "var(--panel2)",
-                  color: "var(--ink)",
-                  outline: "none",
-                }}
-              />
-            </div>
-
-            {/* List */}
-            <div
-              style={{
-                marginTop: 10,
-                maxHeight: "38vh",
-                overflow: "auto",
-                WebkitOverflowScrolling: "touch",
-                borderRadius: 16,
-                border: "1px solid var(--line)",
-                background: "color-mix(in srgb, var(--panel) 60%, transparent)",
-              }}
-            >
-              {visibleSpots.length ? (
-                <ul style={{ listStyle: "none", margin: 0, padding: 8 }}>
-                  {visibleSpots.map((s) => (
-                    <li key={s.id}>
-                      <button
-                        type="button"
-                        onClick={() => jumpToSpot(s)}
-                        style={{
-                          width: "100%",
-                          textAlign: "left",
-                          border: 0,
-                          background: "transparent",
-                          color: "var(--ink)",
-                          padding: "10px 10px",
-                          borderRadius: 12,
-                          cursor: "pointer",
-                        }}
-                      >
-                        <div style={{ fontWeight: 800, fontSize: 14 }}>
-                          {safeTitle(s, locale)}
-                        </div>
-                        <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                          {s.lat.toFixed(3)}, {s.lng.toFixed(3)}
-                          {s.species_slug ? ` · ${s.species_slug}` : ""}
-                        </div>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div style={{ padding: 12, color: "var(--muted)" }}>
-                  {locale === "dk" ? "Ingen spots i view." : "No spots in view."}
+            {/* Detail */}
+            {sheetMode === "detail" && selected ? (
+              <div className={styles.detail}>
+                <div className={styles.detailTitle}>
+                  {selected.title || (locale === "dk" ? "Spot" : "Spot")}
                 </div>
-              )}
-            </div>
 
-            {!selected ? (
-              <p className={styles.p} style={{ marginTop: 10 }}>
-                {locale === "dk"
-                  ? "Tip: zoom ind – så bliver klynger til enkelte spots."
-                  : "Tip: zoom in – clusters break into individual spots."}
-              </p>
-            ) : null}
+                <div className={styles.detailMetaRow}>
+                  <span className={styles.metaPill}>
+                    {selected.lat.toFixed(4)}, {selected.lng.toFixed(4)}
+                  </span>
+
+                  {selected.species_slug ? (
+                    <Link
+                      className={styles.metaLink}
+                      href={`/${locale}/species/${selected.species_slug}`}
+                    >
+                      {locale === "dk" ? "Se art →" : "View species →"}
+                    </Link>
+                  ) : (
+                    <span className={styles.metaMuted}>
+                      {locale === "dk" ? "Ingen art endnu" : "No species yet"}
+                    </span>
+                  )}
+                </div>
+
+                <div className={styles.detailActions}>
+                  <button
+                    className={styles.btn}
+                    type="button"
+                    onClick={() => mapApi?.flyTo(selected.lat, selected.lng, 15)}
+                  >
+                    {locale === "dk" ? "Zoom ind" : "Zoom in"}
+                  </button>
+                  <button className={styles.btnGhost} type="button" onClick={openList}>
+                    {locale === "dk" ? "Til liste" : "Back to list"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* List */
+              <div className={styles.list}>
+                <div className={styles.listHeader}>
+                  <div className={styles.listTitle}>
+                    {locale === "dk" ? "Synlige spots" : "Visible spots"}
+                  </div>
+                  <div className={styles.listHint}>
+                    {locale === "dk" ? "Scroll + tap" : "Scroll + tap"}
+                  </div>
+                </div>
+
+                <div className={styles.listScroller}>
+                  {visibleSpots.length ? (
+                    visibleSpots.map((s) => (
+                      <button
+                        key={s.id}
+                        className={styles.listItem}
+                        type="button"
+                        onClick={() => tapSpotFromList(s)}
+                      >
+                        <div className={styles.listItemMain}>
+                          <div className={styles.listItemTitle}>{s.title || "Spot"}</div>
+                          <div className={styles.listItemMeta}>
+                            {s.species_slug ? s.species_slug : locale === "dk" ? "Ingen art" : "No species"}
+                            {" · "}
+                            {s.lat.toFixed(3)}, {s.lng.toFixed(3)}
+                          </div>
+                        </div>
+                        <div className={styles.chev}>›</div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className={styles.empty}>
+                      {locale === "dk"
+                        ? "Zoom ind eller pan — så dukker listen op."
+                        : "Zoom or pan — the list will populate."}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
