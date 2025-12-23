@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Script from "next/script";
 import { supabaseServer } from "@/lib/supabase/server";
+import styles from "./SpeciesPage.module.css";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 3600;
@@ -74,13 +75,12 @@ function monthName(locale: Locale, m: number) {
 }
 
 function currentMonthUTC() {
-  const now = new Date();
-  return now.getUTCMonth() + 1; // 1-12
+  return new Date().getUTCMonth() + 1;
 }
 
 function isInSeason(month: number, from: number, to: number) {
   if (from <= to) return month >= from && month <= to;
-  return month >= from || month <= to; // wrap-around
+  return month >= from || month <= to;
 }
 
 function seasonLabel(locale: Locale, from: number, to: number) {
@@ -104,17 +104,11 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section
-      style={{
-        border: "1px solid rgba(255,255,255,0.10)",
-        borderRadius: 14,
-        padding: 14,
-        background: "rgba(255,255,255,0.03)",
-        marginTop: 12,
-      }}
-    >
-      <h2 style={{ margin: "0 0 10px", fontSize: 16 }}>{title}</h2>
-      <div style={{ opacity: 0.92, lineHeight: 1.55 }}>{children}</div>
+    <section className={styles.section}>
+      <div className={styles.card}>
+        <h2 className={styles.h2}>{title}</h2>
+        <div className={styles.body}>{children}</div>
+      </div>
     </section>
   );
 }
@@ -169,9 +163,7 @@ export default async function SpeciesPage({
 
   const supabase = supabaseServer();
   const month = currentMonthUTC();
-
-  // Note: we reuse locale as "country" for now ('dk'/'en').
-  const country = locale;
+  const country = locale; // dk/en for now
 
   const { data: sp, error: spErr } = await supabase
     .from("species")
@@ -197,7 +189,6 @@ export default async function SpeciesPage({
   const scientific = sp.scientific_name || "";
   const group = sp.primary_group || "plant";
 
-  // Seasonality (national: region = '')
   const { data: seasonRow, error: seasErr } = await supabase
     .from("seasonality")
     .select("month_from, month_to, confidence, notes")
@@ -215,7 +206,7 @@ export default async function SpeciesPage({
   const inSeasonNow = from && to ? isInSeason(month, from, to) : false;
   const seasonText = from && to ? seasonLabel(locale, from, to) : null;
 
-  // Related species: other species that are also in season now (same country/region)
+  // Related species: other species also in season now
   let related: Array<{ slug: string; name: string; confidence: number }> = [];
   if (inSeasonNow) {
     const { data: relSeas } = await supabase
@@ -226,11 +217,7 @@ export default async function SpeciesPage({
 
     const relIds =
       (relSeas ?? [])
-        .filter((r: any) => {
-          const a = r.month_from as number;
-          const b = r.month_to as number;
-          return isInSeason(month, a, b);
-        })
+        .filter((r: any) => isInSeason(month, r.month_from as number, r.month_to as number))
         .map((r: any) => ({
           species_id: r.species_id as string,
           confidence: (r.confidence as number) ?? 0,
@@ -300,160 +287,100 @@ export default async function SpeciesPage({
     ],
   };
 
+  const shortMissing =
+    !tr?.short_description &&
+    (locale === "dk"
+      ? "Tilføj short_description i species_translations for at gøre siden rankable."
+      : "Add short_description in species_translations to make this page rankable.");
+
   return (
-    <main style={{ padding: 16, maxWidth: 920, margin: "0 auto" }}>
+    <main className={styles.wrap}>
       <Script id="species-jsonld" type="application/ld+json">
         {JSON.stringify(jsonLd)}
       </Script>
 
-      <header style={{ marginBottom: 10 }}>
-        <p style={{ margin: 0 }}>
-          <Link href={`/${locale}/species`} style={{ textDecoration: "none" }}>
-            ← {locale === "dk" ? "Arter" : "Species"}
-          </Link>
-        </p>
+      <header className={styles.header}>
+        <Link className={styles.back} href={`/${locale}/species`}>
+          ← {locale === "dk" ? "Arter" : "Species"}
+        </Link>
 
-        <h1 style={{ margin: "10px 0 6px" }}>{name}</h1>
+        <div className={styles.hero}>
+          <div className={styles.heroMain}>
+            <h1 className={styles.h1}>{name}</h1>
 
-        <div style={{ opacity: 0.78, fontSize: 14, lineHeight: 1.35 }}>
-          {scientific ? <em>{scientific}</em> : null}
-          {scientific ? " · " : null}
-          <span>{group}</span>
+            <div className={styles.meta}>
+              {scientific ? <em>{scientific}</em> : null}
+              {scientific ? <span className={styles.dot}>·</span> : null}
+              <span className={styles.group}>{group}</span>
+            </div>
+
+            <p className={styles.sub}>
+              {tr?.short_description ? tr.short_description : shortMissing}
+            </p>
+          </div>
+
+          <div className={styles.heroSide}>
+            {inSeasonNow ? (
+              <span className={`${styles.badge} ${styles.badgeSeason}`}>
+                {locale === "dk" ? "I sæson nu" : "In season now"}
+                {conf !== null ? ` · ${conf}%` : ""}
+              </span>
+            ) : (
+              <span className={styles.badge}>
+                {locale === "dk" ? "Ikke i sæson" : "Not in season"}
+                {conf !== null ? ` · ${conf}%` : ""}
+              </span>
+            )}
+          </div>
         </div>
 
-        {tr?.short_description ? (
-          <p style={{ margin: "10px 0 0", opacity: 0.9, lineHeight: 1.55 }}>
-            {tr.short_description}
-          </p>
-        ) : (
-          <p style={{ margin: "10px 0 0", opacity: 0.75 }}>
-            {locale === "dk"
-              ? "Tilføj short_description i species_translations for at gøre siden rankable."
-              : "Add short_description in species_translations to make this page rankable."}
-          </p>
-        )}
-
-        {/* Season chips */}
-        <div style={{ marginTop: 12, display: "flex", flexWrap: "wrap", gap: 8 }}>
-          <span
-            style={{
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: "rgba(255,255,255,0.04)",
-              borderRadius: 999,
-              padding: "8px 10px",
-              fontSize: 13,
-              opacity: 0.95,
-            }}
-          >
+        <div className={styles.chips}>
+          <span className={styles.chip}>
             {locale === "dk" ? "Sæson:" : "Season:"}{" "}
             {seasonText ? seasonText : locale === "dk" ? "ukendt" : "unknown"}
           </span>
 
-          <span
-            style={{
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: inSeasonNow ? "rgba(34,197,94,0.18)" : "rgba(255,255,255,0.04)",
-              borderRadius: 999,
-              padding: "8px 10px",
-              fontSize: 13,
-              opacity: 0.95,
-            }}
-          >
-            {inSeasonNow
-              ? locale === "dk"
-                ? "I sæson nu"
-                : "In season now"
-              : locale === "dk"
-              ? "Ikke i sæson nu"
-              : "Not in season now"}
-            {conf !== null ? ` · ${conf}%` : ""}
-          </span>
-
-          <Link
-            href={`/${locale}/season`}
-            style={{
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: "rgba(255,255,255,0.04)",
-              borderRadius: 999,
-              padding: "8px 10px",
-              fontSize: 13,
-              textDecoration: "none",
-              color: "inherit",
-              opacity: 0.95,
-            }}
-          >
+          <Link className={styles.chipLink} href={`/${locale}/season`}>
             {locale === "dk" ? "Se sæson nu →" : "See season now →"}
           </Link>
 
-          <Link
-            href={`/${locale}/guides/safety-basics`}
-            style={{
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: "rgba(255,255,255,0.04)",
-              borderRadius: 999,
-              padding: "8px 10px",
-              fontSize: 13,
-              textDecoration: "none",
-              color: "inherit",
-              opacity: 0.95,
-            }}
-          >
+          <Link className={styles.chipLink} href={`/${locale}/guides/safety-basics`}>
             {locale === "dk" ? "Sikkerhed →" : "Safety →"}
           </Link>
 
-          <Link
-            href={`/${locale}/guides/lookalikes`}
-            style={{
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: "rgba(255,255,255,0.04)",
-              borderRadius: 999,
-              padding: "8px 10px",
-              fontSize: 13,
-              textDecoration: "none",
-              color: "inherit",
-              opacity: 0.95,
-            }}
-          >
+          <Link className={styles.chipLink} href={`/${locale}/guides/lookalikes`}>
             {locale === "dk" ? "Forvekslinger →" : "Look-alikes →"}
           </Link>
         </div>
 
-        {/* NEW: Month links ("I sæson i:") */}
         {from && to ? (
-          <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span style={{ opacity: 0.78, fontSize: 13 }}>
+          <div className={styles.monthRow}>
+            <span className={styles.monthLabel}>
               {locale === "dk" ? "I sæson i:" : "In season in:"}
             </span>
 
-            {monthsBetween(from, to)
-              .slice(0, 8)
-              .map((m) => (
-                <Link
-                  key={m}
-                  href={`/${locale}/season/${MONTH_NUM_TO_SLUG[m]}`}
-                  style={{
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    background: "rgba(255,255,255,0.04)",
-                    borderRadius: 999,
-                    padding: "6px 10px",
-                    fontSize: 13,
-                    textDecoration: "none",
-                    color: "inherit",
-                    opacity: 0.95,
-                  }}
-                >
-                  {monthName(locale, m)}
-                </Link>
-              ))}
+            <div className={styles.monthChips}>
+              {monthsBetween(from, to)
+                .slice(0, 8)
+                .map((m) => (
+                  <Link
+                    key={m}
+                    className={styles.monthChip}
+                    href={`/${locale}/season/${MONTH_NUM_TO_SLUG[m]}`}
+                  >
+                    {monthName(locale, m)}
+                  </Link>
+                ))}
+            </div>
           </div>
         ) : null}
       </header>
 
       <Section title={locale === "dk" ? "Identifikation" : "Identification"}>
         {tr?.identification ? (
-          <div style={{ whiteSpace: "pre-wrap" }}>{tr.identification}</div>
+          <div className={styles.pre}>{tr.identification}</div>
         ) : (
-          <p style={{ margin: 0, opacity: 0.75 }}>
+          <p className={styles.p}>
             {locale === "dk"
               ? "Tilføj identification i species_translations (bullet-liste med kendetegn + habitat)."
               : "Add identification in species_translations (bullets: features + habitat)."}
@@ -463,9 +390,9 @@ export default async function SpeciesPage({
 
       <Section title={locale === "dk" ? "Forvekslinger" : "Look-alikes"}>
         {tr?.lookalikes ? (
-          <div style={{ whiteSpace: "pre-wrap" }}>{tr.lookalikes}</div>
+          <div className={styles.pre}>{tr.lookalikes}</div>
         ) : (
-          <p style={{ margin: 0, opacity: 0.75 }}>
+          <p className={styles.p}>
             {locale === "dk"
               ? "Tilføj lookalikes (det er en af jeres største SEO-vindere)."
               : "Add look-alikes (one of your biggest SEO wins)."}
@@ -475,9 +402,9 @@ export default async function SpeciesPage({
 
       <Section title={locale === "dk" ? "Brug" : "Use"}>
         {tr?.usage_notes ? (
-          <div style={{ whiteSpace: "pre-wrap" }}>{tr.usage_notes}</div>
+          <div className={styles.pre}>{tr.usage_notes}</div>
         ) : (
-          <p style={{ margin: 0, opacity: 0.75 }}>
+          <p className={styles.p}>
             {locale === "dk"
               ? "Tilføj usage_notes (3–5 konkrete anvendelser + tilberedning)."
               : "Add usage_notes (3–5 concrete uses + prep)."}
@@ -487,9 +414,9 @@ export default async function SpeciesPage({
 
       <Section title={locale === "dk" ? "Sikkerhed" : "Safety"}>
         {tr?.safety_notes ? (
-          <div style={{ whiteSpace: "pre-wrap" }}>{tr.safety_notes}</div>
+          <div className={`${styles.pre} ${styles.safety}`}>{tr.safety_notes}</div>
         ) : (
-          <p style={{ margin: 0, opacity: 0.75 }}>
+          <p className={styles.p}>
             {locale === "dk"
               ? "Tilføj safety_notes. Vær tydelig: aldrig spise noget man ikke kan identificere 100%."
               : "Add safety_notes. Be explicit: never eat what you can’t ID with certainty."}
@@ -497,50 +424,42 @@ export default async function SpeciesPage({
         )}
       </Section>
 
-      {/* Related */}
-      <section style={{ marginTop: 18 }}>
-        <h2 style={{ margin: "0 0 10px", fontSize: 16 }}>
-          {locale === "dk" ? "Relaterede arter (i sæson nu)" : "Related species (in season now)"}
-        </h2>
-
-        {related.length ? (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-              gap: 10,
-            }}
-          >
-            {related.map((r) => (
-              <Link
-                key={r.slug}
-                href={`/${locale}/species/${r.slug}`}
-                style={{
-                  textDecoration: "none",
-                  color: "inherit",
-                  border: "1px solid rgba(255,255,255,0.10)",
-                  borderRadius: 14,
-                  padding: 12,
-                  background: "rgba(255,255,255,0.03)",
-                }}
-              >
-                <div style={{ fontWeight: 800, marginBottom: 6 }}>{r.name}</div>
-                <div style={{ opacity: 0.78, fontSize: 13 }}>
-                  {locale === "dk" ? "Sæson match" : "Season match"} · {r.confidence}%
-                </div>
-              </Link>
-            ))}
+      <section className={styles.section}>
+        <div className={styles.card}>
+          <div className={styles.relatedHeader}>
+            <h2 className={styles.h2}>
+              {locale === "dk"
+                ? "Relaterede arter (i sæson nu)"
+                : "Related species (in season now)"}
+            </h2>
           </div>
-        ) : (
-          <p style={{ margin: 0, opacity: 0.75 }}>
-            {locale === "dk"
-              ? "Ingen relaterede arter endnu (tilføj flere seasonality-rækker for denne måned)."
-              : "No related species yet (add more seasonality rows for this month)."}
-          </p>
-        )}
+
+          {related.length ? (
+            <div className={styles.relatedGrid}>
+              {related.map((r) => (
+                <Link
+                  key={r.slug}
+                  href={`/${locale}/species/${r.slug}`}
+                  className={styles.relatedCard}
+                >
+                  <div className={styles.relatedName}>{r.name}</div>
+                  <div className={styles.relatedMeta}>
+                    {locale === "dk" ? "Sæson match" : "Season match"} · {r.confidence}%
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className={styles.p}>
+              {locale === "dk"
+                ? "Ingen relaterede arter endnu."
+                : "No related species yet."}
+            </p>
+          )}
+        </div>
       </section>
 
-      <p style={{ marginTop: 18, opacity: 0.7, fontSize: 13 }}>
+      <p className={styles.updated}>
         {locale === "dk" ? "Sidst opdateret:" : "Last updated:"}{" "}
         {tr?.updated_at ? new Date(tr.updated_at).toISOString().slice(0, 10) : "—"}
       </p>
