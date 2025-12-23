@@ -2,28 +2,80 @@
   /* layout */
   --maxw: 980px;
   --pad: 16px;
+
+  /* radius scale */
   --radius: 18px;
+  --radiusLg: 22px;
+  --radiusPill: 999px;
 
-  /* brand */
-  --accent: #ff9966;
+  /* -------------------------------------------------
+     BRAND DNA (Forago: vibrant nature-tech)
+  ------------------------------------------------- */
 
-  /* semantic surfaces (skal bruges i modules) */
-  --bg: #0b0f14;
-  --ink: rgba(255,255,255,0.92);
-  --muted: rgba(255,255,255,0.70);
+  /* Accent palette */
+  --accent: #22c55e;        /* moss */
+  --accent2: #22d3ee;       /* water */
+  --accent3: #a78bfa;       /* fungi */
+  --accentWarm: #fbbf24;    /* pollen */
 
-  --panel: rgba(255,255,255,0.04);
-  --panel2: rgba(255,255,255,0.06);
-  --line: rgba(255,255,255,0.12);
+  /* Text */
+  --ink: rgba(255, 255, 255, 0.92);
+  --muted: rgba(255, 255, 255, 0.70);
 
-  --chipBg: rgba(255,255,255,0.05);
-  --chipLine: rgba(255,255,255,0.14);
+  /* Backgrounds */
+  --bg: #070b08;            /* deeper, warmer-black than before */
+  --bg2: #0b0f14;           /* keep your old bg as secondary */
 
-  --goodBg: rgba(34,197,94,0.18);
-  --goodLine: rgba(34,197,94,0.35);
+  /* Surfaces */
+  --panel: rgba(255, 255, 255, 0.05);
+  --panel2: rgba(255, 255, 255, 0.08);
+  --panel3: rgba(255, 255, 255, 0.11);
+  --line: rgba(255, 255, 255, 0.12);
 
-  --warnBg: rgba(245,158,11,0.10);
-  --warnLine: rgba(245,158,11,0.30);
+  /* Chips */
+  --chipBg: rgba(255, 255, 255, 0.06);
+  --chipLine: rgba(255, 255, 255, 0.16);
 
-  --shadow-1: 0 10px 30px rgba(0,0,0,0.35);
+  /* Semantic */
+  --goodBg: rgba(34, 197, 94, 0.18);
+  --goodLine: rgba(34, 197, 94, 0.35);
+
+  --warnBg: rgba(245, 158, 11, 0.12);
+  --warnLine: rgba(245, 158, 11, 0.32);
+
+  --dangerBg: rgba(239, 68, 68, 0.12);
+  --dangerLine: rgba(239, 68, 68, 0.30);
+
+  /* -------------------------------------------------
+     GLOWS + GRADIENTS (use these globally)
+  ------------------------------------------------- */
+
+  /* Core ambient background glow (put on body::before) */
+  --g-core: radial-gradient(1100px 700px at 18% 0%,
+      rgba(34, 197, 94, 0.26),
+      rgba(34, 211, 238, 0.14),
+      rgba(167, 139, 250, 0.10),
+      transparent 60%);
+
+  /* Accent gradient for primary CTA */
+  --g-accent: linear-gradient(135deg,
+      rgba(34, 197, 94, 0.95),
+      rgba(34, 211, 238, 0.95),
+      rgba(167, 139, 250, 0.92));
+
+  /* Warm highlight (sparingly) */
+  --g-warm: radial-gradient(700px 420px at 70% 20%,
+      rgba(251, 191, 36, 0.18),
+      transparent 55%);
+
+  /* Glow shadows */
+  --shadow-1: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --shadow-2: 0 18px 50px rgba(0, 0, 0, 0.45);
+  --shadow-accent: 0 18px 55px rgba(34, 197, 94, 0.18);
+
+  /* Glass */
+  --blur: blur(16px);
+
+  /* Focus ring */
+  --focus: 0 0 0 3px rgba(34, 211, 238, 0.25);
 }
