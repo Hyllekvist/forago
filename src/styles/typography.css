@@ -1,0 +1,11 @@
+:root{
+  --h1: 26px;
+  --h2: 20px;
+  --h3: 16px;
+  --body: 15px;
+}
+
+h1{ font-size: var(--h1); letter-spacing: -0.02em; }
+h2{ font-size: var(--h2); letter-spacing: -0.01em; }
+h3{ font-size: var(--h3); }
+p,li{ font-size: var(--body); line-height: 1.55; }
