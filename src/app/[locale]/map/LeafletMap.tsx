@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { MapContainer, TileLayer, Marker } from "react-leaflet";
 import L from "leaflet";
+import type { Map as LeafletMapType } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import styles from "./MapPage.module.css";
 
@@ -30,8 +31,10 @@ export default function LeafletMap({
   userPos: { lat: number; lng: number } | null;
   selectedId: string | null;
   onSelect: (id: string) => void;
-  onMapReady?: (m: LeafletLikeMap) => void; // ✅ vigtigt
+  onMapReady?: (m: LeafletLikeMap) => void;
 }) {
+  const mapRef = useRef<LeafletMapType | null>(null);
+
   useEffect(() => {
     // Fix default marker icon paths (Leaflet + bundlers)
     // @ts-expect-error leaflet internals
@@ -46,7 +49,7 @@ export default function LeafletMap({
 
   const center = useMemo<[number, number]>(() => {
     if (userPos) return [userPos.lat, userPos.lng];
-    return [56.1, 10.2]; // DK-ish fallback
+    return [56.1, 10.2];
   }, [userPos]);
 
   const userIcon = useMemo(() => {
@@ -66,14 +69,26 @@ export default function LeafletMap({
   return (
     <div className={styles.mapWrap}>
       <MapContainer
+        ref={(node) => {
+          // react-leaflet v4 giver Leaflet-map på node?.leafletElement i nogle setups,
+          // men ref() får typisk Leaflet Map direkte. Vi håndterer begge.
+          const anyNode = node as any;
+          mapRef.current = (anyNode?.leafletElement ?? anyNode) || null;
+        }}
         className={styles.map}
         center={center}
         zoom={6}
         zoomControl={false}
         attributionControl={true}
-        whenCreated={(map) => {
-          onMapReady?.({ zoomIn: () => map.zoomIn(), zoomOut: () => map.zoomOut() });
-          if (userPos) map.setView([userPos.lat, userPos.lng], 12, { animate: false });
+        whenReady={() => {
+          const m = mapRef.current;
+          if (!m) return;
+
+          onMapReady?.({ zoomIn: () => m.zoomIn(), zoomOut: () => m.zoomOut() });
+
+          if (userPos) {
+            m.setView([userPos.lat, userPos.lng], 12, { animate: false });
+          }
         }}
       >
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
