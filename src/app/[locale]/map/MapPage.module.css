@@ -1,62 +1,95 @@
-.page{ 
+.page{
   min-height: 100vh;
   background: var(--bg);
   color: var(--ink);
 }
 
+/* Full-bleed map under alt */
 .mapStage{
-  position: relative;
-  height: calc(100vh - 0px);
+  position: fixed;
+  inset: 0;
   width: 100%;
+  height: 100%;
 }
 
+/* Leaflet canvas wrapper */
 .mapWrap{
   position: absolute;
   inset: 0;
 }
 
 .map{
-  height: 100%;
   width: 100%;
-  border-radius: 0;
+  height: 100%;
 }
 
-/* --- Floating top bar (glass) --- */
-.topBar{
+/* ---- Top HUD (compact) ---- */
+.topHud{
   position: absolute;
-  top: 12px;
+  top: calc(10px + env(safe-area-inset-top));
   left: 12px;
   right: 12px;
-  z-index: 500;
+  z-index: 800;
   pointer-events: none;
 }
 
-.topBarInner{
+.topHudInner{
   pointer-events: auto;
-  border-radius: 18px;
-  border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--panel) 70%, transparent);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 22px;
+  border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+  background: color-mix(in srgb, var(--bg) 84%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   box-shadow: var(--shadow-1);
-  padding: 14px;
+}
+
+.topRow{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .h1{
   margin: 0;
-  font-size: 34px;
+  font-size: 26px;
   letter-spacing: -0.02em;
+  line-height: 1.1;
 }
 
 .sub{
-  margin: 6px 0 0;
+  margin: 2px 0 0;
   color: var(--muted);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.hint{
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pill{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel2);
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .actions{
   display: flex;
   gap: 10px;
-  margin-top: 12px;
 }
 
 .btn{
@@ -73,15 +106,56 @@
   padding: 10px 14px;
   border: 1px solid var(--line);
   background: transparent;
+  color: var(--ink);
 }
 
-/* --- Bottom sheet --- */
+/* ---- Floating map controls (right) ---- */
+.controls{
+  position: absolute;
+  right: 12px;
+  top: calc(92px + env(safe-area-inset-top));
+  z-index: 820;
+  display: grid;
+  gap: 10px;
+}
+
+.ctrlStack{
+  display: grid;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-1);
+}
+
+.ctrlBtn{
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.ctrlBtn + .ctrlBtn{
+  border-top: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+}
+
+.ctrlBtn:active{
+  transform: translateY(1px);
+}
+
+/* ---- Bottom sheet ---- */
 .sheet{
   position: absolute;
   left: 12px;
   right: 12px;
   bottom: calc(12px + env(safe-area-inset-bottom));
-  z-index: 600;
+  z-index: 900;
   transition: transform 220ms ease, opacity 220ms ease;
 }
 
@@ -97,17 +171,17 @@
 }
 
 .sheetHandle{
-  width: 54px;
-  height: 5px;
+  width: 56px;
+  height: 6px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--muted) 25%, transparent);
+  background: color-mix(in srgb, var(--muted) 28%, transparent);
   margin: 0 auto 10px;
 }
 
 .sheetCard{
-  border-radius: 22px;
-  border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--panel) 75%, transparent);
+  border-radius: 26px;
+  border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   box-shadow: var(--shadow-1);
@@ -124,6 +198,7 @@
 .sheetTitle{
   font-weight: 800;
   font-size: 16px;
+  letter-spacing: -0.01em;
 }
 
 .close{
@@ -156,7 +231,7 @@
 .metaLink{
   font-size: 13px;
   color: var(--ink);
-  opacity: .9;
+  opacity: .92;
 }
 
 .metaMuted{
@@ -174,10 +249,12 @@
   line-height: 1.55;
 }
 
-/* Leaflet controls: gør dem lidt mere “iOS” */
-.mapWrap :global(.leaflet-control-zoom a){
-  border-radius: 12px !important;
-  border: 1px solid var(--line) !important;
-  background: var(--panel) !important;
-  color: var(--ink) !important;
+/* Safety: Leaflet tiles can “shine through” in light mode,
+   so keep overlays readable on very bright maps */
+@supports not (backdrop-filter: blur(10px)) {
+  .topHudInner,
+  .ctrlStack,
+  .sheetCard{
+    background: color-mix(in srgb, var(--bg) 94%, transparent);
+  }
 }
