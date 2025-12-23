@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import type { Map as LeafletMapType } from "leaflet";
-import Supercluster from "supercluster";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const Supercluster = require("supercluster") as any;
 import "leaflet/dist/leaflet.css";
 import styles from "./MapPage.module.css";
 
