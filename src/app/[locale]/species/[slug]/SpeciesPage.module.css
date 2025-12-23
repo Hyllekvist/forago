@@ -206,3 +206,84 @@
   0% { transform: translateX(-60%); }
   100% { transform: translateX(60%); }
 }
+
+/* Sticky header */
+.sticky {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(10,12,16,0.72);
+  backdrop-filter: blur(14px);
+
+  border-radius: 16px;
+  padding: 10px 10px 10px;
+  box-shadow: var(--shadow-1);
+}
+
+/* Row: back + title + tiny icon */
+.stickyRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.stickyTitleWrap { min-width: 0; }
+.stickyTitle {
+  font-weight: 850;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stickyMeta {
+  margin-top: 2px;
+  font-size: 12px;
+  opacity: 0.78;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stickyIcon {
+  text-decoration: none;
+  color: inherit;
+  opacity: 0.85;
+  border-radius: 12px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.04);
+}
+
+.stickyChips {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+}
+
+.stickyChips::-webkit-scrollbar { display: none; }
+
+/* Mobile behavior */
+@media (min-width: 820px) {
+  .sticky { display: none; }
+}
+
+@media (max-width: 819px) {
+  /* vi viser sticky, og skærer hero ned */
+  .heroSide { display: none; }
+  .sub { display: none; }
+  .chips { display: none; } /* den gamle chips-row */
+  .header { margin-bottom: 12px; }
+}
+
+/* Lidt luft så sticky ikke føles klemt */
+@media (max-width: 819px) {
+  .wrap { padding-top: 14px; }
+}
