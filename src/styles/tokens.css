@@ -3,59 +3,67 @@
   --maxw: 1040px;
   --pad: 16px;
   --radius: 18px;
+  --radius-lg: 24px;
+  --radius-pill: 999px;
 
-  /* ---------- BRAND CORE ---------- */
+  /* ---------- Brand DNA (Forago) ---------- */
+  /* Primary “vibrant nature” gradient */
+  --brand-1: #31ffb5;  /* mint neon */
+  --brand-2: #5aa7ff;  /* sky */
+  --brand-3: #b86bff;  /* violet pop */
 
-  /* Primary accent (bioluminescent green → amber) */
-  --accent-1: #22c55e;   /* leaf green */
-  --accent-2: #84cc16;   /* moss */
-  --accent-3: #f59e0b;   /* amber / fungi */
+  /* Single-action accent (buttons/links) */
+  --accent: #31ffb5;
+  --accent-ink: #04110c;
 
-  /* Gradients */
-  --accent-grad: linear-gradient(
-    135deg,
-    var(--accent-1),
-    var(--accent-2) 45%,
-    var(--accent-3)
-  );
+  /* Optional: warm signal (alerts / highlights) */
+  --amber: #ffb020;
 
-  /* ---------- SURFACES ---------- */
+  /* ---------- Surfaces (Dark default) ---------- */
+  --bg: #070a0e;
+  --bg2: #090f16;
 
-  --bg: #0b0f14;          /* night forest */
-  --bg-soft: #0f1520;
+  --ink: rgba(255,255,255,0.92);
+  --muted: rgba(255,255,255,0.70);
+  --muted2: rgba(255,255,255,0.55);
 
   --panel: rgba(255,255,255,0.045);
-  --panel2: rgba(255,255,255,0.065);
+  --panel2: rgba(255,255,255,0.070);
+  --line: rgba(255,255,255,0.12);
+  --line2: rgba(255,255,255,0.18);
 
-  --line: rgba(255,255,255,0.14);
-
-  /* ---------- TEXT ---------- */
-
-  --ink: rgba(255,255,255,0.94);
-  --muted: rgba(255,255,255,0.68);
-  --faint: rgba(255,255,255,0.45);
-
-  /* ---------- CHIPS / UI ---------- */
-
-  --chipBg: rgba(255,255,255,0.06);
+  /* chips */
+  --chipBg: rgba(255,255,255,0.055);
   --chipLine: rgba(255,255,255,0.16);
 
-  /* ---------- SEMANTIC ---------- */
+  /* semantic */
+  --good: #31ffb5;
+  --goodBg: rgba(49,255,181,0.14);
+  --goodLine: rgba(49,255,181,0.32);
 
-  --goodBg: rgba(34,197,94,0.18);
-  --goodLine: rgba(34,197,94,0.45);
+  --warn: #ffb020;
+  --warnBg: rgba(255,176,32,0.12);
+  --warnLine: rgba(255,176,32,0.30);
 
-  --warnBg: rgba(245,158,11,0.14);
-  --warnLine: rgba(245,158,11,0.45);
+  --bad: #ff4d6d;
+  --badBg: rgba(255,77,109,0.12);
+  --badLine: rgba(255,77,109,0.30);
 
-  --dangerBg: rgba(239,68,68,0.14);
-  --dangerLine: rgba(239,68,68,0.45);
+  /* ---------- Effects ---------- */
+  --shadow-1: 0 10px 30px rgba(0,0,0,0.38);
+  --shadow-2: 0 18px 60px rgba(0,0,0,0.45);
 
-  /* ---------- EFFECTS ---------- */
+  /* Soft “vibrant” glow (use on hero, map HUD, key cards) */
+  --glow: 0 0 0 1px rgba(255,255,255,0.10),
+          0 18px 60px rgba(0,0,0,0.55),
+          0 0 42px rgba(49,255,181,0.16);
 
-  --shadow-1: 0 12px 32px rgba(0,0,0,0.45);
-  --shadow-2: 0 18px 48px rgba(0,0,0,0.55);
+  /* Gradient helpers */
+  --grad-brand: linear-gradient(135deg, var(--brand-1), var(--brand-2) 45%, var(--brand-3));
+  --grad-accent: linear-gradient(135deg, rgba(49,255,181,1), rgba(90,167,255,0.95));
+  --grad-quiet: radial-gradient(1200px 700px at 20% -10%, rgba(49,255,181,0.18), transparent 55%),
+                radial-gradient(900px 600px at 90% 0%, rgba(184,107,255,0.16), transparent 52%);
 
-  --glow-accent: 0 0 0 transparent;
-  --glow-soft: 0 0 24px rgba(34,197,94,0.25);
+  /* Selection */
+  --selection: rgba(49,255,181,0.28);
 }
