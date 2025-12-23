@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import type { Map as LeafletMapType } from "leaflet";
 
 // supercluster (untyped)
