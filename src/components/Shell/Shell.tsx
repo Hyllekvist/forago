@@ -1,8 +1,10 @@
-// src/components/Shell/Shell.tsx 
 "use client";
 
 import { useEffect } from "react";
 import styles from "./Shell.module.css";
+
+import { TopNav } from "@/components/Nav/TopNav";
+import { BottomNav } from "@/components/Nav/BottomNav";
 
 type Locale = "dk" | "en" | "se" | "de";
 
@@ -13,7 +15,7 @@ export default function Shell({
   children: React.ReactNode;
   locale: Locale;
 }) {
-  // Sæt html lang + data-locale (kan bruges i CSS / analytics)
+  // ok at keep, men gerne flyt lang til server layout senere
   useEffect(() => {
     if (typeof document === "undefined") return;
     document.documentElement.lang = locale === "dk" ? "da" : locale;
@@ -26,8 +28,12 @@ export default function Shell({
       <div className={styles.bg} aria-hidden="true" />
       <div className={styles.noise} aria-hidden="true" />
 
+      <TopNav locale={locale} />
+
       {/* Content */}
       <div className={styles.stack}>{children}</div>
+
+      <BottomNav locale={locale} />
     </div>
   );
 }
