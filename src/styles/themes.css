@@ -1,5 +1,5 @@
 /* themes.css
-   Responsible for theme-level variable overrides.
+   Theme-level variable overrides.
    tokens.css defines the contract, themes.css sets values per theme.
 */
 
@@ -8,7 +8,7 @@
   color-scheme: dark;
 
   /* brand / accent */
-  --accent: #6ee7b7; /* mint-green accent (nature-friendly) */
+  --accent: #6ee7b7;
 
   /* base surfaces */
   --bg: #0b0f14;
@@ -37,32 +37,33 @@
 :root[data-theme="light"] {
   color-scheme: light;
 
-  /* keep accent but slightly deeper for contrast */
-  --accent: #10b981; /* emerald */
+  /* Accent lidt dybere så den holder på hvid */
+  --accent: #0ea371; /* dybere emerald */
 
-  /* Base */
-  --bg: #f6faf8;                /* warm minty white */
-  --ink: rgba(15, 23, 42, 0.92); /* slate-900-ish */
+  /* Base: mere neutral (mindre mint) -> mere “premium/clean” */
+  --bg: #f7fafc; /* neutral cool white */
+
+  --ink: rgba(15, 23, 42, 0.92);
   --muted: rgba(15, 23, 42, 0.62);
 
-  /* Surfaces (IMPORTANT: not transparent-white on white) */
-  --panel: rgba(255, 255, 255, 0.90);
-  --panel2: rgba(255, 255, 255, 0.78);
+  /* Surfaces: tydelig separation fra bg */
+  --panel: rgba(255, 255, 255, 0.96);
+  --panel2: rgba(248, 250, 252, 0.92); /* en anelse “cool” */
 
-  /* Lines need to exist in lightmode */
-  --line: rgba(15, 23, 42, 0.12);
+  /* Lines: en smule stærkere end før (ellers flyder kortene) */
+  --line: rgba(15, 23, 42, 0.14);
 
-  /* Chips should be slightly tinted so they’re visible */
-  --chipBg: rgba(15, 23, 42, 0.04);
-  --chipLine: rgba(15, 23, 42, 0.14);
+  /* Chips: skal kunne ses på panel uden at blive “grå klatter” */
+  --chipBg: rgba(15, 23, 42, 0.05);
+  --chipLine: rgba(15, 23, 42, 0.16);
 
-  /* Status tuned for light */
-  --goodBg: rgba(16, 185, 129, 0.14);
-  --goodLine: rgba(16, 185, 129, 0.30);
+  /* Status: mere “tinted surface” end “transparent maling” */
+  --goodBg: rgba(14, 163, 113, 0.14);
+  --goodLine: rgba(14, 163, 113, 0.30);
 
-  --warnBg: rgba(245, 158, 11, 0.16);
-  --warnLine: rgba(245, 158, 11, 0.30);
+  --warnBg: rgba(245, 158, 11, 0.18);
+  --warnLine: rgba(245, 158, 11, 0.32);
 
-  /* Light shadows must be subtle, not “dirty” */
-  --shadow-1: 0 12px 28px rgba(15, 23, 42, 0.10);
+  /* Shadow: lidt mere definition + mindre “dirty” */
+  --shadow-1: 0 14px 30px rgba(15, 23, 42, 0.12);
 }
