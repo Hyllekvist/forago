@@ -30,7 +30,7 @@ export default async function GuideSlugPage({
   const locale: Locale = params.locale;
   const slug = params.slug;
 
-  const supabase = supabaseServer();
+const supabase = await supabaseServer();
 
   const { data, error } = await supabase
     .from("guides")
