@@ -121,7 +121,7 @@ export async function generateMetadata({
   const { locale: locParam, slug } = params;
   if (!isLocale(locParam)) return { title: "Forago" };
 
-  const supabase = supabaseServer();
+const supabase = await supabaseServer();
 
   const { data: sp } = await supabase
     .from("species")
@@ -162,7 +162,7 @@ export default async function SpeciesPage({
   if (!isLocale(locParam)) return notFound();
   const locale = locParam;
 
-  const supabase = supabaseServer();
+const supabase = await supabaseServer();
   const month = currentMonthUTC();
 
   // midlertidigt: land = locale
