@@ -29,7 +29,7 @@ export default async function GuidesPage({ params }: { params: { locale: string 
   if (!isLocale(params.locale)) return notFound();
   const locale = params.locale;
 
-  const supabase = supabaseServer();
+const supabase = await supabaseServer();
 
   const { data, error } = await supabase
     .from("guides")
