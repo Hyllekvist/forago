@@ -11,4 +11,4 @@
 /* Light mode: mindre “tung” */
 :global(:root[data-theme="light"]) .card {
   box-shadow: var(--shadow-1);
-}
+} 
