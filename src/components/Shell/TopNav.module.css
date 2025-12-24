@@ -1,124 +1,112 @@
-.header {
+.header{
   position: sticky;
   top: 0;
   z-index: 60;
 
-  padding: 14px var(--pad) 10px;
-}
-
-.inner {
-  max-width: var(--maxw);
-  margin: 0 auto;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-
-  padding: 10px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--bg) 78%, transparent);
-
+  /* glass */
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-
-  box-shadow: var(--shadow-1);
-
-  /* vigtigt for at undgå “GuidesLogin” overlap */
-  min-width: 0;
 }
 
-.brand {
+.hairline{
+  height: 1px;
+  background: var(--line);
+  opacity: 0.9;
+}
+
+.inner{
+  max-width: var(--maxw, 1120px);
+  margin: 0 auto;
+  padding: 12px var(--pad, 16px);
+
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Brand */
+.brand{
   display: inline-flex;
   align-items: center;
   gap: 10px;
 
   min-width: 0;
+  padding: 8px 10px;
+  border-radius: 14px;
+
+  color: var(--ink);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.dot{
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 30% 30%, var(--accent), rgba(255,255,255,0.25));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+  flex: 0 0 auto;
+}
+
+.word{
+  font-size: 16px;
+  line-height: 1;
   white-space: nowrap;
 }
 
-.mark {
-  width: 14px;
-  height: 14px;
-  border-radius: 999px;
-
-  background: radial-gradient(circle at 30% 30%, #7dd3fc, #a78bfa 45%, #34d399 100%);
-  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.25);
-}
-
-.word {
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  color: var(--ink);
-}
-
-.right {
+/* Nav */
+.nav{
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
 
-  /* gør at højre side kan krympe uden overlap */
+  flex-wrap: nowrap;
   min-width: 0;
-  flex: 1;
 }
 
-.link {
+.link{
   display: inline-flex;
   align-items: center;
   justify-content: center;
 
-  padding: 10px 12px;
-  border-radius: 999px;
+  padding: 8px 10px;
+  border-radius: 12px;
 
   color: var(--muted);
   font-weight: 650;
+  font-size: 14px;
   line-height: 1;
-  white-space: nowrap;
 
   border: 1px solid transparent;
+  background: transparent;
+
+  white-space: nowrap;
 }
 
-.link:hover {
+.active{
   color: var(--ink);
-  border-color: color-mix(in srgb, var(--line) 70%, transparent);
-  background: var(--panel);
+  border-color: var(--line);
+  background: color-mix(in srgb, var(--panel) 85%, transparent);
 }
 
-.hairline {
-  max-width: var(--maxw);
-  margin: 10px auto 0;
-  height: 1px;
-  background: color-mix(in srgb, var(--line) 60%, transparent);
-  opacity: 0.8;
+.toggle{
+  display: inline-flex;
+  align-items: center;
 }
 
-/* --- Mobile: undgå overlap ved at “komprimere” links --- */
-@media (max-width: 420px) {
-  .header {
-    padding: 12px var(--pad) 8px;
-  }
-
-  .inner {
-    padding: 10px 10px;
-  }
-
-  .right {
+/* Mobile: ingen overlap — links bliver bare lidt tight */
+@media (max-width: 420px){
+  .inner{
+    grid-template-columns: 1fr auto;
+    padding: 10px 12px;
     gap: 8px;
   }
 
-  .link {
-    padding: 9px 10px;
+  .link{
+    padding: 8px 8px;
     font-size: 13px;
-  }
-}
-
-@media (max-width: 360px) {
-  /* På helt små skærme: behold kun “Guides” som tekst,
-     og gør Login super-kompakt for at undgå kollision */
-  .link {
-    padding: 9px 9px;
-    font-size: 12.5px;
   }
 }
