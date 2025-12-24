@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
+import Link from "next/link"; 
 import { supabaseServer } from "@/lib/supabase/server";
 
 export const revalidate = 3600;
