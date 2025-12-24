@@ -11,7 +11,12 @@ export function CardLink({ href, children, className }: Props) {
   return (
     <Link
       href={href}
-      className={`${styles.card}${className ? ` ${className}` : ""}`}
+      className={[
+        styles.card,
+        "hoverable",
+        "pressable",
+        className ?? "",
+      ].join(" ")}
     >
       {children}
     </Link>
