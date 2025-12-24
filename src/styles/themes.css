@@ -29,6 +29,20 @@
   --warnBg: rgba(245, 158, 11, 0.12);
   --warnLine: rgba(245, 158, 11, 0.32);
 
+  /* interactive */
+  --tapBg: color-mix(in srgb, var(--ink) 8%, transparent);
+  --tapLine: color-mix(in srgb, var(--ink) 14%, transparent);
+
+  /* elevated glass (header/bottomnav) */
+  --glassBg: color-mix(in srgb, var(--bg) 82%, transparent);
+  --glassLine: var(--line);
+
+  /* focus */
+  --focus: color-mix(in srgb, var(--accent) 65%, transparent);
+
+  /* subtle text */
+  --muted2: color-mix(in srgb, var(--ink) 55%, transparent);
+
   /* shadows */
   --shadow-1: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
@@ -38,46 +52,46 @@
   color-scheme: light;
 
   /* Accent lidt dybere så den holder på hvid */
-  --accent: #0ea371; /* dybere emerald */
+  --accent: #0ea371;
 
-  /* Base: mere neutral (mindre mint) -> mere “premium/clean” */
-  --bg: #f7fafc; /* neutral cool white */
+  /* Base: mere neutral -> mere “premium/clean” */
+  --bg: #f7fafc;
 
   --ink: rgba(15, 23, 42, 0.92);
   --muted: rgba(15, 23, 42, 0.62);
 
   /* Surfaces: tydelig separation fra bg */
   --panel: rgba(255, 255, 255, 0.96);
-  --panel2: rgba(248, 250, 252, 0.92); /* en anelse “cool” */
+  --panel2: rgba(248, 250, 252, 0.92);
 
-  /* Lines: en smule stærkere end før (ellers flyder kortene) */
+  /* Lines */
   --line: rgba(15, 23, 42, 0.14);
 
-  /* Chips: skal kunne ses på panel uden at blive “grå klatter” */
+  /* Chips */
   --chipBg: rgba(15, 23, 42, 0.05);
   --chipLine: rgba(15, 23, 42, 0.16);
 
-  /* Status: mere “tinted surface” end “transparent maling” */
+  /* Status */
   --goodBg: rgba(14, 163, 113, 0.14);
   --goodLine: rgba(14, 163, 113, 0.30);
 
   --warnBg: rgba(245, 158, 11, 0.18);
   --warnLine: rgba(245, 158, 11, 0.32);
 
-  /* Shadow: lidt mere definition + mindre “dirty” */
+  /* interactive (lidt mere tydelig i light) */
+  --tapBg: color-mix(in srgb, var(--ink) 6%, transparent);
+  --tapLine: color-mix(in srgb, var(--ink) 12%, transparent);
+
+  /* glass (lidt mere “solid” i light ellers ser det snavset ud) */
+  --glassBg: rgba(255, 255, 255, 0.78);
+  --glassLine: rgba(15, 23, 42, 0.12);
+
+  /* focus */
+  --focus: color-mix(in srgb, var(--accent) 55%, transparent);
+
+  /* subtle text */
+  --muted2: color-mix(in srgb, var(--ink) 55%, transparent);
+
+  /* Shadow */
   --shadow-1: 0 14px 30px rgba(15, 23, 42, 0.12);
 }
-
-/* interactive */
---tapBg: color-mix(in srgb, var(--ink) 8%, transparent);
---tapLine: color-mix(in srgb, var(--ink) 14%, transparent);
-
-/* elevated glass (header/bottomnav) */
---glassBg: color-mix(in srgb, var(--bg) 82%, transparent);
---glassLine: var(--line);
-
-/* focus */
---focus: color-mix(in srgb, var(--accent) 65%, transparent);
-
-/* subtle text on bright surfaces */
---muted2: color-mix(in srgb, var(--ink) 55%, transparent);
