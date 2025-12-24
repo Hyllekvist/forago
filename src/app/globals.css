@@ -74,3 +74,32 @@ img { max-width: 100%; height: auto; display: block; }
 
 /* Optional: smooth scroll */
 html { scroll-behavior: smooth; }
+
+/* ---------- Global interactive feel ---------- */
+
+a, button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:is(a, button, [role="button"], input, select, textarea):focus-visible{
+  outline: none;
+  box-shadow: var(--focusRing);
+  border-radius: 12px;
+}
+
+@media (hover:hover){
+  .hoverable{
+    transition: transform var(--t) var(--ease), box-shadow var(--t) var(--ease), background var(--t) var(--ease), border-color var(--t) var(--ease);
+  }
+  .hoverable:hover{ transform: translateY(-1px); }
+}
+
+.pressable{
+  transition: transform var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+}
+.pressable:active{ transform: translateY(1px); }
+
+@media (prefers-reduced-motion: reduce){
+  *{ transition: none !important; scroll-behavior: auto !important; }
+}
+
