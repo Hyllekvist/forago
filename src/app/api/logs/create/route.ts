@@ -1,3 +1,4 @@
+// src/app/api/logs/create/route.ts
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 
@@ -15,7 +16,7 @@ function extFromFile(file: File) {
 }
 
 export async function POST(req: Request) {
-  const supabase = supabaseServer();
+  const supabase = supabaseServer(); // <- IKKE await
 
   const { data: auth, error: authErr } = await supabase.auth.getUser();
   if (authErr || !auth?.user) {
