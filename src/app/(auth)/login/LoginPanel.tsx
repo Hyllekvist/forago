@@ -1,61 +1,59 @@
+// src/components/Auth/LoginPanel.tsx
 "use client";
 
 import { useMemo, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
 export function LoginPanel() {
+  const supabase = useMemo(() => {
+    return createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+  }, []);
+
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const redirectTo = useMemo(() => {
-    // Brug fast prod-url hvis den findes (anbefalet), ellers fallback til origin.
-    const base =
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      (typeof window !== "undefined" ? window.location.origin : "");
-
-    try {
-      return new URL("/callback", base).toString();
-    } catch {
-      return `${base}/callback`;
-    }
-  }, []);
-
   async function sendMagicLink() {
     setErr(null);
-    setLoading(true);
 
+    const trimmed = email.trim();
+    if (!trimmed) return;
+
+    setLoading(true);
     try {
-      const clean = email.trim().toLowerCase();
+      const origin = window.location.origin;
+      const redirectTo = `${origin}/callback`;
 
       const { error } = await supabase.auth.signInWithOtp({
-        email: clean,
+        email: trimmed,
         options: {
           emailRedirectTo: redirectTo,
         },
       });
 
       if (error) {
-        // Vis præcis Supabase-fejl (den du har brug for)
+        // Den her er guld: den fortæller præcist hvorfor det fejler
+        console.log("signInWithOtp error:", error);
         throw error;
       }
 
       setSent(true);
     } catch (e: any) {
-      // Supabase giver ofte { message, status, name }
+      console.log("magic link error raw:", e);
+
+      // SupabaseError har typisk `message`
       const msg =
         e?.message ||
         e?.error_description ||
-        JSON.stringify(e, null, 2) ||
-        "Error sending magic link email";
+        e?.details ||
+        (typeof e === "string" ? e : null) ||
+        "Noget gik galt";
 
-      setErr(msg);
+      setErr(String(msg));
     } finally {
       setLoading(false);
     }
@@ -74,27 +72,48 @@ export function LoginPanel() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Email"
             inputMode="email"
-            autoCapitalize="none"
-            autoCorrect="off"
-            style={{ width: "100%", padding: 12, borderRadius: 12 }}
+            autoComplete="email"
+            style={{
+              width: "100%",
+              padding: 12,
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(255,255,255,0.04)",
+              color: "inherit",
+            }}
           />
+
           <button
             onClick={sendMagicLink}
             disabled={loading || !email.trim()}
-            style={{ width: "100%", marginTop: 12, padding: 12, borderRadius: 12 }}
+            style={{
+              width: "100%",
+              marginTop: 12,
+              padding: 12,
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.14)",
+              background: "rgba(255,255,255,0.06)",
+              color: "inherit",
+              cursor: loading ? "default" : "pointer",
+              opacity: loading ? 0.75 : 1,
+            }}
           >
             {loading ? "Sender…" : "Send login-link"}
           </button>
 
           {err ? (
-            <pre style={{ marginTop: 10, whiteSpace: "pre-wrap", opacity: 0.9 }}>
+            <div
+              style={{
+                marginTop: 10,
+                padding: "10px 12px",
+                borderRadius: 12,
+                border: "1px solid rgba(255, 80, 80, 0.35)",
+                background: "rgba(255, 80, 80, 0.10)",
+              }}
+            >
               {err}
-            </pre>
+            </div>
           ) : null}
-
-          <div style={{ marginTop: 10, fontSize: 12, opacity: 0.7 }}>
-            redirectTo: {redirectTo}
-          </div>
         </>
       )}
     </div>
