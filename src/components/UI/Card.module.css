@@ -21,3 +21,11 @@
   padding: 14px;
 }
 .card:hover{ border-color: color-mix(in srgb, var(--line) 70%, var(--accent) 30%); }
+
+.card{
+  border-radius: var(--r-lg);
+  border: var(--stroke) solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--shadow-1);
+  padding: var(--s-3);
+}
