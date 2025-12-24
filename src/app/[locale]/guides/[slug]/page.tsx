@@ -1,76 +1,112 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import Link from "next/link"; 
 import { supabaseServer } from "@/lib/supabase/server";
+import styles from "./GuidePage.module.css";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
-const SUPPORTED_LOCALES = ["dk", "en"] as const;
-type Locale = (typeof SUPPORTED_LOCALES)[number];
+type Params = { locale: string; slug: string };
 
-function isLocale(x: string): x is Locale {
-  return (SUPPORTED_LOCALES as readonly string[]).includes(x);
+type GuideOne = {
+  slug: string;
+  is_published: boolean;
+  guide_translations: Array<{
+    locale: string;
+    title: string | null;
+    excerpt: string | null;
+    body: string | null;
+  }>;
+};
+
+function pickTranslation<T extends { locale: string }>(
+  list: T[],
+  locale: string
+) {
+  return (
+    list.find((t) => t.locale === locale) ??
+    list.find((t) => t.locale === "dk") ??
+    list[0] ??
+    null
+  );
 }
 
-function renderPlain(body: string) {
-  // Simple, safe rendering without extra deps: paragraphs + line breaks
-  const parts = body.split(/\n{2,}/g).map((p) => p.trim()).filter(Boolean);
-  return parts.map((p, i) => (
-    <p key={i} style={{ margin: "0 0 12px", opacity: 0.92, lineHeight: 1.55, whiteSpace: "pre-wrap" }}>
-      {p}
-    </p>
-  ));
-}
-
-export default async function GuideSlugPage({
-  params,
-}: {
-  params: { locale: string; slug: string };
-}) {
-  if (!isLocale(params.locale)) return notFound();
-  const locale: Locale = params.locale;
+export async function generateMetadata({ params }: { params: Params }) {
+  const locale = params.locale || "dk";
   const slug = params.slug;
 
-const supabase = await supabaseServer();
-
-  const { data, error } = await supabase
+  const supabase = await supabaseServer();
+  const { data } = await supabase
     .from("guides")
-    .select("slug, is_published, guide_translations(title, excerpt, body, locale)")
+    .select("slug, is_published, guide_translations(locale, title, excerpt)")
     .eq("slug", slug)
     .maybeSingle();
 
-  if (error) throw error;
-  if (!data || !data.is_published) return notFound();
+  const g = data as unknown as GuideOne | null;
+  const t = g ? pickTranslation(g.guide_translations ?? [], locale) : null;
 
-  const t = (data as any).guide_translations?.find((x: any) => x.locale === locale);
-  const title = (t?.title as string) || slug;
-  const body = (t?.body as string) || "";
+  return {
+    title: `${t?.title || slug} · Guide · Forago`,
+    description: t?.excerpt || "Guide på Forago.",
+  };
+}
+
+export default async function GuideDetailPage({ params }: { params: Params }) {
+  const locale = params.locale || "dk";
+  const slug = params.slug;
+
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase
+    .from("guides")
+    .select("slug, is_published, guide_translations(locale, title, excerpt, body)")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error) notFound();
+
+  const g = data as unknown as GuideOne | null;
+  if (!g || !g.is_published) notFound();
+
+  const t = pickTranslation(g.guide_translations ?? [], locale);
+  const title = t?.title || slug;
+  const excerpt = t?.excerpt || null;
+  const body = t?.body || "";
 
   return (
-    <main style={{ padding: 16, maxWidth: 820, margin: "0 auto" }}>
-      <p style={{ margin: 0 }}>
-        <Link href={`/${locale}/guides`} style={{ textDecoration: "none" }}>
-          ← {locale === "dk" ? "Guides" : "Guides"}
+    <main className={styles.wrap}>
+      <header className={styles.topbar}>
+        <Link className={styles.back} href={`/${locale}/guides`}>
+          ← Guides
         </Link>
-      </p>
 
-      <h1 style={{ margin: "10px 0 8px" }}>{title}</h1>
-      {t?.excerpt ? (
-        <p style={{ margin: "0 0 14px", opacity: 0.8 }}>{t.excerpt}</p>
-      ) : null}
+        <div className={styles.topActions}>
+          <Link className={styles.pill} href={`/${locale}/feed`}>
+            Feed
+          </Link>
+          <Link className={styles.pill} href={`/${locale}/log`}>
+            Log
+          </Link>
+        </div>
+      </header>
 
-      <article
-        style={{
-          border: "1px solid rgba(255,255,255,0.10)",
-          borderRadius: 14,
-          padding: 14,
-          background: "rgba(255,255,255,0.03)",
-        }}
-      >
-        {body ? renderPlain(body) : (
-          <p style={{ opacity: 0.85 }}>
-            {locale === "dk" ? "Tilføj body i DB." : "Add body in DB."}
-          </p>
-        )}
+      <article className={styles.article}>
+        <h1 className={styles.h1}>{title}</h1>
+        {excerpt ? <p className={styles.excerpt}>{excerpt}</p> : null}
+
+        <div className={styles.rule} />
+
+        {/* body forventes at være ren tekst/markdown-ish.
+            Hvis du gemmer HTML, så skift til dangerouslySetInnerHTML. */}
+        <div className={styles.body}>
+          {body.split("\n").map((p, i) =>
+            p.trim() ? (
+              <p key={i} className={styles.p}>
+                {p}
+              </p>
+            ) : (
+              <div key={i} className={styles.spacer} />
+            )
+          )}
+        </div>
       </article>
     </main>
   );
