@@ -103,3 +103,17 @@ a, button {
   *{ transition: none !important; scroll-behavior: auto !important; }
 }
 
+.hoverable:hover{
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+}
+
+.pressable:active{
+  transform: translateY(1px);
+}
+
+/* fælles fokus-ring */
+.focusRing:focus-visible{
+  outline: none;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 40%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
