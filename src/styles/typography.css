@@ -1,42 +1,37 @@
-/* FORAGO TYPOGRAPHY — baseline + utilities */
+:root{
+  /* font stack */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
 
-/* Baseline */
-body {
-  font-size: 15px;
-  line-height: 1.65;
-  font-weight: 450;
-  color: var(--ink);
+  /* scale */
+  --fs-1: 12px;  /* meta */
+  --fs-2: 14px;  /* body */
+  --fs-3: 16px;  /* body+ */
+  --fs-4: 18px;  /* h4 */
+  --fs-5: 22px;  /* h3 */
+  --fs-6: 28px;  /* h2 */
+  --fs-7: 36px;  /* h1 */
+
+  --lh-tight: 1.12;
+  --lh-body: 1.6;
+
+  --ls-tight: -0.02em;
+  --ls-mid: -0.01em;
 }
 
-h1, h2, h3, h4 {
-  margin: 0;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--ink);
-}
+/* Base text helpers */
+.h1{ font-size: var(--fs-7); line-height: var(--lh-tight); letter-spacing: var(--ls-tight); font-weight: 850; }
+.h2{ font-size: var(--fs-6); line-height: 1.16; letter-spacing: var(--ls-tight); font-weight: 800; }
+.h3{ font-size: var(--fs-5); line-height: 1.22; letter-spacing: var(--ls-mid); font-weight: 780; }
+.h4{ font-size: var(--fs-4); line-height: 1.28; letter-spacing: var(--ls-mid); font-weight: 740; }
 
-h1 { font-size: clamp(28px, 4vw, 36px); line-height: 1.1; }
-h2 { font-size: 20px; line-height: 1.25; letter-spacing: -0.015em; }
-h3 { font-size: 17px; line-height: 1.35; font-weight: 750; }
-h4 { font-size: 14px; line-height: 1.4; font-weight: 700; letter-spacing: -0.01em; }
+.p{ font-size: var(--fs-2); line-height: var(--lh-body); }
+.pStrong{ font-size: var(--fs-2); line-height: var(--lh-body); font-weight: 650; }
+.meta{ font-size: var(--fs-1); line-height: 1.25; color: var(--muted2, var(--muted)); }
 
-p { margin: 0; line-height: 1.7; color: var(--ink); }
-
-small { color: var(--muted); font-size: 13px; line-height: 1.55; }
-
-/* Utilities (brug dem i UI, så alt matcher) */
-.t-h1 { font-size: clamp(28px, 4vw, 36px); line-height: 1.1; font-weight: 850; letter-spacing: -0.02em; }
-.t-h2 { font-size: 20px; line-height: 1.25; font-weight: 800; letter-spacing: -0.015em; }
-.t-h3 { font-size: 17px; line-height: 1.35; font-weight: 750; }
-.t-h4 { font-size: 14px; line-height: 1.4; font-weight: 700; letter-spacing: -0.01em; }
-
-.t-body { font-size: 15px; line-height: 1.7; font-weight: 450; }
-.t-muted { color: var(--muted); }
-.t-meta { color: var(--muted); font-size: 13px; line-height: 1.55; }
-.t-subtle { color: var(--muted2, var(--muted)); font-size: 12px; }
-
-a.inline { color: var(--accent); font-weight: 600; }
-
-::selection {
-  background: color-mix(in srgb, var(--accent) 40%, transparent);
+@media (max-width: 640px){
+  :root{
+    --fs-7: 32px;
+    --fs-6: 26px;
+    --fs-5: 20px;
+  }
 }
