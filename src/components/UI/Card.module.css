@@ -1,7 +1,14 @@
-.card{
+.card {
   border-radius: var(--radius);
   border: 1px solid var(--line);
   background: var(--panel);
   box-shadow: var(--shadow-1);
   padding: 14px;
+
+  color: var(--ink);
+}
+
+/* Light mode: mindre “tung” */
+:global(:root[data-theme="light"]) .card {
+  box-shadow: var(--shadow-1);
 }
