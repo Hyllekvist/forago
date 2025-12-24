@@ -174,3 +174,8 @@
   .actions{ flex-direction: column; }
   .photo{ height: 220px; }
 }
+
+.primaryBtn:disabled{
+  opacity: .65;
+  filter: saturate(.85);
+}
