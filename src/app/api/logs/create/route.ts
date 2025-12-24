@@ -15,16 +15,13 @@ function extFromFile(file: File) {
 }
 
 export async function POST(req: Request) {
-  // ❗ VIGTIGT: IKKE await
   const supabase = supabaseServer();
 
-  // 1) Auth check
   const { data: auth, error: authErr } = await supabase.auth.getUser();
   if (authErr || !auth?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // 2) Form data
   let form: FormData;
   try {
     form = await req.formData();
@@ -33,7 +30,6 @@ export async function POST(req: Request) {
   }
 
   const locale = String(form.get("locale") ?? "dk");
-
   const speciesQueryRaw = String(form.get("speciesQuery") ?? "");
   const speciesQuery = speciesQueryRaw.trim() || null;
 
@@ -46,7 +42,6 @@ export async function POST(req: Request) {
   const file = form.get("photo");
   const photoFile = file instanceof File ? file : null;
 
-  // 3) Create log row
   const { data: created, error: insErr } = await supabase
     .from("logs")
     .insert({
@@ -65,7 +60,6 @@ export async function POST(req: Request) {
 
   const logId = created.id as string;
 
-  // 4) Upload photo (optional)
   if (photoFile) {
     const ext = extFromFile(photoFile);
     const path = `${auth.user.id}/${logId}.${ext}`;
@@ -78,7 +72,6 @@ export async function POST(req: Request) {
       });
 
     if (upErr) {
-      // rollback hvis upload fejler
       await supabase.from("logs").delete().eq("id", logId);
       return NextResponse.json({ error: "Photo upload failed" }, { status: 500 });
     }
