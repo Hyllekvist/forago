@@ -1,0 +1,39 @@
+.chip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+
+  height: 34px;
+  padding: 0 12px;
+
+  border-radius: 999px;
+  border: 1px solid var(--chipLine);
+  background: var(--chipBg);
+
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.link{
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.active{
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--chipLine));
+  background: color-mix(in srgb, var(--accent) 12%, var(--chipBg));
+}
+
+.good{
+  border-color: var(--goodLine);
+  background: var(--goodBg);
+  color: color-mix(in srgb, var(--ink) 82%, var(--accent));
+}
+
+.warn{
+  border-color: var(--warnLine);
+  background: var(--warnBg);
+  color: var(--ink);
+}
