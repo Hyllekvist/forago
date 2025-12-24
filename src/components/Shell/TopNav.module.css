@@ -1,66 +1,96 @@
-.bar { 
+.header{
   position: sticky;
   top: 0;
-  z-index: 50;
-  padding: 12px var(--pad);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  background: color-mix(in srgb, var(--bg) 78%, transparent);
-  border-bottom: 1px solid var(--line);
+  z-index: 70;
+  padding: 10px 12px;
+
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
-.inner {
+.inner{
   max-width: var(--maxw);
   margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 14px;
+
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 72%, transparent);
+  box-shadow: var(--shadow-1);
+  padding: 10px 12px;
 }
 
-.brand {
+.brand{
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  text-decoration: none;
+  color: var(--ink);
+  min-width: 0;
+}
+
+.mark{
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  background: var(--grad-brand);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.16),
+    0 10px 24px rgba(0,0,0,0.35),
+    0 0 26px rgba(49,255,181,0.22);
+}
+
+.word{
   font-weight: 900;
   letter-spacing: -0.02em;
+  font-size: 15px;
 }
 
-.brandMark {
-  width: 34px;
-  height: 34px;
-  border-radius: 12px;
-  background: var(--accent-grad);
-  box-shadow: 0 18px 40px rgba(34,197,94,0.18);
-}
-
-.nav {
-  display: flex;
+.right{
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
-.link {
-  padding: 10px 12px;
-  border-radius: 999px;
+.link,
+.linkActive{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 8px 10px;
+  border-radius: var(--radius-pill);
   border: 1px solid transparent;
-  color: var(--muted);
+
+  color: color-mix(in srgb, var(--muted) 95%, transparent);
+  background: transparent;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
   font-weight: 650;
+  font-size: 13px;
+  white-space: nowrap;
 }
 
-.link:hover {
+.link:hover{
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.08);
   color: var(--ink);
-  border-color: var(--chipLine);
-  background: var(--chipBg);
 }
 
-.active {
+.linkActive{
+  background: color-mix(in srgb, var(--goodBg) 55%, rgba(255,255,255,0.02));
+  border-color: color-mix(in srgb, var(--goodLine) 60%, var(--line));
   color: var(--ink);
-  border-color: color-mix(in srgb, var(--accent-1) 55%, var(--chipLine));
-  background: linear-gradient(
-    180deg,
-    rgba(34,197,94,0.14),
-    rgba(255,255,255,0.04)
-  );
-  box-shadow: 0 14px 34px rgba(34,197,94,0.12);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.06);
+}
+
+.hairline{
+  max-width: var(--maxw);
+  margin: 10px auto 0;
+  height: 1px;
+  background: color-mix(in srgb, var(--line) 70%, transparent);
+  opacity: 0.65;
 }
