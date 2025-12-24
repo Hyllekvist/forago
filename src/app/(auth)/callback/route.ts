@@ -1,3 +1,4 @@
+// src/app/(auth)/callback/route.ts
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 
@@ -9,13 +10,13 @@ export async function GET(req: Request) {
     return NextResponse.redirect(new URL("/dk/login?e=missing_code", url.origin));
   }
 
-  const supabase = supabaseServer();
+  const supabase = supabaseServer(); // <- IKKE await
+
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
     return NextResponse.redirect(new URL("/dk/login?e=callback_failed", url.origin));
   }
 
-  // nu burde session-cookie være sat -> redirect til app
   return NextResponse.redirect(new URL("/dk/feed", url.origin));
 }
