@@ -1,12 +1,46 @@
-.btn{
-  width: 38px;
-  height: 34px;
-  border-radius: 14px;
-  border: 1px solid var(--line);
-  background: var(--panel);
+.toggle {
+  width: 36px;
+  height: 32px;
+  border-radius: 12px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--muted2, var(--muted));
+
+  cursor: pointer;
+  padding: 0;
+}
+
+/* Hover / active = samme sprog som nav */
+.toggle:hover {
+  background: var(--tapBg);
+  border-color: var(--tapLine);
   color: var(--ink);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  cursor:pointer;
+}
+
+.toggle:active {
+  transform: translateY(1px);
+}
+
+/* Fokus (keyboard) */
+.toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus);
+}
+
+/* Ikonet */
+.icon {
+  font-size: 16px;
+  line-height: 1;
+  opacity: 0.9;
+  transform: translateY(-0.5px); /* optisk centreret */
+}
+
+/* Light mode: lidt mere rolig kontrast */
+:global(:root[data-theme="light"]) .toggle {
+  color: var(--muted2);
 }
