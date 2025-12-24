@@ -1,0 +1,26 @@
+.card {
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--shadow-1);
+  padding: 14px;
+
+  color: var(--ink);
+  text-decoration: none;
+
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 34px rgba(0,0,0,0.38);
+}
+
+.card:active {
+  transform: translateY(0);
+}
+
+.card:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus);
+}
