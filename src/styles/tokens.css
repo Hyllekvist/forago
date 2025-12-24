@@ -2,6 +2,7 @@
   /* layout */
   --maxw: 1120px;
   --pad: 16px;
+    --bottom-nav-h: 92px;
 
   /* radii */
   --r-sm: 12px;
