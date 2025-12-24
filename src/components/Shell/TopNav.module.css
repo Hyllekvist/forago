@@ -1,33 +1,26 @@
-.header{
+.header {
   position: sticky;
   top: 0;
   z-index: 60;
 
-  /* glass */
-  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  background: var(--glassBg);
+  border-bottom: 1px solid var(--glassLine);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
 }
 
-.hairline{
-  height: 1px;
-  background: var(--line);
-  opacity: 0.9;
-}
-
-.inner{
+.inner {
   max-width: var(--maxw, 1120px);
   margin: 0 auto;
-  padding: 12px var(--pad, 16px);
+  padding: 10px var(--pad, 16px);
 
-  display: grid;
-  grid-template-columns: 1fr auto;
+  display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 /* Brand */
-.brand{
+.brand {
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -39,35 +32,45 @@
   color: var(--ink);
   font-weight: 800;
   letter-spacing: -0.01em;
+  text-decoration: none;
 }
 
-.dot{
+.brand:active {
+  background: var(--tapBg);
+  border: 1px solid var(--tapLine);
+}
+
+.dot {
   width: 12px;
   height: 12px;
   border-radius: 999px;
-  background: radial-gradient(circle at 30% 30%, var(--accent), rgba(255,255,255,0.25));
+  background: radial-gradient(
+    circle at 30% 30%,
+    var(--accent),
+    color-mix(in srgb, var(--accent) 10%, transparent)
+  );
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
   flex: 0 0 auto;
 }
 
-.word{
+.word {
   font-size: 16px;
   line-height: 1;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Nav */
-.nav{
+/* Right side */
+.right {
+  margin-left: auto;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-
-  flex-wrap: nowrap;
+  gap: 8px;
   min-width: 0;
 }
 
-.link{
+.link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -75,38 +78,41 @@
   padding: 8px 10px;
   border-radius: 12px;
 
-  color: var(--muted);
+  color: var(--muted2, var(--muted));
   font-weight: 650;
   font-size: 14px;
   line-height: 1;
+  text-decoration: none;
 
   border: 1px solid transparent;
   background: transparent;
-
   white-space: nowrap;
 }
 
-.active{
-  color: var(--ink);
-  border-color: var(--line);
-  background: color-mix(in srgb, var(--panel) 85%, transparent);
+.link:active {
+  background: var(--tapBg);
+  border-color: var(--tapLine);
 }
 
-.toggle{
+.active {
+  color: var(--ink);
+  border-color: var(--glassLine);
+  background: var(--tapBg);
+}
+
+.toggle {
   display: inline-flex;
   align-items: center;
+  flex: 0 0 auto;
 }
 
-/* Mobile: ingen overlap — links bliver bare lidt tight */
-@media (max-width: 420px){
-  .inner{
-    grid-template-columns: 1fr auto;
+/* Mobile: undgå overlap -> skjul labels, behold kun togglen */
+@media (max-width: 420px) {
+  .inner {
     padding: 10px 12px;
-    gap: 8px;
   }
 
-  .link{
-    padding: 8px 8px;
-    font-size: 13px;
+  .link {
+    display: none;
   }
 }
