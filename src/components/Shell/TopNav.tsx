@@ -14,21 +14,35 @@ export function TopNav({ locale }: { locale: string }) {
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
-        <Link className={styles.brand} href={`/${locale}`} aria-label="Forago home">
+        <Link
+          className={[styles.brand, "hoverable", "pressable"].join(" ")}
+          href={`/${locale}`}
+          aria-label="Forago home"
+        >
           <span className={styles.dot} aria-hidden="true" />
           <span className={styles.word}>Forago</span>
         </Link>
 
         <nav className={styles.nav} aria-label="Primary">
           <Link
-            className={`${styles.link} ${isActive(`/${locale}/guides`) ? styles.active : ""}`}
+            className={[
+              styles.link,
+              "hoverable",
+              "pressable",
+              isActive(`/${locale}/guides`) ? styles.active : "",
+            ].join(" ")}
             href={`/${locale}/guides`}
           >
             Guides
           </Link>
 
           <Link
-            className={`${styles.link} ${isActive(`/login`) ? styles.active : ""}`}
+            className={[
+              styles.link,
+              "hoverable",
+              "pressable",
+              isActive(`/login`) ? styles.active : "",
+            ].join(" ")}
             href={`/login`}
           >
             Login
