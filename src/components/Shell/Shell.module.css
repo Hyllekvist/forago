@@ -1,43 +1,47 @@
 .shell{
   min-height: 100vh;
-  position: relative;
   background: var(--bg);
   color: var(--ink);
+  position: relative;
   overflow-x: hidden;
 }
 
-/* Background layers */
+/* Vibrant but nature-friendly background layers */
 .bg{
   position: fixed;
   inset: 0;
-  z-index: 0;
   pointer-events: none;
+  z-index: 0;
 
-  /* nature-friendly vibrant identity */
+  /* “forest aurora” */
   background:
-    radial-gradient(1200px 700px at 20% -10%, rgba(49,255,181,0.18), transparent 55%),
-    radial-gradient(900px 600px at 90% 10%, rgba(255,107,197,0.14), transparent 55%),
-    radial-gradient(900px 650px at 40% 110%, rgba(255,212,84,0.10), transparent 55%),
-    radial-gradient(700px 520px at 70% 70%, rgba(120,140,255,0.10), transparent 55%),
-    linear-gradient(180deg, rgba(255,255,255,0.00), rgba(255,255,255,0.00));
+    radial-gradient(900px 700px at 20% -10%, rgba(34,197,94,0.18), transparent 60%),
+    radial-gradient(800px 700px at 85% 10%, rgba(56,189,248,0.14), transparent 55%),
+    radial-gradient(900px 800px at 65% 85%, rgba(167,139,250,0.10), transparent 60%),
+    linear-gradient(180deg, rgba(0,0,0,0.0), rgba(0,0,0,0.35));
 }
 
-/* subtle grain */
 .noise{
   position: fixed;
   inset: 0;
-  z-index: 1;
   pointer-events: none;
+  z-index: 1;
   opacity: 0.06;
   mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.7'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
 }
 
-/* page stack sits above backgrounds */
+/* Content stack */
 .stack{
   position: relative;
   z-index: 2;
 
-  /* IMPORTANT: reserve space for BottomNav */
-  padding-bottom: calc(92px + env(safe-area-inset-bottom));
+  /* IMPORTANT: plads til BottomNav */
+  padding-bottom: calc(var(--bottom-nav-h, 82px) + env(safe-area-inset-bottom));
+}
+
+/* Optional: give sider lidt mere “air” under sticky header */
+.stack > *{
+  scroll-margin-top: 80px;
 }
