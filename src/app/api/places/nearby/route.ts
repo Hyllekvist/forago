@@ -16,7 +16,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Missing/invalid lat/lng" }, { status: 400 });
   }
 
-  const supabase = supabaseServer();
+const supabase = await supabaseServer();
 
   const { data, error } = await supabase.rpc("places_nearby", {
     in_lat: lat,
