@@ -1,9 +1,6 @@
-/* -----------------------------------------
-   FORAGO — TYPOGRAPHY SYSTEM
-   Calm, readable, editorial
------------------------------------------- */
+/* FORAGO TYPOGRAPHY — baseline + utilities */
 
-/* Base */
+/* Baseline */
 body {
   font-size: 15px;
   line-height: 1.65;
@@ -11,7 +8,6 @@ body {
   color: var(--ink);
 }
 
-/* Headings */
 h1, h2, h3, h4 {
   margin: 0;
   font-weight: 800;
@@ -19,79 +15,28 @@ h1, h2, h3, h4 {
   color: var(--ink);
 }
 
-/* H1 — Page title */
-h1 {
-  font-size: clamp(28px, 4vw, 36px);
-  line-height: 1.1;
-}
+h1 { font-size: clamp(28px, 4vw, 36px); line-height: 1.1; }
+h2 { font-size: 20px; line-height: 1.25; letter-spacing: -0.015em; }
+h3 { font-size: 17px; line-height: 1.35; font-weight: 750; }
+h4 { font-size: 14px; line-height: 1.4; font-weight: 700; letter-spacing: -0.01em; }
 
-/* H2 — Section */
-h2 {
-  font-size: 20px;
-  line-height: 1.25;
-  letter-spacing: -0.015em;
-}
+p { margin: 0; line-height: 1.7; color: var(--ink); }
 
-/* H3 — Subsection */
-h3 {
-  font-size: 17px;
-  line-height: 1.35;
-  font-weight: 700;
-}
+small { color: var(--muted); font-size: 13px; line-height: 1.55; }
 
-/* H4 — Small headers / cards */
-h4 {
-  font-size: 14px;
-  line-height: 1.4;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
+/* Utilities (brug dem i UI, så alt matcher) */
+.t-h1 { font-size: clamp(28px, 4vw, 36px); line-height: 1.1; font-weight: 850; letter-spacing: -0.02em; }
+.t-h2 { font-size: 20px; line-height: 1.25; font-weight: 800; letter-spacing: -0.015em; }
+.t-h3 { font-size: 17px; line-height: 1.35; font-weight: 750; }
+.t-h4 { font-size: 14px; line-height: 1.4; font-weight: 700; letter-spacing: -0.01em; }
 
-/* Paragraphs */
-p {
-  margin: 0;
-  line-height: 1.7;
-  color: var(--ink);
-}
+.t-body { font-size: 15px; line-height: 1.7; font-weight: 450; }
+.t-muted { color: var(--muted); }
+.t-meta { color: var(--muted); font-size: 13px; line-height: 1.55; }
+.t-subtle { color: var(--muted2, var(--muted)); font-size: 12px; }
 
-/* Muted / meta text */
-.text-muted,
-small,
-.meta {
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.55;
-}
+a.inline { color: var(--accent); font-weight: 600; }
 
-/* Very subtle secondary text (dates, hints) */
-.text-subtle {
-  color: var(--muted2, var(--muted));
-  font-size: 12px;
-}
-
-/* Links */
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-a.inline {
-  color: var(--accent);
-  font-weight: 600;
-}
-
-/* Lists */
-ul, ol {
-  margin: 0;
-  padding-left: 18px;
-}
-
-li {
-  margin: 6px 0;
-  line-height: 1.6;
-}
-
-/* Selection */
 ::selection {
   background: color-mix(in srgb, var(--accent) 40%, transparent);
 }
