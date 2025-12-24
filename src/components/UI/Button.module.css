@@ -1,46 +1,46 @@
 .btn{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 
   border-radius: 14px;
   border: 1px solid transparent;
 
+  color: var(--ink);
   font-weight: 700;
   letter-spacing: -0.01em;
   line-height: 1;
 
-  cursor: pointer;
   user-select: none;
-
-  transition: transform .12s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease, color .18s ease;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
-.md{ height: 40px; padding: 0 14px; font-size: 14px; }
-.sm{ height: 34px; padding: 0 12px; font-size: 13px; border-radius: 12px; }
-
-.primary{
-  background: color-mix(in srgb, var(--accent) 92%, white 8%);
-  color: #07120e;
-  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
-  box-shadow: 0 12px 26px color-mix(in srgb, var(--accent) 22%, transparent);
-}
-
-.soft{
-  background: color-mix(in srgb, var(--accent) 14%, var(--panel));
-  color: var(--ink);
-  border-color: color-mix(in srgb, var(--accent) 22%, var(--line));
-}
+.md{ height: 36px; padding: 0 12px; font-size: 14px; }
+.sm{ height: 32px; padding: 0 10px; font-size: 13px; }
 
 .ghost{
   background: transparent;
-  color: var(--ink);
-  border-color: var(--line);
+  color: var(--muted);
 }
 
-.btn:disabled{
-  opacity: .55;
-  cursor:not-allowed;
-  transform:none;
+.ghost:hover{
+  color: var(--ink);
+  background: var(--tapBg);
+  border-color: var(--tapLine);
 }
+
+.solid{
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 38%, transparent);
+  color: var(--ink);
+}
+
+.solid:hover{
+  background: color-mix(in srgb, var(--accent) 32%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 46%, transparent);
+}
+
+.btn:active{ transform: translateY(1px); }
