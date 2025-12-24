@@ -1,6 +1,7 @@
 // src/app/api/logs/create/route.ts
-import { NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabase/server";
+import { NextResponse, type NextRequest } from "next/server";
+import { cookies } from "next/headers";
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 
 function extFromFile(file: File) {
   const name = (file.name || "").toLowerCase();
@@ -15,8 +16,8 @@ function extFromFile(file: File) {
   return "jpg";
 }
 
-export async function POST(req: Request) {
-  const supabase = await supabaseServer();
+export async function POST(req: NextRequest) {
+  const supabase = createRouteHandlerClient({ cookies });
 
   const { data: auth, error: authErr } = await supabase.auth.getUser();
   if (authErr || !auth?.user) {
@@ -43,7 +44,7 @@ export async function POST(req: Request) {
   const file = form.get("photo");
   const photoFile = file instanceof File ? file : null;
 
-  // 1) create DB row first (so we have id for storage path)
+  // 1) create DB row first
   const { data: created, error: insErr } = await supabase
     .from("logs")
     .insert({
@@ -57,7 +58,10 @@ export async function POST(req: Request) {
     .single();
 
   if (insErr || !created?.id) {
-    return NextResponse.json({ error: "Failed to create log" }, { status: 500 });
+    return NextResponse.json(
+      { error: insErr?.message || "Failed to create log" },
+      { status: 500 }
+    );
   }
 
   const logId = created.id as string;
@@ -75,9 +79,11 @@ export async function POST(req: Request) {
       });
 
     if (upErr) {
-      // rollback row (keep DB clean if upload fails)
       await supabase.from("logs").delete().eq("id", logId);
-      return NextResponse.json({ error: "Photo upload failed" }, { status: 500 });
+      return NextResponse.json(
+        { error: upErr.message || "Photo upload failed" },
+        { status: 500 }
+      );
     }
 
     const { error: updErr } = await supabase
@@ -86,7 +92,10 @@ export async function POST(req: Request) {
       .eq("id", logId);
 
     if (updErr) {
-      return NextResponse.json({ error: "Failed to link photo" }, { status: 500 });
+      return NextResponse.json(
+        { error: updErr.message || "Failed to link photo" },
+        { status: 500 }
+      );
     }
   }
 
