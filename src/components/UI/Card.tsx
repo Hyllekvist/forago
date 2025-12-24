@@ -11,4 +11,4 @@ export function Card({ children, className }: Props) {
       {children}
     </div>
   );
-}
+} 
