@@ -29,6 +29,8 @@ export default function LogPage() {
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
 
   const [query, setQuery] = useState("");
+  const [note, setNote] = useState("");
+
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -66,8 +68,15 @@ export default function LogPage() {
     try {
       const fd = new FormData();
       fd.set("locale", locale);
-      fd.set("speciesQuery", query.trim());
-      fd.set("visibility", "public");
+
+      const q = query.trim();
+      if (q) fd.set("speciesQuery", q);
+
+      const n = note.trim();
+      if (n) fd.set("note", n);
+
+      fd.set("visibility", "public"); // senere: UI toggle
+
       if (photoFile) fd.set("photo", photoFile);
 
       const res = await fetch("/api/logs/create", {
@@ -84,6 +93,8 @@ export default function LogPage() {
 
       removePhoto();
       setQuery("");
+      setNote("");
+
       router.push(`/${locale}/feed`);
     } catch (e: any) {
       setErr(e?.message || "Failed to save");
@@ -101,7 +112,15 @@ export default function LogPage() {
         : "Optional — helps others learn.",
     pick: locale === "dk" ? "Vælg foto" : "Choose photo",
     remove: locale === "dk" ? "Fjern" : "Remove",
+    add: locale === "dk" ? "Tilføj" : "Add",
+    speciesLabel: locale === "dk" ? "Hvad fandt du?" : "What did you find?",
+    speciesHelp:
+      locale === "dk"
+        ? "Du kan logge uden at kende arten."
+        : "You can log without knowing the species.",
     speciesPlaceholder: locale === "dk" ? "Søg art (valgfrit)" : "Search species (optional)",
+    noteLabel: locale === "dk" ? "Note (valgfrit)" : "Note (optional)",
+    notePlaceholder: locale === "dk" ? "Fx sted, duft, størrelse…" : "E.g. location, smell, size…",
     save: locale === "dk" ? "Gem fund" : "Save",
     saving: locale === "dk" ? "Gemmer…" : "Saving…",
     emptyPhoto: locale === "dk" ? "Ingen foto endnu" : "No photo yet",
@@ -128,7 +147,9 @@ export default function LogPage() {
 
       {err ? (
         <div className={styles.alert} role="alert">
-          <div className={styles.alertTitle}>{locale === "dk" ? "Noget gik galt" : "Something went wrong"}</div>
+          <div className={styles.alertTitle}>
+            {locale === "dk" ? "Noget gik galt" : "Something went wrong"}
+          </div>
           <div className={styles.alertBody}>{err}</div>
         </div>
       ) : null}
@@ -145,7 +166,7 @@ export default function LogPage() {
             className={styles.ghostBtn}
             onClick={photoFile ? removePhoto : openPicker}
           >
-            {photoFile ? t.remove : t.pick}
+            {photoFile ? t.remove : t.add}
           </button>
         </div>
 
@@ -176,7 +197,7 @@ export default function LogPage() {
             className={styles.pillBtn}
             onClick={photoFile ? removePhoto : openPicker}
           >
-            {photoFile ? t.remove : (locale === "dk" ? "Tilføj" : "Add")}
+            {photoFile ? t.remove : t.add}
           </button>
 
           <input
@@ -189,10 +210,8 @@ export default function LogPage() {
         </div>
 
         <div className={styles.field}>
-          <label className={styles.label}>{locale === "dk" ? "Hvad fandt du?" : "What did you find?"}</label>
-          <div className={styles.help}>
-            {locale === "dk" ? "Du kan logge uden at kende arten." : "You can log without knowing the species."}
-          </div>
+          <label className={styles.label}>{t.speciesLabel}</label>
+          <div className={styles.help}>{t.speciesHelp}</div>
           <input
             className={styles.input}
             placeholder={t.speciesPlaceholder}
@@ -201,10 +220,25 @@ export default function LogPage() {
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
+
+        <div className={styles.field}>
+          <label className={styles.label}>{t.noteLabel}</label>
+          <input
+            className={styles.input}
+            placeholder={t.notePlaceholder}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
+        </div>
       </section>
 
       <div className={styles.sticky}>
-        <button type="button" className={styles.primaryBtn} onClick={saveLog} disabled={saving}>
+        <button
+          type="button"
+          className={styles.primaryBtn}
+          onClick={saveLog}
+          disabled={saving}
+        >
           {saving ? t.saving : t.save}
         </button>
       </div>
