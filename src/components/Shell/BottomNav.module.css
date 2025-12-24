@@ -1,19 +1,16 @@
-.nav{
-  /* make var available globally */
-  --bottom-nav-h: 64px;
-
+.nav {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 70;
+  z-index: 80;
 
-  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  pointer-events: none; /* så kun selve baren kan trykkes */
+  padding: 0 var(--pad) calc(10px + env(safe-area-inset-bottom));
 }
 
-.inner{
-  /* expose height to Shell */
-  --bottom-nav-h: 64px;
+.inner {
+  pointer-events: auto;
 
   max-width: var(--maxw);
   margin: 0 auto;
@@ -22,72 +19,88 @@
   grid-template-columns: repeat(5, 1fr);
   gap: 6px;
 
-  height: var(--bottom-nav-h);
+  /* LAVERE bar */
+  padding: 8px 10px;
+  border-radius: 22px;
 
-  border-radius: 18px;
-  border: 1px solid rgba(255,255,255,0.10);
-  background: color-mix(in srgb, var(--bg) 72%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 
-  box-shadow: 0 16px 44px rgba(0,0,0,0.40);
-  overflow: hidden;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.34);
 }
 
-:root[data-theme="light"] .inner{
-  border: 1px solid rgba(15,23,42,0.10);
-  background: color-mix(in srgb, var(--bg) 90%, transparent);
-  box-shadow: 0 14px 38px rgba(0,0,0,0.18);
-}
+.item,
+.itemActive {
+  display: grid;
+  place-items: center;
+  gap: 4px;
 
-.item{
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-
-  gap: 3px;
-
-  color: rgba(255,255,255,0.68);
-  text-decoration: none;
-
+  padding: 6px 6px;
   border-radius: 14px;
-  margin: 6px;
 
-  /* keep it quiet */
-  background: transparent;
+  color: var(--muted);
   border: 1px solid transparent;
+
+  min-height: 44px; /* stadig touch-friendly */
 }
 
-:root[data-theme="light"] .item{
-  color: rgba(15,23,42,0.62);
-}
-
-.itemActive{
-  color: rgba(255,255,255,0.92);
-  background: rgba(255,255,255,0.05);
-  border-color: rgba(255,255,255,0.10);
-}
-
-:root[data-theme="light"] .itemActive{
-  color: rgba(15,23,42,0.92);
-  background: rgba(15,23,42,0.05);
-  border-color: rgba(15,23,42,0.10);
-}
-
-.icon{
+.icon {
   width: 22px;
   height: 22px;
+  display: block;
 }
 
-.label{
-  font-size: 10px;
+.label {
+  font-size: 11px;
   line-height: 1;
-  letter-spacing: 0.01em;
+  letter-spacing: -0.01em;
 }
 
-/* If space is tight, drop label a bit */
-@media (max-width: 360px){
-  .label{ font-size: 9px; }
-  .inner{ height: 54px; }
+.itemActive {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--panel2) 70%, transparent);
+  border-color: color-mix(in srgb, var(--line) 90%, transparent);
+}
+
+.item:active,
+.itemActive:active {
+  transform: translateY(1px);
+}
+
+/* ---------- Light mode tuning ---------- */
+:global(:root[data-theme="light"]) .inner {
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.10);
+}
+
+:global(:root[data-theme="light"]) .item {
+  color: color-mix(in srgb, var(--ink) 70%, rgba(15, 23, 42, 0.30));
+}
+
+:global(:root[data-theme="light"]) .itemActive {
+  color: var(--ink);
+  background: rgba(15, 23, 42, 0.06);
+  border-color: rgba(15, 23, 42, 0.12);
+}
+
+@media (max-width: 640px) {
+  .nav {
+    padding: 0 12px calc(10px + env(safe-area-inset-bottom));
+  }
+
+  .inner {
+    padding: 7px 9px;
+    border-radius: 20px;
+  }
+
+  .icon {
+    width: 21px;
+    height: 21px;
+  }
+
+  .label {
+    font-size: 10.5px;
+  }
 }
