@@ -67,3 +67,18 @@
   /* Selection */
   --selection: rgba(49,255,181,0.28);
 }
+
+:root{
+  /* motion */
+  --ease: cubic-bezier(.2,.8,.2,1);
+  --t-fast: 120ms;
+  --t: 180ms;
+
+  /* interaction surfaces */
+  --tapBg: color-mix(in srgb, var(--ink) 8%, transparent);
+  --tapLine: color-mix(in srgb, var(--ink) 14%, transparent);
+
+  /* focus */
+  --focus: color-mix(in srgb, var(--accent) 70%, transparent);
+  --focusRing: 0 0 0 3px var(--focus);
+}
