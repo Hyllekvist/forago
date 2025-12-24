@@ -1,4 +1,4 @@
-.nav {
+.nav{
   position: fixed;
   left: 0;
   right: 0;
@@ -6,72 +6,92 @@
   z-index: 80;
 
   pointer-events: none;
-  padding: 0 var(--pad, 16px) calc(10px + env(safe-area-inset-bottom));
+  padding: 0 var(--pad) calc(10px + env(safe-area-inset-bottom));
 }
 
-.inner {
+.inner{
   pointer-events: auto;
 
-  max-width: var(--maxw, 1120px);
+  max-width: var(--maxw);
   margin: 0 auto;
 
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 6px;
+  gap: var(--s-1);
 
-  /* lavere bar, men stadig “premium” */
-  padding: 7px 9px;
-  border-radius: 20px;
+  padding: 8px 10px;
+  border-radius: var(--r-xl);
 
-  border: 1px solid var(--glassLine);
+  border: var(--stroke) solid var(--glassLine);
   background: var(--glassBg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 
-  box-shadow: var(--shadow-1);
+  box-shadow: var(--shadow-2);
 }
 
-.item,
-.itemActive {
+.item{
   display: grid;
   place-items: center;
   gap: 4px;
 
   padding: 6px 6px;
-  border-radius: 14px;
+  border-radius: var(--r-lg);
 
-  color: var(--muted2, var(--muted));
+  color: var(--muted);
   border: 1px solid transparent;
 
   min-height: 44px;
-  text-decoration: none;
 }
 
-.icon {
-  width: 21px;
-  height: 21px;
+.icon{
+  width: 22px;
+  height: 22px;
   display: block;
 }
 
-.label {
-  font-size: 10.5px;
+.label{
+  font-size: 11px;
   line-height: 1;
   letter-spacing: -0.01em;
 }
 
-.itemActive {
+.itemActive{
   color: var(--ink);
-  background: var(--tapBg);
-  border-color: var(--tapLine);
+  background: color-mix(in srgb, var(--panel2) 70%, transparent);
+  border-color: color-mix(in srgb, var(--line) 90%, transparent);
 }
 
 .item:active,
-.itemActive:active {
+.itemActive:active{
   transform: translateY(1px);
 }
 
-@media (max-width: 640px) {
-  .nav {
+@media (max-width: 640px){
+  .nav{
     padding: 0 12px calc(10px + env(safe-area-inset-bottom));
   }
+  .inner{
+    padding: 7px 9px;
+    border-radius: var(--r-xl);
+  }
+  .icon{
+    width: 21px;
+    height: 21px;
+  }
+  .label{
+    font-size: 10.5px;
+  }
+}
+
+/* Light: mindre “dirty” */
+:global(:root[data-theme="light"]) .inner{
+  box-shadow: 0 14px 34px rgba(15,23,42,0.10);
+}
+:global(:root[data-theme="light"]) .item{
+  color: color-mix(in srgb, var(--ink) 70%, rgba(15,23,42,0.30));
+}
+:global(:root[data-theme="light"]) .itemActive{
+  background: rgba(15,23,42,0.06);
+  border-color: rgba(15,23,42,0.12);
 }
