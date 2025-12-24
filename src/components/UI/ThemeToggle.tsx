@@ -28,8 +28,16 @@ export function ThemeToggle() {
   }
 
   return (
-    <button className={styles.btn} onClick={toggle} type="button" aria-label="Toggle theme">
-      {theme === "dark" ? "☾" : "☀︎"}
+    <button
+      className={styles.toggle}
+      onClick={toggle}
+      type="button"
+      aria-label="Toggle theme"
+      title={theme === "dark" ? "Light mode" : "Dark mode"}
+    >
+      <span className={styles.icon} aria-hidden>
+        {theme === "dark" ? "☾" : "☀︎"}
+      </span>
     </button>
   );
 }
