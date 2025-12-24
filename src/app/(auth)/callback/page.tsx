@@ -1,4 +1,4 @@
-// src/app/(auth)/callback/page.tsx
+// src/app/(auth)/callback/page.tsx 
 import { redirect } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 
