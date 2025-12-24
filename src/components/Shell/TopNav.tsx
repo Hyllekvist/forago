@@ -7,6 +7,7 @@ import { ThemeToggle } from "@/components/UI/ThemeToggle";
 
 export function TopNav({ locale }: { locale: string }) {
   const pathname = usePathname();
+  const inGuides = pathname?.startsWith(`/${locale}/guides`);
 
   return (
     <header className={styles.header}>
@@ -17,7 +18,7 @@ export function TopNav({ locale }: { locale: string }) {
         </Link>
 
         <div className={styles.right}>
-          <Link className={styles.link} href={`/${locale}/guides`}>
+          <Link className={inGuides ? styles.linkActive : styles.link} href={`/${locale}/guides`}>
             Guides
           </Link>
           <Link className={styles.link} href={`/login`}>
