@@ -1,100 +1,113 @@
-import Link from "next/link"; 
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
+import styles from "./Guides.module.css";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
-const SUPPORTED_LOCALES = ["dk", "en"] as const;
-type Locale = (typeof SUPPORTED_LOCALES)[number];
+type Params = { locale: string };
 
-function isLocale(x: string): x is Locale {
-  return (SUPPORTED_LOCALES as readonly string[]).includes(x);
+type GuideRow = {
+  slug: string;
+  is_published: boolean;
+  guide_translations: Array<{
+    locale: string;
+    title: string | null;
+    excerpt: string | null;
+  }>;
+};
+
+export const metadata = {
+  title: "Guides · Forago",
+};
+
+function pickTranslation<T extends { locale: string }>(
+  list: T[],
+  locale: string
+) {
+  return (
+    list.find((t) => t.locale === locale) ??
+    list.find((t) => t.locale === "dk") ??
+    list[0] ??
+    null
+  );
 }
 
-export async function generateMetadata({ params }: { params: { locale: string } }) {
-  const localeParam = params.locale;
-  if (!isLocale(localeParam)) return { title: "Forago" };
-
-  return {
-    title: localeParam === "dk" ? "Guides — Forago" : "Guides — Forago",
-    description:
-      localeParam === "dk"
-        ? "Sikker sankning: identifikation, forvekslinger, udstyr og første ture."
-        : "Safe foraging: identification, look-alikes, gear, and first trips.",
-    alternates: { canonical: `/${localeParam}/guides` },
-  };
-}
-
-export default async function GuidesPage({ params }: { params: { locale: string } }) {
-  if (!isLocale(params.locale)) return notFound();
-  const locale = params.locale;
-
-const supabase = await supabaseServer();
+export default async function GuidesPage({ params }: { params: Params }) {
+  const locale = params.locale || "dk";
+  const supabase = await supabaseServer();
 
   const { data, error } = await supabase
     .from("guides")
-    .select("slug, is_published, guide_translations(title, excerpt, locale)")
+    .select("slug, is_published, guide_translations(locale, title, excerpt)")
     .eq("is_published", true)
     .order("slug", { ascending: true });
 
-  if (error) throw error;
+  if (error) notFound();
 
-  const items =
-    (data ?? [])
-      .map((g: any) => {
-        const t = (g.guide_translations ?? []).find((x: any) => x.locale === locale);
-        return {
-          slug: g.slug as string,
-          title: (t?.title as string) || g.slug,
-          excerpt: (t?.excerpt as string) || "",
-        };
-      })
-      .filter(Boolean) ?? [];
+  const rows = (data as unknown as GuideRow[]) ?? [];
 
   return (
-    <main style={{ padding: 16, maxWidth: 980, margin: "0 auto" }}>
-      <header style={{ marginBottom: 14 }}>
-        <h1 style={{ margin: 0 }}>{locale === "dk" ? "Guides" : "Guides"}</h1>
-        <p style={{ margin: "8px 0 0", opacity: 0.85 }}>
-          {locale === "dk"
-            ? "Evergreen guides der gør Forago nyttig – og rankable."
-            : "Evergreen guides that make Forago useful — and rankable."}
-        </p>
+    <main className={styles.wrap}>
+      <header className={styles.header}>
+        <div>
+          <h1 className={styles.h1}>Guides</h1>
+          <p className={styles.sub}>
+            Korte, praktiske guides til foraging, sikkerhed og sæson.
+          </p>
+        </div>
+
+        <div className={styles.actions}>
+          <Link className={styles.pill} href={`/${locale}/feed`}>
+            Feed
+          </Link>
+          <Link className={styles.pill} href={`/${locale}/season`}>
+            Sæson
+          </Link>
+        </div>
       </header>
 
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-          gap: 12,
-        }}
-      >
-        {items.map((g) => (
-          <Link
-            key={g.slug}
-            href={`/${locale}/guides/${g.slug}`}
-            style={{
-              textDecoration: "none",
-              color: "inherit",
-              border: "1px solid rgba(255,255,255,0.10)",
-              borderRadius: 14,
-              padding: 14,
-              background: "rgba(255,255,255,0.03)",
-            }}
-          >
-            <div style={{ fontWeight: 800, marginBottom: 6 }}>{g.title}</div>
-            <div style={{ opacity: 0.85, fontSize: 14, lineHeight: 1.35 }}>
-              {g.excerpt || (locale === "dk" ? "Tilføj excerpt i DB." : "Add excerpt in DB.")}
-            </div>
-          </Link>
-        ))}
-      </section>
+      {rows.length === 0 ? (
+        <section className={styles.emptyCard}>
+          <div className={styles.emptyTitle}>Ingen guides endnu</div>
+          <div className={styles.emptyText}>
+            Opret rækker i <code>guides</code> og <code>guide_translations</code>,
+            og sæt <code>is_published=true</code>.
+          </div>
+        </section>
+      ) : (
+        <section className={styles.grid}>
+          {rows.map((g) => {
+            const t = pickTranslation(g.guide_translations ?? [], locale);
+            const title = t?.title || g.slug;
+            const excerpt =
+              t?.excerpt ||
+              "Åbn guiden for konkrete tips, forvekslinger og sikkerhed.";
 
-      {items.length === 0 ? (
-        <p style={{ marginTop: 18, opacity: 0.8 }}>
-          {locale === "dk" ? "Ingen publicerede guides endnu." : "No published guides yet."}
-        </p>
-      ) : null}
+            return (
+              <Link
+                key={g.slug}
+                href={`/${locale}/guides/${encodeURIComponent(g.slug)}`}
+                className={styles.card}
+              >
+                <div className={styles.cardTop}>
+                  <div className={styles.cardTitle}>{title}</div>
+                  <div className={styles.badge}>Guide</div>
+                </div>
+
+                <div className={styles.cardExcerpt}>{excerpt}</div>
+
+                <div className={styles.cardMeta}>
+                  <span className={styles.cardSlug}>/{g.slug}</span>
+                  <span className={styles.cardArrow} aria-hidden>
+                    →
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
+        </section>
+      )}
     </main>
   );
 }
