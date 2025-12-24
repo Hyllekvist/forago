@@ -67,3 +67,17 @@
   /* Shadow: lidt mere definition + mindre “dirty” */
   --shadow-1: 0 14px 30px rgba(15, 23, 42, 0.12);
 }
+
+/* interactive */
+--tapBg: color-mix(in srgb, var(--ink) 8%, transparent);
+--tapLine: color-mix(in srgb, var(--ink) 14%, transparent);
+
+/* elevated glass (header/bottomnav) */
+--glassBg: color-mix(in srgb, var(--bg) 82%, transparent);
+--glassLine: var(--line);
+
+/* focus */
+--focus: color-mix(in srgb, var(--accent) 65%, transparent);
+
+/* subtle text on bright surfaces */
+--muted2: color-mix(in srgb, var(--ink) 55%, transparent);
