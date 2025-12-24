@@ -1,7 +1,7 @@
 // src/app/[locale]/feed/page.tsx
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import styles from "./Feed.module.css";
+import styles from "./FeedPage.module.css";
 import { supabaseServer } from "@/lib/supabase/server";
 
 type Locale = "dk" | "en" | "se" | "de";
