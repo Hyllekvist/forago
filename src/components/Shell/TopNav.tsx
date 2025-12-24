@@ -7,7 +7,8 @@ import { ThemeToggle } from "@/components/UI/ThemeToggle";
 
 export function TopNav({ locale }: { locale: string }) {
   const pathname = usePathname();
-  const inGuides = pathname?.startsWith(`/${locale}/guides`);
+
+  const isActive = (href: string) => pathname === href;
 
   return (
     <header className={styles.header}>
@@ -17,18 +18,23 @@ export function TopNav({ locale }: { locale: string }) {
           <span className={styles.word}>Forago</span>
         </Link>
 
-        <div className={styles.right}>
-          <Link className={inGuides ? styles.linkActive : styles.link} href={`/${locale}/guides`}>
+        <nav className={styles.nav} aria-label="Top navigation">
+          <Link
+            className={`${styles.link} ${isActive(`/${locale}/guides`) ? styles.linkActive : ""}`}
+            href={`/${locale}/guides`}
+          >
             Guides
           </Link>
+
           <Link className={styles.link} href={`/login`}>
             Login
           </Link>
-          <ThemeToggle />
-        </div>
-      </div>
 
-      <div className={styles.hairline} />
+          <div className={styles.toggleWrap}>
+            <ThemeToggle />
+          </div>
+        </nav>
+      </div>
     </header>
   );
 }
