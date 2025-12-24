@@ -1,76 +1,83 @@
 .header {
   position: sticky;
-  top: 12px;
-  z-index: 50;
+  top: 10px;
+  z-index: 60;
 
-  /* vigtig: ingen inheritance fra Shell */
-  pointer-events: auto;
+  /* lidt luft så den ikke klistrer til kanter */
+  padding: 0 12px;
 }
 
 .inner {
-  max-width: 980px;
+  max-width: var(--maxw);
   margin: 0 auto;
-  padding: 10px 14px;
+
+  height: 54px;                 /* 👈 kompakt */
+  padding: 0 14px;              /* 👈 mindre “puffy” */
 
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
 
-  /* PILL LOOK */
   border-radius: 999px;
 
-  background: color-mix(
-    in srgb,
-    var(--panel) 92%,
-    transparent
-  );
-
-  backdrop-filter: blur(14px) saturate(1.1);
-  -webkit-backdrop-filter: blur(14px) saturate(1.1);
-
+  background: color-mix(in srgb, var(--bg) 65%, var(--panel));
   border: 1px solid var(--line);
+
+  backdrop-filter: blur(14px) saturate(1.05);
+  -webkit-backdrop-filter: blur(14px) saturate(1.05);
+
   box-shadow: var(--shadow-1);
 }
 
 .brand {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-weight: 600;
+
+  padding: 8px 10px;            /* 👈 lille “mini-pill” */
+  border-radius: 999px;
+
+  background: color-mix(in srgb, var(--panel2) 70%, transparent);
+  border: 1px solid color-mix(in srgb, var(--line) 75%, transparent);
 }
 
 .mark {
   width: 14px;
   height: 14px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle at 30% 30%,
-    #7dd3fc,
-    #34d399 60%,
-    #1e293b
-  );
+  border-radius: 999px;
+  background: radial-gradient(circle at 30% 30%, #7dd3fc, #34d399 60%, #0b0f14);
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.04);
 }
 
 .word {
+  font-weight: 700;
   font-size: 15px;
+  letter-spacing: -0.01em;
 }
 
 .right {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 14px;
 }
 
 .link {
   font-size: 14px;
-  opacity: 0.85;
+  color: var(--muted);
 }
 
 .link:hover {
-  opacity: 1;
+  color: var(--ink);
 }
 
-/* fjern hairline – den hører ikke til pill-design */
+/* ingen hairline i pill header */
 .hairline {
   display: none;
+}
+
+@media (max-width: 420px) {
+  .inner { padding: 0 12px; }
+  .right { gap: 10px; }
+  .link { font-size: 13px; }
 }
