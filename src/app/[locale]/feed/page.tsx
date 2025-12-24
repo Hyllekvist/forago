@@ -1,6 +1,6 @@
 import { supabaseServer } from "@/lib/supabase/server";
 import FeedClient from "./FeedClient";
-import styles from "./Feed.module.css";
+import styles from "./FeedPage.module.css";
 
 type Locale = "dk" | "en" | "se" | "de";
 
