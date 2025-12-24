@@ -4,8 +4,8 @@
 import { useEffect } from "react";
 import styles from "./Shell.module.css";
 
-import { TopNav } from "@/components/TopNav";
-import { BottomNav } from "@/components/BottomNav";
+import { TopNav } from "./TopNav";
+import { BottomNav } from "./BottomNav";
 
 type Locale = "dk" | "en" | "se" | "de";
 
