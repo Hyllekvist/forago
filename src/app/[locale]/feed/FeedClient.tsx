@@ -1,191 +1,141 @@
 "use client";
 
 import Link from "next/link";
-import styles from "./FeedPage.module.css";
-import { Card } from "@/components/UI/Card";
-import { CardLink } from "@/components/UI/CardLink";
+import styles from "./Feed.module.css";
 
-type InSeasonItem = {
-  slug: string;
-  name: string;
-  confidence: number;
-  short?: string | null;
-};
-
-type RecentSpot = {
+type LogItem = {
   id: string;
-  title?: string | null;
-  species_slug?: string | null;
-  created_at?: string | null;
+  created_at: string;
+  user_id: string;
+  visibility: "public" | "private";
+  species_query: string | null;
+  note: string | null;
+  photo_url: string | null; // server prepared
+  is_mine?: boolean;        // server prepared
 };
 
-export default function FeedClient({
-  locale,
-  month,
-  inSeason,
-  recentSpots,
-}: {
-  locale: string;
-  month: number;
-  inSeason: InSeasonItem[];
-  recentSpots: RecentSpot[];
-}) {
-  const t = (dk: string, en: string) => (locale === "dk" ? dk : en);
+type Props = {
+  locale: "dk" | "en" | "se" | "de";
+  items: LogItem[];
+  userId?: string | null;
+};
 
-  const monthName = (() => {
-    const dk = [
-      "",
-      "januar",
-      "februar",
-      "marts",
-      "april",
-      "maj",
-      "juni",
-      "juli",
-      "august",
-      "september",
-      "oktober",
-      "november",
-      "december",
-    ];
-    const en = [
-      "",
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
-    ];
-    return (locale === "dk" ? dk : en)[month] ?? String(month);
-  })();
+function t(locale: Props["locale"], dk: string, en: string) {
+  return locale === "dk" ? dk : en;
+}
 
+function formatWhen(iso: string, locale: Props["locale"]) {
+  const d = new Date(iso);
+  const now = new Date();
+  const diff = Math.abs(now.getTime() - d.getTime());
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+
+  if (minutes < 2) return t(locale, "Lige nu", "Just now");
+  if (minutes < 60) return `${minutes}m`;
+  if (hours < 24) return `${hours}h`;
+
+  return d.toLocaleDateString(locale === "dk" ? "da-DK" : "en-US", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+export default function FeedClient({ locale, items }: Props) {
   return (
-    <main className={styles.wrap}>
-      {/* Hero */}
-      <Card className={styles.hero}>
-        <div className={styles.heroTop}>
-          <div>
-            <h1 className={styles.h1}>{t("Feed", "Feed")}</h1>
-            <p className={styles.sub}>
-              {t(
-                `I sæson lige nu · ${monthName}`,
-                `In season right now · ${monthName}`
-              )}
-            </p>
-          </div>
-
-          <div className={styles.heroActions}>
-            <Link className={styles.pill} href={`/${locale}/season`}>
-              {t("Sæson", "Season")}
-            </Link>
-            <Link className={styles.pill} href={`/${locale}/map`}>
-              {t("Kort", "Map")}
-            </Link>
-          </div>
+    <main className={styles.page}>
+      <header className={styles.hero}>
+        <div className={styles.heroLeft}>
+          <h1 className={styles.h1}>{t(locale, "Feed", "Feed")}</h1>
+          <p className={styles.sub}>
+            {t(
+              locale,
+              "De seneste fund fra fællesskabet — og dine egne.",
+              "Latest finds from the community — and yours."
+            )}
+          </p>
         </div>
-      </Card>
 
-      {/* In-season now */}
-      <section className={styles.section}>
-        <div className={styles.sectionTop}>
-          <h2 className={styles.h2}>{t("I sæson nu", "In season now")}</h2>
-          <Link className={styles.sectionLink} href={`/${locale}/season`}>
-            {t("Se alle", "See all")}
+        <Link className={styles.cta} href={`/${locale}/log`}>
+          <span className={styles.ctaDot} aria-hidden="true" />
+          {t(locale, "Log fund", "Log find")}
+        </Link>
+      </header>
+
+      {items.length === 0 ? (
+        <section className={styles.empty}>
+          <div className={styles.emptyIcon}>🪴</div>
+          <div className={styles.emptyTitle}>
+            {t(locale, "Ingen fund endnu", "No finds yet")}
+          </div>
+          <div className={styles.emptyBody}>
+            {t(locale, "Vær den første til at logge et fund.", "Be the first to log a find.")}
+          </div>
+
+          <Link className={styles.emptyCta} href={`/${locale}/log`}>
+            {t(locale, "Log fund", "Log find")}
           </Link>
-        </div>
+        </section>
+      ) : (
+        <section className={styles.grid} aria-label="Feed items">
+          {items.map((r) => {
+            const title = r.species_query?.trim() || t(locale, "Ukendt art", "Unknown species");
+            const when = formatWhen(r.created_at, locale);
 
-        {inSeason.length ? (
-          <div className={styles.grid}>
-            {inSeason.slice(0, 12).map((it) => (
-              <CardLink
-                key={it.slug}
-                href={`/${locale}/species/${it.slug}`}
-                className={styles.cardLink}
-              >
-                <div className={styles.cardHead}>
-                  <div className={styles.cardTitle}>{it.name}</div>
-                  <div className={styles.badge}>
-                    {t("Match", "Match")} · {it.confidence}%
+            return (
+              <article key={r.id} className={styles.card}>
+                <div className={styles.cardTop}>
+                  <div className={styles.metaRow}>
+                    <span className={styles.when}>{when}</span>
+                    <span className={styles.sep}>·</span>
+
+                    <span
+                      className={`${styles.badge} ${
+                        r.visibility === "private" ? styles.badgePrivate : styles.badgePublic
+                      }`}
+                    >
+                      {r.visibility === "private"
+                        ? t(locale, "Privat", "Private")
+                        : t(locale, "Offentlig", "Public")}
+                    </span>
+
+                    {r.is_mine ? (
+                      <>
+                        <span className={styles.sep}>·</span>
+                        <span className={styles.mine}>{t(locale, "Mit", "Mine")}</span>
+                      </>
+                    ) : null}
                   </div>
+
+                  <h2 className={styles.h2}>{title}</h2>
+                  {r.note ? <p className={styles.note}>{r.note}</p> : null}
                 </div>
-                <div className={styles.cardBody}>
-                  <p className={styles.cardText}>
-                    {it.short ??
-                      t(
-                        "Åbn for identifikation, forvekslinger og sikkerhed.",
-                        "Open for identification, look-alikes and safety."
-                      )}
-                  </p>
+
+                <div className={styles.media}>
+                  {r.photo_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img className={styles.img} src={r.photo_url} alt="" loading="lazy" />
+                  ) : (
+                    <div className={styles.mediaEmpty}>
+                      <div className={styles.mediaIcon}>📷</div>
+                      <div className={styles.mediaText}>
+                        {t(locale, "Intet foto", "No photo")}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </CardLink>
-            ))}
-          </div>
-        ) : (
-          <Card className={styles.empty}>
-            <p className={styles.muted}>
-              {t(
-                "Ingen sæsondata endnu for dette land. Udfyld seasonality-tabellen.",
-                "No season data yet for this country. Fill the seasonality table."
-              )}
-            </p>
-          </Card>
-        )}
-      </section>
 
-      {/* New spots */}
-      <section className={styles.section}>
-        <div className={styles.sectionTop}>
-          <h2 className={styles.h2}>{t("Nye spots", "New spots")}</h2>
-          <Link className={styles.sectionLink} href={`/${locale}/map`}>
-            {t("Åbn kort", "Open map")}
-          </Link>
-        </div>
-
-        {recentSpots.length ? (
-          <div className={styles.list}>
-            {recentSpots.slice(0, 10).map((s) => {
-              const title =
-                s.title ||
-                (s.species_slug
-                  ? t(`Spot: ${s.species_slug}`, `Spot: ${s.species_slug}`)
-                  : t("Spot", "Spot"));
-
-              const meta = s.species_slug
-                ? t(`Art · ${s.species_slug}`, `Species · ${s.species_slug}`)
-                : t("Ukendt art", "Unknown species");
-
-              return (
-                <CardLink
-                  key={s.id}
-                  href={`/${locale}/map?spot=${encodeURIComponent(s.id)}`}
-                  className={styles.row}
-                >
-                  <div className={styles.rowMain}>
-                    <div className={styles.rowTitle}>{title}</div>
-                    <div className={styles.rowMeta}>{meta}</div>
-                  </div>
-                  <div className={styles.rowChevron} aria-hidden>
-                    →
-                  </div>
-                </CardLink>
-              );
-            })}
-          </div>
-        ) : (
-          <Card className={styles.empty}>
-            <p className={styles.muted}>
-              {t("Ingen spots endnu.", "No spots yet.")}
-            </p>
-          </Card>
-        )}
-      </section>
+                <div className={styles.cardActions}>
+                  <Link className={styles.open} href={`/${locale}/log/${r.id}`}>
+                    {t(locale, "Åbn", "Open")}
+                  </Link>
+                </div>
+              </article>
+            );
+          })}
+        </section>
+      )}
     </main>
   );
 }
