@@ -97,7 +97,12 @@ export function BottomNav({ locale }: { locale: string }) {
             <Link
               key={it.key}
               href={href}
-              className={`${styles.item} ${active ? styles.itemActive : ""}`}
+              className={[
+                styles.item,
+                "hoverable",
+                "pressable",
+                active ? styles.itemActive : "",
+              ].join(" ")}
             >
               <Icon kind={it.icon} />
               <span className={styles.label}>{it.label}</span>
