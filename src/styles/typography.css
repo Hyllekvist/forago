@@ -1,40 +1,97 @@
-:root{
-  /* Primary UI font */
-  --font-sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+/* -----------------------------------------
+   FORAGO — TYPOGRAPHY SYSTEM
+   Calm, readable, editorial
+------------------------------------------ */
 
-  /* Optional “editorial” headings (if you want it later) */
-  --font-serif: ui-serif, Georgia, "Times New Roman", Times, serif;
-
-  /* Scale */
-  --text-xs: 12px;
-  --text-sm: 13px;
-  --text-md: 15px;
-  --text-lg: 18px;
-  --text-xl: 22px;
-  --text-2xl: 28px;
-  --text-3xl: 34px;
-
-  --lh-tight: 1.15;
-  --lh-snug: 1.3;
-  --lh-normal: 1.5;
-  --lh-relaxed: 1.65;
+/* Base */
+body {
+  font-size: 15px;
+  line-height: 1.65;
+  font-weight: 450;
+  color: var(--ink);
 }
 
-/* sensible defaults so modules don’t have to fight browser styles */
-h1, h2, h3, h4{
+/* Headings */
+h1, h2, h3, h4 {
   margin: 0;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--ink);
 }
 
-p{
-  margin: 0;
-  color: var(--muted);
+/* H1 — Page title */
+h1 {
+  font-size: clamp(28px, 4vw, 36px);
+  line-height: 1.1;
 }
 
-small{ font-size: var(--text-xs); color: var(--muted); }
+/* H2 — Section */
+h2 {
+  font-size: 20px;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+}
 
-code, pre{
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+/* H3 — Subsection */
+h3 {
+  font-size: 17px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+/* H4 — Small headers / cards */
+h4 {
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* Paragraphs */
+p {
+  margin: 0;
+  line-height: 1.7;
+  color: var(--ink);
+}
+
+/* Muted / meta text */
+.text-muted,
+small,
+.meta {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+/* Very subtle secondary text (dates, hints) */
+.text-subtle {
+  color: var(--muted2, var(--muted));
+  font-size: 12px;
+}
+
+/* Links */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+a.inline {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Lists */
+ul, ol {
+  margin: 0;
+  padding-left: 18px;
+}
+
+li {
+  margin: 6px 0;
+  line-height: 1.6;
+}
+
+/* Selection */
+::selection {
+  background: color-mix(in srgb, var(--accent) 40%, transparent);
 }
