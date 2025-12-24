@@ -16,8 +16,8 @@ function Icon({ kind }: { kind: string }) {
   const common = {
     className: styles.icon,
     viewBox: "0 0 24 24",
-    "aria-hidden": true,
-  } as const;
+    "aria-hidden": true as const,
+  };
 
   if (kind === "season")
     return (
@@ -87,21 +87,19 @@ export function BottomNav({ locale }: { locale: string }) {
   const pathname = usePathname();
 
   return (
-    <nav className={styles.nav} aria-label="Primary">
+    <nav className={styles.nav} aria-label="Bottom navigation">
       <div className={styles.inner}>
         {items.map((it) => {
           const href = `/${locale}/${it.key}`;
-          const active = pathname === href || pathname.startsWith(href + "/");
+          const active = pathname === href;
 
           return (
             <Link
               key={it.key}
               href={href}
-              className={active ? styles.itemActive : styles.item}
+              className={`${styles.item} ${active ? styles.itemActive : ""}`}
             >
-              <span className={styles.iconWrap}>
-                <Icon kind={it.icon} />
-              </span>
+              <Icon kind={it.icon} />
               <span className={styles.label}>{it.label}</span>
             </Link>
           );
