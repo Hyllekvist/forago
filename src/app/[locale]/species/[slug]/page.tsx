@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "next/link"; 
 import { notFound } from "next/navigation";
 import Script from "next/script";
 import { supabaseServer } from "@/lib/supabase/server";
