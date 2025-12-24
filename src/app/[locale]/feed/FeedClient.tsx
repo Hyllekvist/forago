@@ -1,141 +1,137 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 import styles from "./FeedPage.module.css";
+import { CardLink } from "@/components/UI/CardLink";
+import { Card } from "@/components/UI/Card";
 
 type LogItem = {
   id: string;
-  created_at: string;
-  user_id: string;
-  visibility: "public" | "private";
-  species_query: string | null;
-  note: string | null;
-  photo_url: string | null; // server prepared
-  is_mine?: boolean;        // server prepared
+  created_at?: string | null;
+  title?: string | null;
+  species_query?: string | null;
+  photo_path?: string | null;
+  visibility?: "public" | "private" | null;
+  user_id?: string | null;
 };
 
-type Props = {
-  locale: "dk" | "en" | "se" | "de";
-  items: LogItem[];
-  userId?: string | null;
-};
+export default function FeedClient({
+  locale,
+  month,
+  logs,
+  viewerUserId,
+}: {
+  locale: string;
+  month: number;
+  logs: LogItem[];
+  viewerUserId: string | null;
+}) {
+  const t = (dk: string, en: string) => (locale === "dk" ? dk : en);
 
-function t(locale: Props["locale"], dk: string, en: string) {
-  return locale === "dk" ? dk : en;
-}
+  const monthName = useMemo(() => {
+    const dk = ["", "januar","februar","marts","april","maj","juni","juli","august","september","oktober","november","december"];
+    const en = ["", "January","February","March","April","May","June","July","August","September","October","November","December"];
+    return (locale === "dk" ? dk : en)[month] ?? String(month);
+  }, [locale, month]);
 
-function formatWhen(iso: string, locale: Props["locale"]) {
-  const d = new Date(iso);
-  const now = new Date();
-  const diff = Math.abs(now.getTime() - d.getTime());
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
+  function fmt(ts?: string | null) {
+    if (!ts) return "";
+    const d = new Date(ts);
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mm = String(d.getMinutes()).padStart(2, "0");
+    return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")} · ${hh}:${mm}`;
+  }
 
-  if (minutes < 2) return t(locale, "Lige nu", "Just now");
-  if (minutes < 60) return `${minutes}m`;
-  if (hours < 24) return `${hours}h`;
-
-  return d.toLocaleDateString(locale === "dk" ? "da-DK" : "en-US", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-export default function FeedClient({ locale, items }: Props) {
   return (
-    <main className={styles.page}>
-      <header className={styles.hero}>
+    <div className={styles.page}>
+      <div className={styles.hero}>
         <div className={styles.heroLeft}>
-          <h1 className={styles.h1}>{t(locale, "Feed", "Feed")}</h1>
+          <h1 className={styles.h1}>{t("Feed", "Feed")}</h1>
           <p className={styles.sub}>
-            {t(
-              locale,
-              "De seneste fund fra fællesskabet — og dine egne.",
-              "Latest finds from the community — and yours."
-            )}
+            {t(`Nye fund · ${monthName}`, `New finds · ${monthName}`)}
           </p>
         </div>
 
         <Link className={styles.cta} href={`/${locale}/log`}>
-          <span className={styles.ctaDot} aria-hidden="true" />
-          {t(locale, "Log fund", "Log find")}
+          <span className={styles.ctaDot} aria-hidden />
+          {t("Log fund", "Log find")}
         </Link>
-      </header>
+      </div>
 
-      {items.length === 0 ? (
-        <section className={styles.empty}>
-          <div className={styles.emptyIcon}>🪴</div>
-          <div className={styles.emptyTitle}>
-            {t(locale, "Ingen fund endnu", "No finds yet")}
-          </div>
-          <div className={styles.emptyBody}>
-            {t(locale, "Vær den første til at logge et fund.", "Be the first to log a find.")}
-          </div>
+      {logs.length ? (
+        <div className={styles.grid}>
+          {logs.map((l) => {
+            const isMine = viewerUserId && l.user_id === viewerUserId;
+            const title =
+              l.title ||
+              l.species_query ||
+              (locale === "dk" ? "Nyt fund" : "New find");
 
-          <Link className={styles.emptyCta} href={`/${locale}/log`}>
-            {t(locale, "Log fund", "Log find")}
-          </Link>
-        </section>
-      ) : (
-        <section className={styles.grid} aria-label="Feed items">
-          {items.map((r) => {
-            const title = r.species_query?.trim() || t(locale, "Ukendt art", "Unknown species");
-            const when = formatWhen(r.created_at, locale);
+            const imgUrl = l.photo_path
+              ? `/api/logs/photo?path=${encodeURIComponent(l.photo_path)}`
+              : null;
 
             return (
-              <article key={r.id} className={styles.card}>
+              <CardLink
+                key={l.id}
+                href={`/${locale}/map?log=${encodeURIComponent(l.id)}`}
+                className={styles.card}
+              >
                 <div className={styles.cardTop}>
                   <div className={styles.metaRow}>
-                    <span className={styles.when}>{when}</span>
-                    <span className={styles.sep}>·</span>
-
-                    <span
-                      className={`${styles.badge} ${
-                        r.visibility === "private" ? styles.badgePrivate : styles.badgePublic
-                      }`}
-                    >
-                      {r.visibility === "private"
-                        ? t(locale, "Privat", "Private")
-                        : t(locale, "Offentlig", "Public")}
+                    <span className={`${styles.badge} ${l.visibility === "public" ? styles.badgePublic : styles.badgePrivate}`}>
+                      {l.visibility === "public" ? t("Offentlig", "Public") : t("Privat", "Private")}
                     </span>
-
-                    {r.is_mine ? (
-                      <>
-                        <span className={styles.sep}>·</span>
-                        <span className={styles.mine}>{t(locale, "Mit", "Mine")}</span>
-                      </>
-                    ) : null}
+                    {isMine ? <span className={styles.mine}>{t("Dig", "You")}</span> : null}
+                    <span className={styles.sep}>·</span>
+                    <span className={styles.when}>{fmt(l.created_at)}</span>
                   </div>
 
                   <h2 className={styles.h2}>{title}</h2>
-                  {r.note ? <p className={styles.note}>{r.note}</p> : null}
+                  {l.species_query ? (
+                    <p className={styles.note}>
+                      {t("Art (valgfrit): ", "Species (optional): ")}
+                      <strong>{l.species_query}</strong>
+                    </p>
+                  ) : (
+                    <p className={styles.note}>
+                      {t("Ukendt art — fællesskabet kan hjælpe.", "Unknown species — community can help.")}
+                    </p>
+                  )}
                 </div>
 
                 <div className={styles.media}>
-                  {r.photo_url ? (
+                  {imgUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img className={styles.img} src={r.photo_url} alt="" loading="lazy" />
+                    <img className={styles.img} src={imgUrl} alt="" />
                   ) : (
                     <div className={styles.mediaEmpty}>
                       <div className={styles.mediaIcon}>📷</div>
-                      <div className={styles.mediaText}>
-                        {t(locale, "Intet foto", "No photo")}
-                      </div>
+                      <div className={styles.mediaText}>{t("Ingen foto", "No photo")}</div>
                     </div>
                   )}
                 </div>
 
                 <div className={styles.cardActions}>
-                  <Link className={styles.open} href={`/${locale}/log/${r.id}`}>
-                    {t(locale, "Åbn", "Open")}
-                  </Link>
+                  <span className={styles.open}>{t("Åbn", "Open")} →</span>
                 </div>
-              </article>
+              </CardLink>
             );
           })}
-        </section>
+        </div>
+      ) : (
+        <Card className={styles.empty}>
+          <div className={styles.emptyIcon}>🍄</div>
+          <div className={styles.emptyTitle}>{t("Ingen fund endnu", "No finds yet")}</div>
+          <div className={styles.emptyBody}>
+            {t("Vær den første til at logge et fund.", "Be the first to log a find.")}
+          </div>
+          <Link className={styles.emptyCta} href={`/${locale}/log`}>
+            {t("Log fund", "Log find")}
+          </Link>
+        </Card>
       )}
-    </main>
+    </div>
   );
 }
