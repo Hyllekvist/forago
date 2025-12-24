@@ -1,4 +1,7 @@
 .nav{
+  /* make var available globally */
+  --bottom-nav-h: 64px;
+
   position: fixed;
   left: 0;
   right: 0;
@@ -9,6 +12,9 @@
 }
 
 .inner{
+  /* expose height to Shell */
+  --bottom-nav-h: 64px;
+
   max-width: var(--maxw);
   margin: 0 auto;
 
@@ -16,8 +22,7 @@
   grid-template-columns: repeat(5, 1fr);
   gap: 6px;
 
-  /* slimmer than before */
-  height: 56px;
+  height: var(--bottom-nav-h);
 
   border-radius: 18px;
   border: 1px solid rgba(255,255,255,0.10);
