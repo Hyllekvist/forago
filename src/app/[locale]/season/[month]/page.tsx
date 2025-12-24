@@ -57,7 +57,7 @@ export async function generateMetadata({
   const monthNum = MONTH_SLUG_TO_NUM[params.month];
   if (!monthNum) return { title: "Forago" };
 
-  const supabase = supabaseServer();
+const supabase = await supabaseServer();
   const { data: mp } = await supabase
     .from("season_month_pages")
     .select("title, seo_description")
@@ -90,7 +90,7 @@ export default async function SeasonMonthPage({
   const monthNum = MONTH_SLUG_TO_NUM[params.month];
   if (!monthNum) return notFound();
 
-  const supabase = supabaseServer();
+const supabase = await supabaseServer();
 
   // Month page intro (SEO text)
   const { data: mp, error: mpErr } = await supabase
