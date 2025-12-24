@@ -4,7 +4,6 @@ import { supabaseServer } from "@/lib/supabase/server";
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
-  const next = url.searchParams.get("next") || "/dk/feed";
 
   if (!code) {
     return NextResponse.redirect(new URL("/dk/login?e=missing_code", url.origin));
@@ -17,5 +16,6 @@ export async function GET(req: Request) {
     return NextResponse.redirect(new URL("/dk/login?e=callback_failed", url.origin));
   }
 
-  return NextResponse.redirect(new URL(next, url.origin));
+  // nu burde session-cookie være sat -> redirect til app
+  return NextResponse.redirect(new URL("/dk/feed", url.origin));
 }
