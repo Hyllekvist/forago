@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -14,22 +14,48 @@ export function LoginPanel() {
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const redirectTo = useMemo(() => {
+    // Brug fast prod-url hvis den findes (anbefalet), ellers fallback til origin.
+    const base =
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      (typeof window !== "undefined" ? window.location.origin : "");
+
+    try {
+      return new URL("/callback", base).toString();
+    } catch {
+      return `${base}/callback`;
+    }
+  }, []);
+
   async function sendMagicLink() {
     setErr(null);
     setLoading(true);
+
     try {
-      const origin =
-        typeof window !== "undefined" ? window.location.origin : "";
+      const clean = email.trim().toLowerCase();
+
       const { error } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
+        email: clean,
         options: {
-          emailRedirectTo: `${origin}/callback`,
+          emailRedirectTo: redirectTo,
         },
       });
-      if (error) throw error;
+
+      if (error) {
+        // Vis præcis Supabase-fejl (den du har brug for)
+        throw error;
+      }
+
       setSent(true);
     } catch (e: any) {
-      setErr(e?.message ?? "Noget gik galt");
+      // Supabase giver ofte { message, status, name }
+      const msg =
+        e?.message ||
+        e?.error_description ||
+        JSON.stringify(e, null, 2) ||
+        "Error sending magic link email";
+
+      setErr(msg);
     } finally {
       setLoading(false);
     }
@@ -48,6 +74,8 @@ export function LoginPanel() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Email"
             inputMode="email"
+            autoCapitalize="none"
+            autoCorrect="off"
             style={{ width: "100%", padding: 12, borderRadius: 12 }}
           />
           <button
@@ -57,7 +85,16 @@ export function LoginPanel() {
           >
             {loading ? "Sender…" : "Send login-link"}
           </button>
-          {err ? <p style={{ marginTop: 10 }}>{err}</p> : null}
+
+          {err ? (
+            <pre style={{ marginTop: 10, whiteSpace: "pre-wrap", opacity: 0.9 }}>
+              {err}
+            </pre>
+          ) : null}
+
+          <div style={{ marginTop: 10, fontSize: 12, opacity: 0.7 }}>
+            redirectTo: {redirectTo}
+          </div>
         </>
       )}
     </div>
