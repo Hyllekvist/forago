@@ -1,7 +1,6 @@
 // src/app/api/logs/create/route.ts
-import { NextResponse, type NextRequest } from "next/server";
-import { cookies } from "next/headers";
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import { NextResponse } from "next/server";
+import { supabaseServer } from "@/lib/supabase/server";
 
 function extFromFile(file: File) {
   const name = (file.name || "").toLowerCase();
@@ -16,8 +15,8 @@ function extFromFile(file: File) {
   return "jpg";
 }
 
-export async function POST(req: NextRequest) {
-  const supabase = createRouteHandlerClient({ cookies });
+export async function POST(req: Request) {
+  const supabase = await supabaseServer();
 
   const { data: auth, error: authErr } = await supabase.auth.getUser();
   if (authErr || !auth?.user) {
@@ -58,10 +57,7 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (insErr || !created?.id) {
-    return NextResponse.json(
-      { error: insErr?.message || "Failed to create log" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to create log" }, { status: 500 });
   }
 
   const logId = created.id as string;
@@ -80,10 +76,7 @@ export async function POST(req: NextRequest) {
 
     if (upErr) {
       await supabase.from("logs").delete().eq("id", logId);
-      return NextResponse.json(
-        { error: upErr.message || "Photo upload failed" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Photo upload failed" }, { status: 500 });
     }
 
     const { error: updErr } = await supabase
@@ -92,10 +85,7 @@ export async function POST(req: NextRequest) {
       .eq("id", logId);
 
     if (updErr) {
-      return NextResponse.json(
-        { error: updErr.message || "Failed to link photo" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to link photo" }, { status: 500 });
     }
   }
 
