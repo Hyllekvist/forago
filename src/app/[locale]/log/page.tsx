@@ -71,7 +71,11 @@ export default function LogPage() {
       fd.set("visibility", "public"); // TODO: UI toggle senere
       if (photoFile) fd.set("photo", photoFile);
 
-      const res = await fetch("/api/logs/create", { method: "POST", body: fd });
+      const res = await fetch("/api/logs/create", {
+        method: "POST",
+        body: fd,
+      });
+
       const json = (await res.json().catch(() => null)) as any;
 
       if (!res.ok) {
@@ -87,6 +91,15 @@ export default function LogPage() {
       setSaving(false);
     }
   }
+
+  const saveLabel =
+    saving
+      ? locale === "dk"
+        ? "Gemmer…"
+        : "Saving…"
+      : locale === "dk"
+        ? "Gem fund"
+        : "Save";
 
   return (
     <main className={styles.page}>
@@ -108,9 +121,7 @@ export default function LogPage() {
 
       {err ? (
         <div className={styles.card} role="alert">
-          <div className={styles.sub} style={{ color: "var(--muted)" }}>
-            {err}
-          </div>
+          <div className={styles.sub}>{err}</div>
         </div>
       ) : null}
 
@@ -188,7 +199,7 @@ export default function LogPage() {
           onClick={saveLog}
           disabled={saving}
         >
-          {saving ? (locale === "dk" ? "Gemmer…" : "Saving…") : locale === "dk" ? "Gem fund" : "Save"}
+          {saveLabel}
         </button>
       </div>
     </main>
