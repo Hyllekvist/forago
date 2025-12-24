@@ -56,7 +56,7 @@ export default async function SeasonNowPage({ params }: { params: { locale: stri
   const month = currentMonthCopenhagen();
   const country = locale; // dk -> dk
 
-  const supabase = supabaseServer();
+const supabase = await supabaseServer();
 
   // Get seasonality rows for current month (national = region = '')
   const { data: rows, error } = await supabase
