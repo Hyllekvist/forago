@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import styles from "./Feed.module.css";
+import styles from "./FeedPage.module.css";
 
 type LogItem = {
   id: string;
