@@ -1,4 +1,3 @@
-// src/app/[locale]/log/page.tsx
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -84,7 +83,6 @@ export default function LogPage() {
     const f = e.target.files?.[0] ?? null;
     if (!f) return;
 
-    // cleanup previous preview url
     if (photoPreviewUrl?.startsWith("blob:")) URL.revokeObjectURL(photoPreviewUrl);
 
     setPhotoFile(f);
@@ -103,7 +101,6 @@ export default function LogPage() {
     try {
       const id = crypto.randomUUID();
       const createdAt = new Date().toISOString();
-
       const photoDataUrl = photoFile ? await fileToDataUrl(photoFile) : undefined;
 
       const draft: LogDraft = {
@@ -117,7 +114,6 @@ export default function LogPage() {
       const all = readAll();
       writeAll([draft, ...all].slice(0, 200));
 
-      // reset
       removePhoto();
       setQuery("");
 
@@ -128,107 +124,134 @@ export default function LogPage() {
   }
 
   return (
-    <main className={styles.page}>
-      {/* Header row */}
-      <div className={styles.topRow}>
-        <button
-          type="button"
-          className={styles.backBtn}
-          onClick={() => router.back()}
-          aria-label="Back"
-        >
-          ←
-        </button>
+    <>
+      <main className={styles.page}>
+        {/* Header row */}
+        <div className={styles.topRow}>
+          <button
+            type="button"
+            className={styles.backBtn}
+            onClick={() => router.back()}
+            aria-label={locale === "dk" ? "Tilbage" : "Back"}
+          >
+            ←
+          </button>
 
-        <div className={styles.titleBlock}>
-          <h1 className={styles.h1}>{locale === "dk" ? "Log fund" : "Log find"}</h1>
-          <div className={styles.meta}>{fmtNow(locale)}</div>
+          <div className={styles.titleBlock}>
+            <h1 className={styles.h1}>{locale === "dk" ? "Log fund" : "Log find"}</h1>
+            <div className={styles.meta}>{fmtNow(locale)}</div>
+          </div>
         </div>
 
+        {/* Content */}
+        <section className={styles.section}>
+          <div className={styles.card}>
+            <div className={styles.cardHead}>
+              <div>
+                <div className={styles.cardTitle}>{locale === "dk" ? "Foto" : "Photo"}</div>
+                <div className={styles.cardSub}>
+                  {locale === "dk"
+                    ? "Valgfrit — men hjælper andre med at lære."
+                    : "Optional — helps others learn."}
+                </div>
+              </div>
+
+              <div className={styles.cardActions}>
+                {photoFile ? (
+                  <button type="button" className={styles.ghostBtn} onClick={removePhoto}>
+                    {locale === "dk" ? "Fjern" : "Remove"}
+                  </button>
+                ) : (
+                  <button type="button" className={styles.ghostBtn} onClick={openPicker}>
+                    {locale === "dk" ? "Tilføj" : "Add"}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div
+              className={styles.photoBox}
+              onClick={!photoFile ? openPicker : undefined}
+              role={!photoFile ? "button" : undefined}
+              tabIndex={!photoFile ? 0 : -1}
+              onKeyDown={(e) => {
+                if (!photoFile && (e.key === "Enter" || e.key === " ")) openPicker();
+              }}
+              aria-label={!photoFile ? (locale === "dk" ? "Tilføj foto" : "Add photo") : undefined}
+            >
+              {photoPreviewUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img className={styles.photo} src={photoPreviewUrl} alt="" />
+              ) : (
+                <div className={styles.photoEmpty}>
+                  <div className={styles.photoEmptyIcon} aria-hidden="true">
+                    +
+                  </div>
+                  <div>{locale === "dk" ? "Ingen foto endnu" : "No photo yet"}</div>
+                </div>
+              )}
+            </div>
+
+            <div className={styles.photoBtns}>
+              <button type="button" className={styles.chipBtn} onClick={openPicker}>
+                {locale === "dk" ? "Tag et nyt" : "Take new"}
+              </button>
+              <button type="button" className={styles.chipBtn} onClick={openPicker}>
+                {locale === "dk" ? "Vælg fra bibliotek" : "Choose"}
+              </button>
+
+              <input
+                ref={fileInputRef}
+                className={styles.hiddenInput}
+                type="file"
+                accept="image/*"
+                onChange={onPickFile}
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.card}>
+            <div className={styles.cardTitle}>
+              {locale === "dk" ? "Hvad fandt du?" : "What did you find?"}
+            </div>
+            <div className={styles.cardSub}>
+              {locale === "dk"
+                ? "Du kan logge uden at kende arten."
+                : "You can log without knowing the species."}
+            </div>
+
+            <div className={styles.field}>
+              <input
+                className={styles.input}
+                placeholder={locale === "dk" ? "Søg art (valgfrit)" : "Search species (optional)"}
+                inputMode="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </div>
+          </div>
+        </section>
+      </main>
+
+      {/* Sticky CTA (den ENESTE Gem-knap) */}
+      <div className={styles.sticky} aria-hidden="false">
         <button
           type="button"
           className={styles.primaryBtn}
           onClick={saveLog}
           disabled={saving}
         >
-          {saving ? (locale === "dk" ? "Gemmer…" : "Saving…") : (locale === "dk" ? "Gem fund" : "Save")}
+          {saving
+            ? locale === "dk"
+              ? "Gemmer…"
+              : "Saving…"
+            : locale === "dk"
+              ? "Gem fund"
+              : "Save find"}
         </button>
       </div>
-
-      {/* Content */}
-      <section className={styles.section}>
-        <div className={styles.card}>
-          <div className={styles.cardHead}>
-            <div>
-              <div className={styles.cardTitle}>{locale === "dk" ? "Foto" : "Photo"}</div>
-              <div className={styles.cardSub}>
-                {locale === "dk"
-                  ? "Valgfrit — men hjælper andre med at lære."
-                  : "Optional — helps others learn."}
-              </div>
-            </div>
-
-            <div className={styles.cardActions}>
-              {photoFile ? (
-                <button type="button" className={styles.ghostBtn} onClick={removePhoto}>
-                  {locale === "dk" ? "Fjern" : "Remove"}
-                </button>
-              ) : (
-                <button type="button" className={styles.ghostBtn} onClick={openPicker}>
-                  {locale === "dk" ? "Tilføj" : "Add"}
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className={styles.photoBox} onClick={!photoFile ? openPicker : undefined} role={!photoFile ? "button" : undefined}>
-            {photoPreviewUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img className={styles.photo} src={photoPreviewUrl} alt="" />
-            ) : (
-              <div className={styles.photoEmpty}>{locale === "dk" ? "Ingen foto endnu" : "No photo yet"}</div>
-            )}
-          </div>
-
-          <div className={styles.photoBtns}>
-            <button type="button" className={styles.chipBtn} onClick={openPicker}>
-              {locale === "dk" ? "Tag et nyt" : "Take new"}
-            </button>
-            <button type="button" className={styles.chipBtn} onClick={openPicker}>
-              {locale === "dk" ? "Vælg fra bibliotek" : "Choose"}
-            </button>
-
-            <input
-              ref={fileInputRef}
-              className={styles.hiddenInput}
-              type="file"
-              accept="image/*"
-              onChange={onPickFile}
-            />
-          </div>
-        </div>
-      </section>
-
-      <section className={styles.section}>
-        <div className={styles.card}>
-          <div className={styles.cardTitle}>{locale === "dk" ? "Hvad fandt du?" : "What did you find?"}</div>
-          <div className={styles.cardSub}>
-            {locale === "dk"
-              ? "Du kan logge uden at kende arten."
-              : "You can log without knowing the species."}
-          </div>
-
-          <div className={styles.field}>
-            <input
-              className={styles.input}
-              placeholder={locale === "dk" ? "Søg art (valgfrit)" : "Search species (optional)"}
-              inputMode="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-          </div>
-        </div>
-      </section>
-    </main>
+    </>
   );
 }
