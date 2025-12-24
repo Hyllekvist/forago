@@ -1,63 +1,118 @@
-.header{
+.header {
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 60;
+
   padding: 10px var(--pad);
 }
 
-.inner{
+.inner {
   max-width: var(--maxw);
   margin: 0 auto;
 
-  border-radius: 16px;
-  border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--bg) 82%, transparent);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: var(--shadow-1);
+  height: 52px;
+  padding: 0 12px;
 
-  height: 52px;                 /* 👈 vigtig */
-  padding: 0 12px;              /* 👈 strammere */
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+
+  border-radius: 16px;
+  border: 1px solid var(--line);
+
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+
+  box-shadow: var(--shadow-1);
 }
 
-.brand{
+.brand {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-weight: 800;
+
+  color: var(--ink);
+  font-weight: 850;
   letter-spacing: -0.02em;
+
+  min-width: 0;
 }
 
-.mark{
+.mark {
   width: 12px;
   height: 12px;
-  border-radius: 6px;
+  border-radius: 7px;
+
   background: linear-gradient(135deg, #6ee7ff, #a78bfa, #34d399, #ffd36e);
-  box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
 }
 
-.word{
+.word {
   font-size: 15px;
+  line-height: 1;
+  white-space: nowrap;
 }
 
-.right{
+.right {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.link{
-  font-size: 13px;
-  color: var(--muted);
+.link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
   padding: 8px 10px;
   border-radius: 999px;
+
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--muted);
+
   border: 1px solid transparent;
+  background: transparent;
 }
 
-.link:active{
+.link:hover {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--panel2) 70%, transparent);
+  border-color: color-mix(in srgb, var(--line) 85%, transparent);
+}
+
+.link:active {
   transform: translateY(1px);
+}
+
+.hairline {
+  height: 1px;
+  max-width: var(--maxw);
+  margin: 10px auto 0;
+
+  background: color-mix(in srgb, var(--line) 65%, transparent);
+  opacity: 0.7;
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .header {
+    padding: 8px var(--pad);
+  }
+
+  .inner {
+    height: 50px;
+    padding: 0 10px;
+  }
+
+  .right {
+    gap: 8px;
+  }
+
+  .link {
+    padding: 8px 9px;
+    font-size: 12px;
+  }
 }
