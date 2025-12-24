@@ -12,3 +12,12 @@
 :global(:root[data-theme="light"]) .card {
   box-shadow: var(--shadow-1);
 } 
+
+.card{
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--shadow-1);
+  padding: 14px;
+}
+.card:hover{ border-color: color-mix(in srgb, var(--line) 70%, var(--accent) 30%); }
