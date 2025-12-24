@@ -1,84 +1,59 @@
 :root {
   /* layout */
-  --maxw: 1040px;
+  --maxw: 1120px;
   --pad: 16px;
-  --radius: 18px;
-  --radius-lg: 24px;
-  --radius-pill: 999px;
 
-  /* ---------- Brand DNA (Forago) ---------- */
-  /* Primary “vibrant nature” gradient */
-  --brand-1: #31ffb5;  /* mint neon */
-  --brand-2: #5aa7ff;  /* sky */
-  --brand-3: #b86bff;  /* violet pop */
+  /* radii */
+  --r-sm: 12px;
+  --r-md: 14px;
+  --r-lg: 18px;
+  --r-xl: 22px;
 
-  /* Single-action accent (buttons/links) */
-  --accent: #31ffb5;
-  --accent-ink: #04110c;
+  /* spacing scale */
+  --s-1: 6px;
+  --s-2: 10px;
+  --s-3: 14px;
+  --s-4: 18px;
+  --s-5: 24px;
+  --s-6: 32px;
 
-  /* Optional: warm signal (alerts / highlights) */
-  --amber: #ffb020;
+  /* strokes */
+  --stroke: 1px;
 
-  /* ---------- Surfaces (Dark default) ---------- */
-  --bg: #070a0e;
-  --bg2: #090f16;
+  /* shadows (theme overrides shadow colors in themes.css) */
+  --shadow-0: 0 1px 0 rgba(0,0,0,0.0);
+  --shadow-1: 0 10px 30px rgba(0,0,0,0.35);
+  --shadow-2: 0 16px 44px rgba(0,0,0,0.42);
 
+  /* brand (themes.css overrides accent) */
+  --accent: #6ee7b7;
+
+  /* semantic surfaces (themes.css overrides these) */
+  --bg: #0b0f14;
   --ink: rgba(255,255,255,0.92);
   --muted: rgba(255,255,255,0.70);
-  --muted2: rgba(255,255,255,0.55);
 
-  --panel: rgba(255,255,255,0.045);
-  --panel2: rgba(255,255,255,0.070);
+  --panel: rgba(255,255,255,0.05);
+  --panel2: rgba(255,255,255,0.08);
   --line: rgba(255,255,255,0.12);
-  --line2: rgba(255,255,255,0.18);
 
-  /* chips */
-  --chipBg: rgba(255,255,255,0.055);
+  --chipBg: rgba(255,255,255,0.06);
   --chipLine: rgba(255,255,255,0.16);
 
-  /* semantic */
-  --good: #31ffb5;
-  --goodBg: rgba(49,255,181,0.14);
-  --goodLine: rgba(49,255,181,0.32);
+  --goodBg: rgba(34,197,94,0.16);
+  --goodLine: rgba(34,197,94,0.35);
 
-  --warn: #ffb020;
-  --warnBg: rgba(255,176,32,0.12);
-  --warnLine: rgba(255,176,32,0.30);
+  --warnBg: rgba(245,158,11,0.12);
+  --warnLine: rgba(245,158,11,0.32);
 
-  --bad: #ff4d6d;
-  --badBg: rgba(255,77,109,0.12);
-  --badLine: rgba(255,77,109,0.30);
-
-  /* ---------- Effects ---------- */
-  --shadow-1: 0 10px 30px rgba(0,0,0,0.38);
-  --shadow-2: 0 18px 60px rgba(0,0,0,0.45);
-
-  /* Soft “vibrant” glow (use on hero, map HUD, key cards) */
-  --glow: 0 0 0 1px rgba(255,255,255,0.10),
-          0 18px 60px rgba(0,0,0,0.55),
-          0 0 42px rgba(49,255,181,0.16);
-
-  /* Gradient helpers */
-  --grad-brand: linear-gradient(135deg, var(--brand-1), var(--brand-2) 45%, var(--brand-3));
-  --grad-accent: linear-gradient(135deg, rgba(49,255,181,1), rgba(90,167,255,0.95));
-  --grad-quiet: radial-gradient(1200px 700px at 20% -10%, rgba(49,255,181,0.18), transparent 55%),
-                radial-gradient(900px 600px at 90% 0%, rgba(184,107,255,0.16), transparent 52%);
-
-  /* Selection */
-  --selection: rgba(49,255,181,0.28);
-}
-
-:root{
-  /* motion */
-  --ease: cubic-bezier(.2,.8,.2,1);
-  --t-fast: 120ms;
-  --t: 180ms;
-
-  /* interaction surfaces */
+  /* interaction */
   --tapBg: color-mix(in srgb, var(--ink) 8%, transparent);
   --tapLine: color-mix(in srgb, var(--ink) 14%, transparent);
+  --focus: color-mix(in srgb, var(--accent) 65%, transparent);
 
-  /* focus */
-  --focus: color-mix(in srgb, var(--accent) 70%, transparent);
-  --focusRing: 0 0 0 3px var(--focus);
+  /* glass surfaces (header/bottomnav) */
+  --glassBg: color-mix(in srgb, var(--bg) 82%, transparent);
+  --glassLine: var(--line);
+
+  --muted2: color-mix(in srgb, var(--ink) 55%, transparent);
 }
