@@ -1,96 +1,63 @@
 .header{
   position: sticky;
   top: 0;
-  z-index: 70;
-  padding: 10px 12px;
-
-  background: color-mix(in srgb, var(--bg) 86%, transparent);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  z-index: 50;
+  padding: 10px var(--pad);
 }
 
 .inner{
   max-width: var(--maxw);
   margin: 0 auto;
+
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-1);
+
+  height: 52px;                 /* 👈 vigtig */
+  padding: 0 12px;              /* 👈 strammere */
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-
-  border-radius: var(--radius);
-  border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--panel) 72%, transparent);
-  box-shadow: var(--shadow-1);
-  padding: 10px 12px;
+  gap: 12px;
 }
 
 .brand{
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  text-decoration: none;
-  color: var(--ink);
-  min-width: 0;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 .mark{
-  width: 18px;
-  height: 18px;
+  width: 12px;
+  height: 12px;
   border-radius: 6px;
-  background: var(--grad-brand);
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,0.16),
-    0 10px 24px rgba(0,0,0,0.35),
-    0 0 26px rgba(49,255,181,0.22);
+  background: linear-gradient(135deg, #6ee7ff, #a78bfa, #34d399, #ffd36e);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.35);
 }
 
 .word{
-  font-weight: 900;
-  letter-spacing: -0.02em;
   font-size: 15px;
 }
 
 .right{
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.link,
-.linkActive{
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 8px 10px;
-  border-radius: var(--radius-pill);
-  border: 1px solid transparent;
-
-  color: color-mix(in srgb, var(--muted) 95%, transparent);
-  background: transparent;
-  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
-  font-weight: 650;
+.link{
   font-size: 13px;
-  white-space: nowrap;
+  color: var(--muted);
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
 }
 
-.link:hover{
-  background: rgba(255,255,255,0.04);
-  border-color: rgba(255,255,255,0.08);
-  color: var(--ink);
-}
-
-.linkActive{
-  background: color-mix(in srgb, var(--goodBg) 55%, rgba(255,255,255,0.02));
-  border-color: color-mix(in srgb, var(--goodLine) 60%, var(--line));
-  color: var(--ink);
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.06);
-}
-
-.hairline{
-  max-width: var(--maxw);
-  margin: 10px auto 0;
-  height: 1px;
-  background: color-mix(in srgb, var(--line) 70%, transparent);
-  opacity: 0.65;
+.link:active{
+  transform: translateY(1px);
 }
