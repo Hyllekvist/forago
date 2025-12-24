@@ -119,4 +119,4 @@ export default async function FeedPage({ params }: Props) {
       recentSpots={recentSpots}
     />
   );
-}
+} 
