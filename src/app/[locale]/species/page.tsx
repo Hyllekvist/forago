@@ -45,7 +45,7 @@ export default async function SpeciesIndexPage({
   const q = (searchParams?.q ?? "").trim();
   const group = (searchParams?.group ?? "").trim();
 
-  const supabase = supabaseServer();
+const supabase = await supabaseServer();
 
   const { data: species, error: spErr } = await supabase
     .from("species")
