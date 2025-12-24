@@ -5,30 +5,30 @@
   bottom: 0;
   z-index: 80;
 
-  pointer-events: none; /* så kun selve baren kan trykkes */
-  padding: 0 var(--pad) calc(10px + env(safe-area-inset-bottom));
+  pointer-events: none;
+  padding: 0 var(--pad, 16px) calc(10px + env(safe-area-inset-bottom));
 }
 
 .inner {
   pointer-events: auto;
 
-  max-width: var(--maxw);
+  max-width: var(--maxw, 1120px);
   margin: 0 auto;
 
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 6px;
 
-  /* LAVERE bar */
-  padding: 8px 10px;
-  border-radius: 22px;
+  /* lavere bar, men stadig “premium” */
+  padding: 7px 9px;
+  border-radius: 20px;
 
-  border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  border: 1px solid var(--glassLine);
+  background: var(--glassBg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.34);
+  box-shadow: var(--shadow-1);
 }
 
 .item,
@@ -40,28 +40,29 @@
   padding: 6px 6px;
   border-radius: 14px;
 
-  color: var(--muted);
+  color: var(--muted2, var(--muted));
   border: 1px solid transparent;
 
-  min-height: 44px; /* stadig touch-friendly */
+  min-height: 44px;
+  text-decoration: none;
 }
 
 .icon {
-  width: 22px;
-  height: 22px;
+  width: 21px;
+  height: 21px;
   display: block;
 }
 
 .label {
-  font-size: 11px;
+  font-size: 10.5px;
   line-height: 1;
   letter-spacing: -0.01em;
 }
 
 .itemActive {
   color: var(--ink);
-  background: color-mix(in srgb, var(--panel2) 70%, transparent);
-  border-color: color-mix(in srgb, var(--line) 90%, transparent);
+  background: var(--tapBg);
+  border-color: var(--tapLine);
 }
 
 .item:active,
@@ -69,38 +70,8 @@
   transform: translateY(1px);
 }
 
-/* ---------- Light mode tuning ---------- */
-:global(:root[data-theme="light"]) .inner {
-  background: color-mix(in srgb, var(--bg) 78%, transparent);
-  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.10);
-}
-
-:global(:root[data-theme="light"]) .item {
-  color: color-mix(in srgb, var(--ink) 70%, rgba(15, 23, 42, 0.30));
-}
-
-:global(:root[data-theme="light"]) .itemActive {
-  color: var(--ink);
-  background: rgba(15, 23, 42, 0.06);
-  border-color: rgba(15, 23, 42, 0.12);
-}
-
 @media (max-width: 640px) {
   .nav {
     padding: 0 12px calc(10px + env(safe-area-inset-bottom));
-  }
-
-  .inner {
-    padding: 7px 9px;
-    border-radius: 20px;
-  }
-
-  .icon {
-    width: 21px;
-    height: 21px;
-  }
-
-  .label {
-    font-size: 10.5px;
   }
 }
