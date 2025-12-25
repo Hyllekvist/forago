@@ -1,4 +1,4 @@
-// src/components/Posts/PostCard.tsx
+// src/components/Posts/PostCard.tsx 
 import Link from "next/link";
 import styles from "./PostCard.module.css";
 import { VoteButton } from "./VoteButton";
