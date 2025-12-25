@@ -9,6 +9,7 @@
   height: 100svh;
   width: 100%;
   overflow: hidden;
+  padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom));
 }
 
 /* Map layer */
@@ -115,10 +116,12 @@
   position: absolute;
   left: 12px;
   right: 12px;
-  bottom: calc(12px + env(safe-area-inset-bottom));
-  z-index: 900;
 
-  pointer-events: none; /* 🔥 gør at sheet wrapper ikke sluger map klik */
+  /* 🔥 over BottomNav */
+  bottom: calc(var(--bottom-nav-h) + 12px + env(safe-area-inset-bottom));
+
+  z-index: 900;
+  pointer-events: none;
 }
 
 .sheetCard{
