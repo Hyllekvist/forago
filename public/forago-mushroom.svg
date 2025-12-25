@@ -1,0 +1,18 @@
+<svg
+  width="64"
+  height="64"
+  viewBox="0 0 64 64"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <!-- Hat -->
+  <path
+    d="M12 30C12 18.954 21.402 10 32 10C42.598 10 52 18.954 52 30C52 31.657 50.657 33 49 33H15C13.343 33 12 31.657 12 30Z"
+    fill="currentColor"
+  />
+  <!-- Stilk -->
+  <path
+    d="M24 33H40V48C40 51.314 37.314 54 34 54H30C26.686 54 24 51.314 24 48V33Z"
+    fill="currentColor"
+  />
+</svg>
