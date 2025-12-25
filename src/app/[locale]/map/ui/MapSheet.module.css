@@ -1,133 +1,135 @@
-.sheet { 
+.sheet{
   width: 100%;
-  border-top-left-radius: 18px;
-  border-top-right-radius: 18px;
-  border: 1px solid rgba(255,255,255,0.10);
+  border-top-left-radius: var(--r-lg);
+  border-top-right-radius: var(--r-lg);
+
+  border: var(--stroke) solid var(--glassLine);
   border-bottom: 0;
-  background: rgba(11,15,20,0.86);
-  backdrop-filter: blur(14px);
-  box-shadow: 0 -18px 60px rgba(0,0,0,0.45);
-  transform: translateY(0);
+
+  background: var(--glassBg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+
+  box-shadow: var(--shadow-2);
 }
 
-.grab {
-  width: 100%;
-  background: transparent;
-  border: 0;
+.grab{
+  width:100%;
+  background:transparent;
+  border:0;
   padding: 10px 0 0;
-  cursor: pointer;
-}
-.handle {
-  display: block;
-  margin: 0 auto;
-  width: 44px;
-  height: 5px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.20);
+  cursor:pointer;
 }
 
-.header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+.handle{
+  display:block;
+  margin:0 auto;
+  width:44px;
+  height:5px;
+  border-radius:999px;
+  background: color-mix(in srgb, var(--ink) 18%, transparent);
+}
+
+.header{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
   padding: 10px 14px 12px;
-  cursor: pointer;
+  cursor:pointer;
 }
 
-.hTitle {
+.hTitle{
   font-size: 13px;
-  font-weight: 850;
+  font-weight: 900;
   letter-spacing: -0.01em;
 }
 
-.hHint {
+.hHint{
   font-size: 12px;
-  opacity: 0.7;
-  font-weight: 750;
+  color: var(--muted);
+  font-weight: 850;
 }
 
-.body {
-  max-height: 0;
-  overflow: hidden;
+.body{
+  max-height:0;
+  overflow:hidden;
   transition: max-height 220ms ease;
 }
 
-.sheet[data-expanded="true"] .body {
+.sheet[data-expanded="true"] .body{
   max-height: 52vh;
-  overflow: auto;
+  overflow:auto;
 }
 
-.empty {
-  padding: 18px 14px 22px;
+.empty{ padding: 18px 14px 22px; }
+.emptyTitle{ font-weight: 950; font-size: 13px; }
+.emptySub{
+  margin-top:6px;
+  font-size:12px;
+  color: var(--muted);
+  line-height:1.35;
 }
-.emptyTitle {
+
+.list{
+  padding: 0 10px 12px;
+  display:grid;
+  gap:8px;
+}
+
+.row{
+  display:grid;
+  grid-template-columns: 1fr auto;
+  gap:10px;
+  align-items:center;
+
+  padding: 10px 10px;
+  border-radius: var(--r-md);
+  border: var(--stroke) solid var(--line);
+  background: var(--panel);
+}
+
+.row[data-active="true"]{
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--line));
+  background: color-mix(in srgb, var(--accent) 12%, var(--panel));
+}
+
+.rowMain{
+  background:transparent;
+  border:0;
+  color: inherit;
+  text-align:left;
+  cursor:pointer;
+  padding:0;
+  min-width:0;
+}
+
+.rowTitle{
   font-weight: 900;
   font-size: 13px;
-}
-.emptySub {
-  margin-top: 6px;
-  font-size: 12px;
-  opacity: 0.7;
-  line-height: 1.35;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 
-.list {
-  padding: 0 10px 12px;
-  display: grid;
-  gap: 8px;
+.rowMeta{
+  margin-top:2px;
+  font-size:12px;
+  color: var(--muted);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 
-.row {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 10px;
-  align-items: center;
-  padding: 10px 10px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.05);
-}
-
-.row[data-active="true"] {
-  border-color: rgba(16,185,129,0.25);
-  background: rgba(16,185,129,0.10);
-}
-
-.rowMain {
-  background: transparent;
-  border: 0;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-  padding: 0;
-  min-width: 0;
-}
-
-.rowTitle {
-  font-weight: 850;
-  font-size: 13px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.rowMeta {
-  margin-top: 2px;
-  font-size: 12px;
-  opacity: 0.65;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.logBtn {
+.logBtn{
   height: 32px;
   padding: 0 12px;
   border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.10);
-  background: rgba(255,255,255,0.08);
+
+  border: var(--stroke) solid var(--chipLine);
+  background: var(--chipBg);
   color: inherit;
-  font-weight: 850;
+
+  font-weight: 900;
   font-size: 12px;
-  cursor: pointer;
+  cursor:pointer;
 }
