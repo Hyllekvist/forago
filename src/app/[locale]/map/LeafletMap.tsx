@@ -115,7 +115,7 @@ function ClusterLayer({
   });
 
 const index = useMemo(() => {
-  const sc = new Supercluster<{ spotId: string }>({ radius: 60, maxZoom: 17 });
+const sc = new Supercluster({ radius: 60, maxZoom: 17 });
   sc.load(
     points.map((s) => ({
       type: "Feature",
