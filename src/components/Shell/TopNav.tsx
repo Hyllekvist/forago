@@ -14,14 +14,25 @@ export function TopNav({ locale }: { locale: string }) {
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
-        <Link className={styles.brand} href={`/${locale}`} aria-label="Forago home">
-          <span className={styles.dot} aria-hidden="true" />
+        <Link
+          className={styles.brand}
+          href={`/${locale}`}
+          aria-label="Forago home"
+        >
+          <img
+            src="/forago-mushroom-filled.svg"
+            alt=""
+            aria-hidden="true"
+            className={styles.logo}
+          />
           <span className={styles.word}>Forago</span>
         </Link>
 
         <nav className={styles.nav} aria-label="Primary">
           <Link
-            className={`${styles.link} ${isActive(`/${locale}/guides`) ? styles.active : ""}`}
+            className={`${styles.link} ${
+              isActive(`/${locale}/guides`) ? styles.active : ""
+            }`}
             href={`/${locale}/guides`}
           >
             <span className={styles.icon} aria-hidden="true">
@@ -47,7 +58,9 @@ export function TopNav({ locale }: { locale: string }) {
           </Link>
 
           <Link
-            className={`${styles.link} ${isActive(`/login`) ? styles.active : ""}`}
+            className={`${styles.link} ${
+              isActive(`/login`) ? styles.active : ""
+            }`}
             href="/login"
           >
             <span className={styles.icon} aria-hidden="true">
