@@ -1,57 +1,75 @@
+/* src/components/Posts/PostCard.module.css */
+
 .card{
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 12px;
+  align-items: start;
+
+  padding: 14px;
   border-radius: 18px;
   background: var(--panel);
   border: 1px solid var(--line);
-  padding: 14px;
   box-shadow: var(--shadow-1);
 }
 
-.top{
+.voteCol{
+  display:flex;
+  justify-content:center;
+  padding-top: 2px;
+}
+
+.content{
+  min-width: 0; /* vigtigt for tekst-wrap */
+  display:block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.meta{
   display:flex;
   align-items:center;
   gap: 8px;
   color: var(--muted);
-  font-size: 12px;
-  margin-bottom: 8px;
+  font-size: 13px;
+  line-height: 1;
 }
 
-.badge{
+.pill{
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.sep{ opacity: .7; }
+.time{ opacity: .9; }
+.spacer{ flex: 1; }
+
+.comments{
+  opacity: .9;
   padding: 6px 10px;
   border-radius: 999px;
   border: 1px solid var(--line);
   background: color-mix(in srgb, var(--ink) 6%, transparent);
-  color: var(--ink);
-  font-weight: 700;
-  font-size: 12px;
-}
-
-.mine{
-  font-weight: 700;
-  color: var(--ink);
-  opacity: .9;
-}
-
-.sep{
-  opacity: .6;
-}
-
-.when{
-  opacity: .9;
 }
 
 .title{
-  margin: 0;
-  font-size: 16px;
-  line-height: 1.25;
-  letter-spacing: -0.01em;
+  margin: 10px 0 8px;
+  font-size: 18px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
 }
 
-.body{
-  margin: 8px 0 0;
+.excerpt{
+  margin: 0;
   color: var(--muted);
-  line-height: 1.6;
+  line-height: 1.5;
+
   display: -webkit-box;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
