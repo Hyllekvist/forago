@@ -4,10 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import Supercluster from "supercluster";
 import type { Map as LeafletMapType } from "leaflet";
 
 // supercluster (untyped)
-const Supercluster = require("supercluster") as any;
 
 import styles from "./MapPage.module.css";
 
@@ -114,17 +114,18 @@ function ClusterLayer({
     zoomend: () => setTick((t) => t + 1),
   });
 
-  const index = useMemo(() => {
-    const sc = new Supercluster({ radius: 60, maxZoom: 17 });
-    sc.load(
-      points.map((s) => ({
-        type: "Feature",
-        properties: { spotId: s.id },
-        geometry: { type: "Point", coordinates: [s.lng, s.lat] },
-      }))
-    );
-    return sc;
-  }, [points]);
+const index = useMemo(() => {
+  const sc = new Supercluster<{ spotId: string }>({ radius: 60, maxZoom: 17 });
+  sc.load(
+    points.map((s) => ({
+      type: "Feature",
+      properties: { spotId: s.id },
+      geometry: { type: "Point", coordinates: [s.lng, s.lat] },
+    }))
+  );
+  return sc;
+}, [points]);
+
 
   // expose map api once
   useEffect(() => {
