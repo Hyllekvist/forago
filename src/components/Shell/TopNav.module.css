@@ -136,9 +136,6 @@
 .brandIcon{
   width: 18px;
   height: 18px;
+  display: block;
   flex: 0 0 auto;
-
-  /* gør svg “UI-monokrom” i stedet for rød emoji-vibe */
-  opacity: .92;
-  filter: grayscale(1);
 }
