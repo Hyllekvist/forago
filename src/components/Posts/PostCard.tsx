@@ -16,12 +16,12 @@ export type PostItem = {
 };
 
 type Props = {
-  item: PostItem;
+  post: PostItem;
+  locale: string;
 };
 
-export function PostCard({ item }: Props) {
+export function PostCard({ post, locale }: Props) {
   const {
-    locale,
     id,
     type,
     title,
@@ -30,7 +30,7 @@ export function PostCard({ item }: Props) {
     score = 0,
     my_vote = 0,
     comment_count = 0,
-  } = item;
+  } = post;
 
   return (
     <article className={styles.card}>
