@@ -1,7 +1,7 @@
-// src/app/[locale]/map/page.tsx
 import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import MapClient from "./MapClient";
+import type { Spot } from "./LeafletMap";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -20,25 +20,22 @@ export default async function MapPage({
 }) {
   const locParam = params?.locale;
   if (!locParam || !isLocale(locParam)) return notFound();
-  const locale = locParam;
 
-  // Fail-safe: ingen throw på server
   try {
     const supabase = await supabaseServer();
 
-    const { data: spots, error } = await supabase
+    const { data, error } = await supabase
       .from("spots")
       .select("id, lat, lng, title, species_slug, created_at")
       .order("created_at", { ascending: false })
       .limit(500);
 
     if (error) {
-      // fallback til tomt map
-      return <MapClient locale={locale} spots={[]} />;
+      return <MapClient spots={[] as Spot[]} />;
     }
 
-    return <MapClient locale={locale} spots={(spots ?? []) as any} />;
+    return <MapClient spots={(data ?? []) as Spot[]} />;
   } catch {
-    return <MapClient locale={locale} spots={[]} />;
+    return <MapClient spots={[] as Spot[]} />;
   }
 }
