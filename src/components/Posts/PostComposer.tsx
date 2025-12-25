@@ -19,7 +19,6 @@ export function PostComposer() {
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // udleder locale fra URL ("/dk/ask" => "dk")
   const locale = (pathname?.split("/")[1] || "dk") as string;
 
   async function submit(e: React.FormEvent) {
@@ -32,30 +31,32 @@ export function PostComposer() {
       const res = await fetch("/api/posts/create", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          locale,
-          type,
-          title,
-          body,
-        }),
+        body: JSON.stringify({ locale, type, title, body }),
       });
 
       const json = (await res.json()) as ApiResp;
 
-      if (!res.ok || !json.ok) {
-        // hvis ikke logged in → send til login
-        if (res.status === 401) {
-          router.push("/login");
-          return;
-        }
-        setErr(!json.ok ? json.error : "Failed");
+      // Ikke logged in
+      if (res.status === 401) {
+        const returnTo = encodeURIComponent(pathname || `/${locale}/ask`);
+        router.push(`/${locale}/login?returnTo=${returnTo}`);
         return;
       }
 
+      // Fejl (TS-sikkert)
+      if (!res.ok || json.ok === false) {
+        setErr(json.ok === false ? json.error : "Failed");
+        return;
+      }
+
+      // Success (TS-sikkert)
       setOkId(json.id);
       setTitle("");
       setBody("");
       setType("Identification");
+
+      // Optional: refresh hvis du viser posts nedenunder på samme side
+      // router.refresh();
     } catch (e: any) {
       setErr(e?.message ?? "Noget gik galt");
     } finally {
