@@ -30,3 +30,14 @@
   z-index: 40;
 }
  
+.mapShell {
+  position: relative;
+  height: calc(100vh - 116px);
+  z-index: 0;
+}
+
+.peekWrap,
+.sheetWrap {
+  z-index: 40;
+}
+
