@@ -152,3 +152,37 @@
   .topbar { gap: 8px; }
   .topActions { gap: 8px; }
 }
+
+/* Task lists ( - [ ] ) */
+.md :global(.task-list-item) {
+  list-style: none;
+  margin-left: 0;
+  padding-left: 0;
+}
+
+.md :global(.task-list-item input[type="checkbox"]) {
+  appearance: none;
+  -webkit-appearance: none;
+
+  width: 18px;
+  height: 18px;
+  margin: 0 10px 0 0;
+
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.22);
+  background: rgba(255,255,255,0.06);
+
+  display: inline-block;
+  vertical-align: -3px;
+  flex: 0 0 auto;
+}
+
+.md :global(.task-list-item) {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+}
+
+.md :global(.task-list-item > label) {
+  flex: 1;
+}
