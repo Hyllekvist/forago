@@ -32,5 +32,5 @@ export function SpotPeekCard({ spot, onClose, onLog, onLearn }: Props) {
         </button>
       </div>
     </div>
-  );
+  ); 
 }
