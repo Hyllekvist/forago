@@ -1,3 +1,118 @@
-.wrap{ padding: 18px var(--pad) 110px; max-width: var(--maxw); margin: 0 auto; }
-.h1{ margin:0; }
-.sub{ margin: 8px 0 0; color: var(--muted); max-width: 70ch; }
+.wrap{
+  padding: 18px var(--pad) 110px;
+  max-width: var(--maxw);
+  margin: 0 auto;
+}
+
+.hero{
+  border-radius: 18px;
+  padding: 16px;
+  background: color-mix(in srgb, var(--panel) 82%, transparent);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-1);
+}
+
+.heroTop{
+  display:flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.h1{ margin:0; font-size: 26px; letter-spacing: -0.02em; line-height: 1.12; }
+.sub{ margin: 8px 0 0; color: var(--muted); max-width: 70ch; line-height: 1.5; }
+
+.chips{
+  display:flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chip{
+  display:inline-flex;
+  align-items:center;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.section{ margin-top: 14px; }
+.sectionTop{ display:flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+
+.h2{
+  margin:0;
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.hint{ margin:0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+
+.list{
+  display:flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.row{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 12px;
+
+  padding: 14px 14px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--shadow-1);
+
+  color: inherit;
+  text-decoration: none;
+}
+
+.row:hover{
+  border-color: color-mix(in srgb, var(--ink) 18%, var(--line));
+}
+
+.rowMain{ min-width: 0; }
+.rowTitle{ font-weight: 800; letter-spacing: -0.01em; }
+.rowText{
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+
+  display:-webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow:hidden;
+}
+
+.rowChevron{
+  flex: 0 0 auto;
+  opacity: .75;
+  font-size: 18px;
+}
+
+.empty{
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  padding: 16px;
+  box-shadow: var(--shadow-1);
+}
+
+.emptyTitle{ font-weight: 850; }
+.emptySub{ margin-top: 6px; color: var(--muted); line-height: 1.5; }
+
+.composer{
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  padding: 14px;
+  box-shadow: var(--shadow-1);
+}
