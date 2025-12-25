@@ -1,4 +1,4 @@
-"use client";
+"use client"; 
 
 import styles from "./InsightStrip.module.css";
 
