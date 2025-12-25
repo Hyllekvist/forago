@@ -1,0 +1,133 @@
+.sheet {
+  width: 100%;
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.10);
+  border-bottom: 0;
+  background: rgba(11,15,20,0.86);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 -18px 60px rgba(0,0,0,0.45);
+  transform: translateY(0);
+}
+
+.grab {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  padding: 10px 0 0;
+  cursor: pointer;
+}
+.handle {
+  display: block;
+  margin: 0 auto;
+  width: 44px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.20);
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 10px 14px 12px;
+  cursor: pointer;
+}
+
+.hTitle {
+  font-size: 13px;
+  font-weight: 850;
+  letter-spacing: -0.01em;
+}
+
+.hHint {
+  font-size: 12px;
+  opacity: 0.7;
+  font-weight: 750;
+}
+
+.body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 220ms ease;
+}
+
+.sheet[data-expanded="true"] .body {
+  max-height: 52vh;
+  overflow: auto;
+}
+
+.empty {
+  padding: 18px 14px 22px;
+}
+.emptyTitle {
+  font-weight: 900;
+  font-size: 13px;
+}
+.emptySub {
+  margin-top: 6px;
+  font-size: 12px;
+  opacity: 0.7;
+  line-height: 1.35;
+}
+
+.list {
+  padding: 0 10px 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.05);
+}
+
+.row[data-active="true"] {
+  border-color: rgba(16,185,129,0.25);
+  background: rgba(16,185,129,0.10);
+}
+
+.rowMain {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+  min-width: 0;
+}
+
+.rowTitle {
+  font-weight: 850;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rowMeta {
+  margin-top: 2px;
+  font-size: 12px;
+  opacity: 0.65;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.logBtn {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.08);
+  color: inherit;
+  font-weight: 850;
+  font-size: 12px;
+  cursor: pointer;
+}
