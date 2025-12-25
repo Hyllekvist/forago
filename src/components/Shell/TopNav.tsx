@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import styles from "./TopNav.module.css";
 import { ThemeToggle } from "@/components/UI/ThemeToggle";
@@ -16,13 +15,13 @@ export function TopNav({ locale }: { locale: string }) {
     <header className={styles.header}>
       <div className={styles.inner}>
         <Link className={styles.brand} href={`/${locale}`} aria-label="Forago home">
-          <Image
+          <img
             src="/forago-mushroom.svg"
             alt=""
             width={18}
             height={18}
             className={styles.brandIcon}
-            priority
+            aria-hidden="true"
           />
           <span className={styles.word}>Forago</span>
         </Link>
@@ -35,6 +34,7 @@ export function TopNav({ locale }: { locale: string }) {
             href={`/${locale}/guides`}
           >
             <span className={styles.icon} aria-hidden="true">
+              {/* book */}
               <svg viewBox="0 0 24 24">
                 <path
                   d="M7 4h10a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2V6a2 2 0 0 1 2-2Z"
@@ -60,6 +60,7 @@ export function TopNav({ locale }: { locale: string }) {
             href="/login"
           >
             <span className={styles.icon} aria-hidden="true">
+              {/* user */}
               <svg viewBox="0 0 24 24">
                 <path
                   d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm7 9a7 7 0 0 0-14 0"
