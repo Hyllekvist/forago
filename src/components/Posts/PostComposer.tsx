@@ -1,38 +1,26 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import styles from "./PostComposer.module.css";
 
 type ApiOk = { ok: true; id: string };
-type ApiErr = { error: string };
-
-function isApiOk(x: unknown): x is ApiOk {
-  return (
-    typeof x === "object" &&
-    x !== null &&
-    (x as any).ok === true &&
-    typeof (x as any).id === "string"
-  );
-}
-
-function localeFromPath(pathname: string | null) {
-  const seg = (pathname ?? "/").split("/").filter(Boolean)[0];
-  return seg && ["dk", "en", "se", "de"].includes(seg) ? seg : "dk";
-}
+type ApiErr = { ok: false; error: string };
+type ApiResp = ApiOk | ApiErr;
 
 export function PostComposer() {
   const router = useRouter();
   const pathname = usePathname();
-  const locale = useMemo(() => localeFromPath(pathname), [pathname]);
 
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [type, setType] = useState("Identification");
-
-  const [loading, setLoading] = useState(false);
   const [okId, setOkId] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // udleder locale fra URL ("/dk/ask" => "dk")
+  const locale = (pathname?.split("/")[1] || "dk") as string;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -43,40 +31,25 @@ export function PostComposer() {
     try {
       const res = await fetch("/api/posts/create", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({
           locale,
           type,
-          title: title.trim(),
-          body: body.trim(),
+          title,
+          body,
         }),
       });
 
-      let json: unknown = null;
-      try {
-        json = await res.json();
-      } catch {
-        // ignore
-      }
+      const json = (await res.json()) as ApiResp;
 
-      if (res.status === 401) {
-        router.push("/login");
+      if (!res.ok || !json.ok) {
+        // hvis ikke logged in → send til login
+        if (res.status === 401) {
+          router.push("/login");
+          return;
+        }
+        setErr(!json.ok ? json.error : "Failed");
         return;
-      }
-
-      if (!res.ok) {
-        const msg =
-          typeof json === "object" &&
-          json !== null &&
-          "error" in json &&
-          typeof (json as any).error === "string"
-            ? (json as any).error
-            : `Failed to post (${res.status})`;
-        throw new Error(msg);
-      }
-
-      if (!isApiOk(json)) {
-        throw new Error("Unexpected API response");
       }
 
       setOkId(json.id);
@@ -98,7 +71,6 @@ export function PostComposer() {
           className={styles.input}
           value={type}
           onChange={(e) => setType(e.target.value)}
-          disabled={loading}
         >
           <option>Identification</option>
           <option>How-to</option>
@@ -114,7 +86,6 @@ export function PostComposer() {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
-          disabled={loading}
         />
       </label>
 
@@ -125,7 +96,7 @@ export function PostComposer() {
           value={body}
           onChange={(e) => setBody(e.target.value)}
           rows={6}
-          disabled={loading}
+          required
         />
       </label>
 
@@ -133,8 +104,8 @@ export function PostComposer() {
         {loading ? "Posting…" : "Post"}
       </button>
 
-      {err && <div className={styles.err}>{err}</div>}
-      {okId && <div className={styles.ok}>Saved ✓</div>}
+      {err ? <div className={styles.err}>{err}</div> : null}
+      {okId ? <div className={styles.ok}>Posted ✅ (id: {okId})</div> : null}
     </form>
   );
 }
