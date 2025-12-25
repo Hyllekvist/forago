@@ -2,7 +2,7 @@ import styles from "./Ask.module.css";
 import { supabaseServer } from "@/lib/supabase/server";
 import { PostComposer } from "@/components/Posts/PostComposer";
 import { PostCard, type PostItem } from "@/components/Posts/PostCard";
-
+ 
 type Locale = "dk" | "en" | "se" | "de";
 function safeLocale(v: unknown): Locale {
   return v === "dk" || v === "en" || v === "se" || v === "de" ? v : "dk";
