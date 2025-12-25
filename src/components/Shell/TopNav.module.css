@@ -133,9 +133,9 @@
   }
 }
 
-.brandIcon{
-  width: 18px;
-  height: 18px;
+.brandIcon {
   display: block;
-  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  color: var(--ink);
 }
