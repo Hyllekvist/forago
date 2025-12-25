@@ -193,7 +193,8 @@ const sc = new Supercluster({ radius: 60, maxZoom: 17 });
                 // smooth zoom on tap (til mindst 14)
                 const targetZoom = Math.max(map.getZoom(), 14);
                 map.flyTo([lat, lng], targetZoom, { animate: true, duration: 0.5 });
-                onSelectSpot(spotId);
+console.log("[map] spot click", spotId);
+onSelectSpot(spotId);
               },
             }}
           />
