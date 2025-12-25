@@ -1,44 +1,62 @@
 <!-- /public/forago-mushroom.svg -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Forago mushroom">
-  <!-- Cap shadow edge -->
+  <defs>
+    <!-- Subtil cap highlight (moderne men ikke “glossy”) -->
+    <linearGradient id="cap" x1="16" y1="14" x2="48" y2="34" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF4A4A"/>
+      <stop offset="1" stop-color="#D81B27"/>
+    </linearGradient>
+
+    <!-- Stem -->
+    <linearGradient id="stem" x1="24" y1="34" x2="40" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF1D8"/>
+      <stop offset="1" stop-color="#E9D4B2"/>
+    </linearGradient>
+  </defs>
+
+  <!-- CAP (sharp, symmetric, flat silhouette) -->
   <path
-    d="M10.5 30.8C10.5 19.2 20.7 10 32 10s21.5 9.2 21.5 20.8c0 2.3-1.9 4.2-4.2 4.2H14.7c-2.3 0-4.2-1.9-4.2-4.2Z"
-    fill="#C81D25"
+    d="M12 29.5C12 18.7 21.5 10 32 10s20 8.7 20 19.5c0 2.5-2 4.5-4.5 4.5h-31C14 34 12 32 12 29.5Z"
+    fill="url(#cap)"
   />
 
-  <!-- Cap highlight -->
+  <!-- Cap underline (gives crisp separation) -->
   <path
-    d="M16 24.5C18.9 17.2 25.1 13 32 13c6.9 0 13.1 4.2 16 11.5c.6 1.5-.6 3-2.2 3H20.2c-1.6 0-2.8-1.5-2.2-3Z"
-    fill="#E53935"
-    opacity="0.95"
+    d="M15.5 34h33"
+    stroke="#101010"
+    stroke-opacity="0.10"
+    stroke-width="2"
+    stroke-linecap="round"
   />
 
-  <!-- Dots -->
-  <g fill="#F6F1E6">
-    <circle cx="24.5" cy="22.2" r="3.2"/>
-    <circle cx="35.8" cy="19.8" r="2.7"/>
-    <circle cx="42.5" cy="24.1" r="2.4"/>
-    <circle cx="30.2" cy="26.2" r="2.2"/>
+  <!-- DOTS (clean, consistent sizes) -->
+  <g fill="#FFF7EB">
+    <circle cx="23" cy="22.5" r="3.1"/>
+    <circle cx="34.5" cy="19.5" r="2.6"/>
+    <circle cx="42.5" cy="24" r="2.4"/>
+    <circle cx="30" cy="26.2" r="2.1"/>
   </g>
 
-  <!-- Stem -->
+  <!-- STEM (modern rounded rectangle-ish with taper) -->
   <path
-    d="M24 35h16v13.2C40 53.2 36.2 56 32 56s-8-2.8-8-7.8V35Z"
-    fill="#F5E6C8"
+    d="M24.5 34H39.5V48.2c0 5-3.6 7.8-7.5 7.8s-7.5-2.8-7.5-7.8V34Z"
+    fill="url(#stem)"
   />
 
-  <!-- Stem shading -->
+  <!-- Stem inner cut (adds sharp “designed” feel) -->
   <path
-    d="M33.5 35h6.5v13.2c0 5-3.8 7.8-8 7.8c-.9 0-1.8-.1-2.6-.4c3-.7 4.6-3 4.6-7.4V35Z"
-    fill="#E7D3B0"
-    opacity="0.9"
+    d="M29 38.5h6"
+    stroke="#101010"
+    stroke-opacity="0.10"
+    stroke-width="2"
+    stroke-linecap="round"
   />
 
-  <!-- Ground hint -->
+  <!-- Tiny base shadow (keeps it grounded) -->
   <path
-    d="M18 56c4.2-1.6 8.8-2.4 14-2.4S41.8 54.4 46 56"
-    stroke="#2A2A2A"
-    stroke-opacity="0.12"
+    d="M20 56c3.8-1.4 7.8-2.1 12-2.1s8.2.7 12 2.1"
+    stroke="#101010"
+    stroke-opacity="0.08"
     stroke-width="2"
     stroke-linecap="round"
   />
