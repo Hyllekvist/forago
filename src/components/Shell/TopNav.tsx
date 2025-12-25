@@ -20,7 +20,7 @@ export function TopNav({ locale }: { locale: string }) {
           aria-label="Forago home"
         >
           <img
-            src="/forago-mushroom-filled.svg"
+            src="/forago-mushroom.svg"
             alt=""
             aria-hidden="true"
             className={styles.logo}
