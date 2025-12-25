@@ -47,13 +47,12 @@
 }
 .brand:active{ transform: translateY(1px); }
 
-.dot{
-  width: 12px;
-  height: 12px;
-  border-radius: 999px;
-  background: radial-gradient(circle at 30% 30%, var(--accent), rgba(255,255,255,0.25));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+.logo{
+  width: 20px;
+  height: 20px;
+  display: block;
   flex: 0 0 auto;
+  opacity: .95;
 }
 
 .word{
