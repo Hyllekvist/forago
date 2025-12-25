@@ -142,3 +142,13 @@
     font-size: 26px;
   }
 }
+
+.back, .pill {
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+@media (max-width: 420px) {
+  .topbar { gap: 8px; }
+  .topActions { gap: 8px; }
+}
