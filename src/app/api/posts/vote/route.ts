@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
-
+ 
 type ApiOk = { ok: true; score: number; my_vote: number };
 type ApiErr = { ok: false; error: string };
 
