@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   }
 
   const locale = String(payload?.locale ?? "dk");
-  const type = String(payload?.type ?? "question");
+  const type = String(payload?.type ?? "Identification");
   const title = String(payload?.title ?? "").trim();
   const body = String(payload?.body ?? "").trim();
 
@@ -38,7 +38,10 @@ export async function POST(req: Request) {
     .single();
 
   if (error || !data?.id) {
-    return NextResponse.json({ error: "Failed to create post" }, { status: 500 });
+    return NextResponse.json(
+      { error: error?.message ?? "Failed to create post" },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json({ ok: true, id: data.id });
