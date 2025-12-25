@@ -1,4 +1,4 @@
-"use client";
+"use client"; 
 
 import styles from "./MapSheet.module.css";
 import type { Spot } from "../LeafletMap";
