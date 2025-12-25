@@ -1,88 +1,77 @@
-<!-- /public/forago-mushroom.svg -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Forago">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Forago mushroom">
   <defs>
-    <!-- Cap: deep red -> hot coral -->
-    <linearGradient id="gCap" x1="14" y1="10" x2="50" y2="34" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#FF2D55"/>
-      <stop offset="0.55" stop-color="#E11D48"/>
-      <stop offset="1" stop-color="#B3122B"/>
+    <linearGradient id="cap" x1="12" y1="10" x2="52" y2="34" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff5a5f"/>
+      <stop offset="0.55" stop-color="#e4373e"/>
+      <stop offset="1" stop-color="#b81d2a"/>
     </linearGradient>
 
-    <!-- Stem: warm off-white -->
-    <linearGradient id="gStem" x1="26" y1="34" x2="40" y2="58" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#FFF6E7"/>
-      <stop offset="1" stop-color="#EAD7BB"/>
+    <linearGradient id="stem" x1="22" y1="30" x2="42" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff2e8"/>
+      <stop offset="0.55" stop-color="#e7d6c8"/>
+      <stop offset="1" stop-color="#cbb3a3"/>
     </linearGradient>
 
-    <!-- Subtle neon rim -->
-    <radialGradient id="gRim" cx="30%" cy="25%" r="70%">
-      <stop offset="0" stop-color="#FFB3C1" stop-opacity="0.85"/>
-      <stop offset="0.45" stop-color="#FF2D55" stop-opacity="0"/>
-      <stop offset="1" stop-color="#FF2D55" stop-opacity="0"/>
+    <radialGradient id="shine" cx="28" cy="18" r="18" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.85"/>
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
     </radialGradient>
 
-    <!-- Shadow -->
-    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="2.2" result="b"/>
-      <feOffset in="b" dy="1.2" result="o"/>
-      <feColorMatrix in="o" type="matrix"
-        values="0 0 0 0 0.05
-                0 0 0 0 0.05
-                0 0 0 0 0.08
-                0 0 0 .25 0" />
-      <feMerge>
-        <feMergeNode/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
+    <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.25"/>
     </filter>
-
-    <!-- Clip for cap highlights -->
-    <clipPath id="capClip">
-      <path d="M10.5 30.2C10.5 18.9 20.8 10 32 10s21.5 8.9 21.5 20.2c0 2.6-2.1 4.8-4.8 4.8H15.3c-2.7 0-4.8-2.2-4.8-4.8Z"/>
-    </clipPath>
   </defs>
 
-  <!-- Base shadow -->
-  <path d="M18 56c4.6-1.8 9.3-2.7 14-2.7s9.4.9 14 2.7"
-        stroke="#0B0B10" stroke-opacity=".12" stroke-width="3" stroke-linecap="round"/>
+  <!-- subtle base shadow (reads well on light + dark) -->
+  <ellipse cx="32" cy="54" rx="16" ry="6" fill="#000" opacity="0.10"/>
 
-  <g filter="url(#soft)">
-    <!-- CAP -->
-    <path d="M10.5 30.2C10.5 18.9 20.8 10 32 10s21.5 8.9 21.5 20.2c0 2.6-2.1 4.8-4.8 4.8H15.3c-2.7 0-4.8-2.2-4.8-4.8Z"
-          fill="url(#gCap)"/>
+  <!-- mushroom group -->
+  <g filter="url(#softShadow)">
+    <!-- cap -->
+    <path
+      d="M12 30c0-11.2 9.5-20 20-20s20 8.8 20 20c0 2.2-1.8 4-4 4H16c-2.2 0-4-1.8-4-4Z"
+      fill="url(#cap)"
+    />
+    <!-- cap shine -->
+    <path
+      d="M16 29c1.2-9.4 8.9-16.5 18.8-16.5 6.6 0 12.4 3.2 16 8.2"
+      fill="none"
+      stroke="url(#shine)"
+      stroke-width="6"
+      stroke-linecap="round"
+      opacity="0.9"
+    />
 
-    <!-- Rim glow -->
-    <path d="M10.5 30.2C10.5 18.9 20.8 10 32 10s21.5 8.9 21.5 20.2c0 2.6-2.1 4.8-4.8 4.8H15.3c-2.7 0-4.8-2.2-4.8-4.8Z"
-          fill="url(#gRim)" opacity=".85"/>
-
-    <!-- Crisp outline (logo-ish) -->
-    <path d="M10.5 30.2C10.5 18.9 20.8 10 32 10s21.5 8.9 21.5 20.2c0 2.6-2.1 4.8-4.8 4.8H15.3c-2.7 0-4.8-2.2-4.8-4.8Z"
-          fill="none" stroke="#0B0B10" stroke-opacity=".22" stroke-width="1.5"/>
-
-    <!-- Cap highlight slice (asymmetrisk = mere “design”) -->
-    <g clip-path="url(#capClip)" opacity=".9">
-      <path d="M14 22c6.2-8.6 17.7-10.8 27.4-6.8c1.8.8 1.7 3.4-.2 4.1c-8.2 3.2-15.8 7-22.9 13.8c-1.6 1.5-4.1.4-4.3-1.6Z"
-            fill="#FFF1F4" fill-opacity=".22"/>
+    <!-- spots (simple, iconic) -->
+    <g fill="#fff" opacity="0.95">
+      <circle cx="24" cy="23" r="4.2"/>
+      <circle cx="36.5" cy="20.5" r="5.4"/>
+      <circle cx="44.5" cy="27" r="3.6"/>
+      <circle cx="30" cy="28.5" r="3.4"/>
     </g>
 
-    <!-- DOTS: negative-space cutouts (premium) -->
-    <g fill="#0B0B10" fill-opacity=".18">
-      <path d="M23.3 18.8c-2.7 0-4.9 2.1-4.9 4.7s2.2 4.7 4.9 4.7c2.7 0 4.9-2.1 4.9-4.7s-2.2-4.7-4.9-4.7Z"/>
-      <path d="M36.6 16.8c-2.2 0-4 1.7-4 3.8s1.8 3.8 4 3.8s4-1.7 4-3.8s-1.8-3.8-4-3.8Z"/>
-      <path d="M44.6 21c-2 0-3.6 1.5-3.6 3.4s1.6 3.4 3.6 3.4s3.6-1.5 3.6-3.4S46.6 21 44.6 21Z"/>
-      <path d="M31 24.2c-1.7 0-3.1 1.3-3.1 2.9S29.3 30 31 30s3.1-1.3 3.1-2.9S32.7 24.2 31 24.2Z"/>
-    </g>
+    <!-- underside rim -->
+    <path
+      d="M16 34h32c1.4 0 2.6-.7 3.3-1.8-.3 4.1-3.7 7.3-7.9 7.3H20.6c-4.2 0-7.6-3.2-7.9-7.3.7 1.1 1.9 1.8 3.3 1.8Z"
+      fill="#000"
+      opacity="0.14"
+    />
 
-    <!-- Gills line -->
-    <path d="M16 35h32" stroke="#0B0B10" stroke-opacity=".16" stroke-width="2" stroke-linecap="round"/>
+    <!-- stem -->
+    <path
+      d="M24 34h16v14c0 4.4-3.6 8-8 8h0c-4.4 0-8-3.6-8-8V34Z"
+      fill="url(#stem)"
+    />
 
-    <!-- STEM -->
-    <path d="M25 35h14v12.7c0 5.7-4.1 8.8-7 8.8s-7-3.1-7-8.8V35Z"
-          fill="url(#gStem)"/>
-    <path d="M25 35h14v12.7c0 5.7-4.1 8.8-7 8.8s-7-3.1-7-8.8V35Z"
-          fill="none" stroke="#0B0B10" stroke-opacity=".18" stroke-width="1.4"/>
-
-    <!-- Stem notch (signature detail) -->
-    <path d="M29 40.5h6" stroke="#0B0B10" stroke-opacity=".14" stroke-width="2" stroke-linecap="round"/>
+    <!-- stem highlight -->
+    <path
+      d="M28 38c0 10.5 0 14 0 14 0 1.5 1.2 2.8 2.8 2.8"
+      fill="none"
+      stroke="#fff"
+      stroke-opacity="0.35"
+      stroke-width="3"
+      stroke-linecap="round"
+    />
   </g>
 </svg>
