@@ -29,7 +29,7 @@ export default function PostPage({
         </div>
       </div>
 
-      <CommentList postId={params.id} />
+      <CommentList />
     </div>
   );
 }
