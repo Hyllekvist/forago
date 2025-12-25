@@ -7,6 +7,15 @@ import styles from "./PostComposer.module.css";
 type ApiOk = { ok: true; id: string };
 type ApiErr = { error: string };
 
+function isApiOk(x: unknown): x is ApiOk {
+  return (
+    typeof x === "object" &&
+    x !== null &&
+    (x as any).ok === true &&
+    typeof (x as any).id === "string"
+  );
+}
+
 function localeFromPath(pathname: string | null) {
   const seg = (pathname ?? "/").split("/").filter(Boolean)[0];
   return seg && ["dk", "en", "se", "de"].includes(seg) ? seg : "dk";
@@ -15,7 +24,6 @@ function localeFromPath(pathname: string | null) {
 export function PostComposer() {
   const router = useRouter();
   const pathname = usePathname();
-
   const locale = useMemo(() => localeFromPath(pathname), [pathname]);
 
   const [title, setTitle] = useState("");
@@ -44,16 +52,31 @@ export function PostComposer() {
         }),
       });
 
-      const json = (await res.json()) as ApiOk | ApiErr;
+      let json: unknown = null;
+      try {
+        json = await res.json();
+      } catch {
+        // ignore
+      }
 
       if (res.status === 401) {
-        // ikke logget ind
         router.push("/login");
         return;
       }
 
       if (!res.ok) {
-        throw new Error(("error" in json && json.error) || "Failed to post");
+        const msg =
+          typeof json === "object" &&
+          json !== null &&
+          "error" in json &&
+          typeof (json as any).error === "string"
+            ? (json as any).error
+            : `Failed to post (${res.status})`;
+        throw new Error(msg);
+      }
+
+      if (!isApiOk(json)) {
+        throw new Error("Unexpected API response");
       }
 
       setOkId(json.id);
