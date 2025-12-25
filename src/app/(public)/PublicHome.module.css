@@ -1,238 +1,216 @@
 .page{
   min-height: 100vh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding: 26px var(--pad);
+  padding: 18px var(--pad) 36px;
+  display: flex;
+  justify-content: center;
 }
 
 .hero{
-  width:100%;
+  width: 100%;
   max-width: 980px;
-  position: relative;
+  padding-top: 10px;
 }
 
-.hero:before{
-  content:"";
-  position:absolute;
-  inset:-18px;
-  border-radius: 28px;
-  background:
-    radial-gradient(800px 420px at 18% 10%, rgba(74, 222, 128, .14), transparent 60%),
-    radial-gradient(700px 420px at 85% 15%, rgba(56, 189, 248, .10), transparent 55%),
-    radial-gradient(900px 520px at 45% 95%, rgba(255, 255, 255, .06), transparent 55%);
-  pointer-events:none;
-  filter: blur(0px);
-}
-
+/* Brand */
 .brand{
-  display:flex;
-  align-items:center;
-  gap: 12px;
-  padding: 8px 2px;
+  border-radius: 22px;
+  padding: 18px 16px;
+  background: color-mix(in srgb, var(--panel) 70%, transparent);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-1);
+}
+
+.brandTop{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brandIconWrap{
+  width: 34px;
+  height: 34px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
 }
 
 .brandIcon{
-  width: 28px;
-  height: 28px;
-  display:block;
+  display: block;
 }
-
-.brandText{ min-width:0; }
 
 .h1{
   margin: 0;
-  font-size: 34px;
+  font-size: 36px;
   letter-spacing: -0.03em;
   line-height: 1.05;
 }
 
-.sub{
-  margin: 6px 0 0;
+.tagline{
+  margin: 10px 0 0;
   color: var(--muted);
-  max-width: 62ch;
-  font-size: 14.5px;
+  font-size: 15px;
   line-height: 1.5;
 }
 
-.subDim{ opacity: .9; }
+.dot{
+  opacity: .65;
+  padding: 0 2px;
+}
 
-.pitch{
+/* Value card */
+.valueCard{
   margin-top: 14px;
+  border-radius: 22px;
   padding: 16px 16px;
-  border-radius: 20px;
-  background: color-mix(in srgb, var(--panel) 84%, transparent);
+  background: color-mix(in srgb, var(--panel) 76%, transparent);
   border: 1px solid var(--line);
   box-shadow: var(--shadow-1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 
 .h2{
   margin: 0;
-  font-size: 22px;
+  font-size: 26px;
   letter-spacing: -0.02em;
-  line-height: 1.15;
+  line-height: 1.12;
 }
 
-.lead{
+.lede{
   margin: 10px 0 0;
   color: var(--muted);
+  font-size: 16px;
   line-height: 1.65;
-  max-width: 68ch;
+  max-width: 62ch;
 }
 
+/* CTAs */
 .ctas{
-  display:flex;
-  flex-direction: column;
+  display: grid;
   gap: 10px;
   margin-top: 14px;
 }
 
-.primary,.secondary{
-  padding: 12px 14px;
-  border-radius: 16px;
+.primary,
+.secondary{
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 18px;
   border: 1px solid var(--line);
-  font-weight: 700;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap: 10px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  box-shadow: var(--shadow-1);
 }
 
 .primary{
-  background: linear-gradient(135deg,
-    rgba(74, 222, 128, .18),
-    rgba(56, 189, 248, .10)
-  );
+  background: color-mix(in srgb, var(--accent) 18%, var(--panel));
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--line));
 }
 
 .secondary{
   background: var(--panel);
 }
 
-.quickLinks{
-  display:flex;
+/* Quick pills */
+.quickNav{
+  display: flex;
   gap: 10px;
   flex-wrap: wrap;
-  margin-top: 2px;
+  margin-top: 12px;
 }
 
 .pill{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 10px 12px;
   border-radius: 999px;
   border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
   color: var(--ink);
   font-weight: 650;
-  font-size: 13px;
+  font-size: 14px;
+  box-shadow: var(--shadow-1);
 }
 
-.cards{
-  margin-top: 16px;
-  display:grid;
+/* Feature grid */
+.grid{
+  margin-top: 14px;
+  display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
 }
 
 .card{
-  border-radius: 20px;
+  border-radius: 22px;
+  padding: 14px 14px 16px;
   background: var(--panel);
   border: 1px solid var(--line);
-  padding: 14px;
   box-shadow: var(--shadow-1);
 }
 
-.cardTop{
-  display:flex;
-  align-items: baseline;
+.cardMeta{
+  display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .kicker{
   font-size: 12px;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: var(--muted);
+  letter-spacing: 0.14em;
   font-weight: 800;
+  color: var(--muted);
 }
 
-.mini{
+.metaRight{
   font-size: 12px;
   color: var(--muted);
   opacity: .9;
 }
 
-.cardH{
-  margin: 0 0 8px;
-  font-size: 16px;
-  letter-spacing: -0.01em;
+.cardTitle{
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+  line-height: 1.18;
 }
 
-.cardP{
+.cardText{
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.65;
+  font-size: 15px;
+}
+
+/* Footer */
+.foot{
+  margin-top: 14px;
+}
+
+.footNote{
   margin: 0;
   color: var(--muted);
-  line-height: 1.6;
-}
-
-.footerStrip{
-  margin-top: 16px;
-  border-radius: 20px;
-  border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--panel) 86%, transparent);
-  padding: 14px;
-  display:flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.stripItem{
-  display:flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.stripTitle{
-  font-weight: 800;
-  letter-spacing: -0.01em;
-}
-
-.stripText{
-  color: var(--muted);
-  line-height: 1.55;
-  font-size: 14px;
-}
-
-.stripDivider{
-  height: 1px;
-  background: var(--line);
+  font-size: 13px;
+  text-align: center;
   opacity: .9;
 }
 
-@media(min-width: 860px){
+/* Desktop */
+@media (min-width: 860px){
   .ctas{
-    flex-direction: row;
-    align-items: center;
-    flex-wrap: wrap;
+    grid-template-columns: 1fr 1fr;
   }
-  .primary,.secondary{
-    justify-content: center;
-    min-width: 220px;
+  .grid{
+    grid-template-columns: repeat(3, 1fr);
   }
-  .quickLinks{
-    margin-left: auto;
-    justify-content: flex-end;
+  .h1{
+    font-size: 44px;
   }
-  .cards{ grid-template-columns: repeat(3, 1fr); }
-
-  .footerStrip{
-    flex-direction: row;
-    align-items: center;
-  }
-  .stripDivider{
-    width: 1px;
-    height: 44px;
+  .h2{
+    font-size: 30px;
   }
 }
