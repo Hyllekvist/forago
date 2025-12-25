@@ -1,53 +1,56 @@
-.wrap { 
-  height: 60px;
+.wrap{
+  height: 58px;
   padding: 10px 12px;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  background: rgba(11,15,20,0.72);
-  backdrop-filter: blur(12px);
+
+  border-bottom: var(--stroke) solid var(--glassLine);
+  background: color-mix(in srgb, var(--glassBg) 92%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
-.scroller {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  scrollbar-width: none;
+.scroller{
+  display:flex;
+  gap:10px;
+  overflow-x:auto;
+  scrollbar-width:none;
 }
-.scroller::-webkit-scrollbar { display: none; }
+.scroller::-webkit-scrollbar{ display:none; }
 
-.card {
+.card{
   min-width: 170px;
   height: 40px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,0.10);
-  background: rgba(255,255,255,0.06);
+  border-radius: var(--r-md);
+  border: var(--stroke) solid var(--chipLine);
+  background: var(--chipBg);
   color: inherit;
+
   padding: 8px 10px;
-  display: grid;
-  gap: 3px;
-  cursor: pointer;
-  text-align: left;
+  display:grid;
+  gap:3px;
+  cursor:pointer;
+  text-align:left;
 }
 
-.card[data-active="true"] {
-  border-color: rgba(16,185,129,0.28);
-  background: rgba(16,185,129,0.10);
+.card[data-active="true"]{
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--chipLine));
+  background: color-mix(in srgb, var(--accent) 12%, var(--chipBg));
 }
 
-.kicker {
+.kicker{
   font-size: 11px;
-  font-weight: 850;
-  opacity: 0.9;
+  font-weight: 900;
+  color: color-mix(in srgb, var(--ink) 88%, transparent);
   line-height: 1.1;
 }
 
-.value {
+.value{
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: -0.01em;
   line-height: 1.1;
 }
 
-.muted {
-  font-weight: 700;
-  opacity: 0.65;
+.muted{
+  font-weight: 800;
+  color: var(--muted);
 }
