@@ -1,27 +1,44 @@
 import styles from "./PostCard.module.css";
 
-export function PostCard({
-  title,
-  type,
-  votes,
-  comments,
-}: {
-  title: string;
+type PostRow = {
+  id: string;
+  created_at: string;
+  locale: string;
   type: string;
-  votes: number;
-  comments: number;
+  title: string;
+  body: string;
+  user_id: string | null;
+};
+
+function fmt(ts: string) {
+  const d = new Date(ts);
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")} · ${hh}:${mm}`;
+}
+
+export function PostCard({
+  post,
+  isMine,
+  locale,
+}: {
+  post: PostRow;
+  isMine: boolean;
+  locale: string;
 }) {
+  const type = post.type || "Question";
+
   return (
-    <div className={styles.card}>
+    <article className={styles.card}>
       <div className={styles.top}>
-        <div className={styles.type}>{type}</div>
-        <div className={styles.meta}>
-          <span>{votes} votes</span>
-          <span>·</span>
-          <span>{comments} replies</span>
-        </div>
+        <span className={styles.badge}>{type}</span>
+        {isMine ? <span className={styles.mine}>{locale === "dk" ? "Dig" : "You"}</span> : null}
+        <span className={styles.sep}>·</span>
+        <span className={styles.when}>{fmt(post.created_at)}</span>
       </div>
-      <div className={styles.title}>{title}</div>
-    </div>
+
+      <h3 className={styles.title}>{post.title}</h3>
+      <p className={styles.body}>{post.body}</p>
+    </article>
   );
 }
