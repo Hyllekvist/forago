@@ -11,15 +11,20 @@
   overflow: hidden;
 }
 
+/* Map layer */
 .mapWrap{
   position: absolute;
   inset: 0;
+  z-index: 0;
 }
 
 .map{
   height: 100%;
   width: 100%;
   border-radius: 0;
+
+  position: relative;
+  z-index: 1;
 }
 
 /* ----- Top HUD ----- */
@@ -29,11 +34,12 @@
   left: 12px;
   right: 12px;
   z-index: 800;
-  pointer-events: none;
+
+  pointer-events: none; /* wrapper må ikke blokere kortet */
 }
 
 .topBarInner{
-  pointer-events: auto;
+  pointer-events: auto; /* selve UI'et er klikbart */
   border-radius: 20px;
   border: 1px solid var(--line);
   background: color-mix(in srgb, var(--panel) 74%, transparent);
@@ -111,6 +117,19 @@
   right: 12px;
   bottom: calc(12px + env(safe-area-inset-bottom));
   z-index: 900;
+
+  pointer-events: none; /* 🔥 gør at sheet wrapper ikke sluger map klik */
+}
+
+.sheetCard{
+  pointer-events: auto; /* kun kortet er klikbart */
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 78%, transparent);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: var(--shadow-1);
+  padding: 12px;
 }
 
 .sheetHandle{
@@ -119,16 +138,6 @@
   border-radius: 999px;
   background: color-mix(in srgb, var(--muted) 25%, transparent);
   margin: 0 auto 10px;
-}
-
-.sheetCard{
-  border-radius: 22px;
-  border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--panel) 78%, transparent);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  box-shadow: var(--shadow-1);
-  padding: 12px;
 }
 
 .sheetTabs{
@@ -284,7 +293,7 @@
   color: var(--muted);
 }
 
-/* Leaflet controls (pure selector: skal have lokal klasse før :global) */
+/* Leaflet controls */
 .mapWrap :global(.leaflet-control-zoom){
   border: none !important;
   box-shadow: none !important;
@@ -299,13 +308,16 @@
   -webkit-backdrop-filter: blur(10px) !important;
 }
 
-.map {
-  position: relative;
-  z-index: 1;
+/* Leaflet pane stacking (robust) */
+.mapWrap :global(.leaflet-pane){
+  z-index: 100;
 }
 
-.mapWrap{
-  position: absolute;
-  inset: 0;
-  z-index: 0;
+.mapWrap :global(.leaflet-marker-pane){
+  z-index: 300;
+}
+
+.mapWrap :global(.leaflet-tooltip-pane),
+.mapWrap :global(.leaflet-popup-pane){
+  z-index: 400;
 }
