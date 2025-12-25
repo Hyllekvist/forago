@@ -1,0 +1,31 @@
+.page {
+  min-height: 100vh;
+  background: var(--bg, #0b0f14);
+  color: var(--ink, rgba(255, 255, 255, 0.92));
+}
+
+.mapShell {
+  position: relative;
+  height: calc(100vh - 116px); /* topbar + insights */
+}
+
+.peekWrap {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 112px; /* above sheet */
+  z-index: 30;
+  pointer-events: none;
+}
+
+.peekWrap > * {
+  pointer-events: auto;
+}
+
+.sheetWrap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+}
