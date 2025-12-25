@@ -1,122 +1,73 @@
-// src/app/[locale]/ask/page.tsx
-import Link from "next/link";
-import styles from "./Ask.module.css";
 import { supabaseServer } from "@/lib/supabase/server";
+import styles from "./Ask.module.css";
 import { PostComposer } from "@/components/Posts/PostComposer";
+import { PostCard } from "@/components/Posts/PostCard";
+
+type Locale = "dk" | "en" | "se" | "de";
+
+function safeLocale(v: unknown): Locale {
+  return v === "dk" || v === "en" || v === "se" || v === "de" ? v : "dk";
+}
 
 export const dynamic = "force-dynamic";
 
 type PostRow = {
   id: string;
-  title: string | null;
-  body: string | null;
-  created_at: string | null;
-  locale: string | null;
+  created_at: string;
+  locale: string;
+  type: string;
+  title: string;
+  body: string;
+  user_id: string | null;
 };
 
-export default async function Ask({ params }: { params: { locale: string } }) {
-  const locale = params.locale || "dk";
+export default async function AskPage({ params }: { params: { locale: string } }) {
+  const locale = safeLocale(params?.locale);
   const supabase = await supabaseServer();
 
-  // TODO: tilpas table/kolonner hvis dine navne er anderledes
+  const { data: auth } = await supabase.auth.getUser();
+  const uid = auth.user?.id ?? null;
+
   const { data: posts } = await supabase
     .from("posts")
-    .select("id, title, body, created_at, locale")
+    .select("id, created_at, locale, type, title, body, user_id")
     .eq("locale", locale)
     .order("created_at", { ascending: false })
-    .limit(20);
-
-  const list = (posts ?? []) as PostRow[];
+    .limit(30);
 
   return (
     <main className={styles.wrap}>
-      <header className={styles.hero}>
-        <div className={styles.heroTop}>
-          <div>
-            <h1 className={styles.h1}>
-              {locale === "dk" ? "Spørg fællesskabet" : "Ask the community"}
-            </h1>
-            <p className={styles.sub}>
-              {locale === "dk"
-                ? "Få hjælp til ID, forvekslinger og sikkerhed. Ingen præcise spots."
-                : "Get help with ID, look-alikes and safety. No exact spots."}
-            </p>
-          </div>
-
-          <div className={styles.chips}>
-            <span className={styles.chip}>
-              {locale === "dk" ? "Sæson" : "Season"}
-            </span>
-            <span className={styles.chip}>
-              {locale === "dk" ? "Habitat" : "Habitat"}
-            </span>
-            <span className={styles.chip}>
-              {locale === "dk" ? "Fotos" : "Photos"}
-            </span>
-          </div>
-        </div>
+      <header className={styles.head}>
+        <h1 className={styles.h1}>Ask</h1>
+        <p className={styles.sub}>
+          Be specific: season, habitat, traits, and clear photos. No exact spots.
+        </p>
       </header>
 
-      <section className={styles.section}>
-        <div className={styles.sectionTop}>
-          <h2 className={styles.h2}>
-            {locale === "dk" ? "Seneste spørgsmål" : "Latest questions"}
-          </h2>
+      <section className={styles.composer}>
+        <h2 className={styles.h2}>Stil et spørgsmål</h2>
+        <PostComposer />
+      </section>
+
+      <section className={styles.list}>
+        <div className={styles.listTop}>
+          <h2 className={styles.h2}>Seneste spørgsmål</h2>
+          <div className={styles.meta}>Viser {posts?.length ?? 0}</div>
         </div>
 
-        {list.length ? (
-          <div className={styles.list}>
-            {list.map((p) => (
-              <Link
-                key={p.id}
-                href={`/${locale}/ask/${p.id}`}
-                className={styles.row}
-              >
-                <div className={styles.rowMain}>
-                  <div className={styles.rowTitle}>
-                    {p.title ||
-                      (locale === "dk" ? "Spørgsmål" : "Question")}
-                  </div>
-                  <div className={styles.rowText}>
-                    {(p.body ?? "").slice(0, 120)}
-                    {(p.body ?? "").length > 120 ? "…" : ""}
-                  </div>
-                </div>
-                <div className={styles.rowChevron} aria-hidden>
-                  →
-                </div>
-              </Link>
+        {posts?.length ? (
+          <div className={styles.grid}>
+            {(posts as PostRow[]).map((p) => (
+              <PostCard key={p.id} post={p} isMine={!!uid && p.user_id === uid} locale={locale} />
             ))}
           </div>
         ) : (
           <div className={styles.empty}>
-            <div className={styles.emptyTitle}>
-              {locale === "dk" ? "Ingen spørgsmål endnu" : "No questions yet"}
-            </div>
-            <div className={styles.emptySub}>
-              {locale === "dk"
-                ? "Bliv den første — spørg om en svamp/plante og få hjælp."
-                : "Be the first — ask about a mushroom/plant and get help."}
-            </div>
+            <div className={styles.emptyIcon}>🍄</div>
+            <div className={styles.emptyTitle}>Ingen spørgsmål endnu</div>
+            <div className={styles.emptyBody}>Vær den første til at spørge.</div>
           </div>
         )}
-      </section>
-
-      <section className={styles.section}>
-        <div className={styles.sectionTop}>
-          <h2 className={styles.h2}>
-            {locale === "dk" ? "Stil et spørgsmål" : "Ask a question"}
-          </h2>
-          <p className={styles.hint}>
-            {locale === "dk"
-              ? "Skriv sæson + habitat + det du er i tvivl om. Upload klare fotos."
-              : "Include season + habitat + what you’re unsure about. Add clear photos."}
-          </p>
-        </div>
-
-        <div className={styles.composer}>
-          <PostComposer />
-        </div>
       </section>
     </main>
   );
