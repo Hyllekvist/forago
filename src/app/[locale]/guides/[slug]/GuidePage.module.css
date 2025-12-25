@@ -4,9 +4,47 @@
   padding: 18px 14px 96px;
 }
 
-.hero {
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.topActions {
+  display: flex;
+  gap: 10px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.article {
   padding: 18px 16px;
   border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .h1 {
@@ -23,20 +61,29 @@
   line-height: 1.5;
 }
 
-/* Content */
-.content {
-  margin-top: 14px;
-  padding: 16px;
-  border-radius: 18px;
+.rule {
+  height: 1px;
+  margin: 14px 0 6px;
+  background: rgba(255, 255, 255, 0.08);
 }
 
-/* Markdown defaults */
+/* Markdown-ish body */
+.md {
+  margin-top: 10px;
+}
+
 .md h2 {
   margin: 18px 0 10px;
   font-size: 16px;
   letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--muted);
+}
+
+.md h3 {
+  margin: 16px 0 8px;
+  font-size: 16px;
+  color: var(--ink);
 }
 
 .md p {
@@ -47,6 +94,7 @@
 
 .md ul {
   margin: 10px 0 6px 18px;
+  padding: 0;
 }
 
 .md li {
@@ -54,13 +102,13 @@
   line-height: 1.6;
 }
 
-/* TL;DR as a card */
+/* TL;DR card: første h2 efterfulgt af ul */
 .md h2:first-of-type + ul {
   margin-left: 0;
   padding: 14px 14px 12px;
   border-radius: 16px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .md h2:first-of-type + ul li {
@@ -77,14 +125,20 @@
   opacity: 0.75;
 }
 
-/* Strong emphasis looks nicer */
 .md strong {
   color: var(--ink);
 }
 
-/* Optional: divider between sections */
-.divider {
-  height: 1px;
-  margin: 14px 0;
-  background: rgba(255,255,255,0.08);
+/* Mobile polish */
+@media (max-width: 480px) {
+  .wrap {
+    padding: 16px 12px 92px;
+  }
+  .article {
+    padding: 16px 14px;
+    border-radius: 16px;
+  }
+  .h1 {
+    font-size: 26px;
+  }
 }
