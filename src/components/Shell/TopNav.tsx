@@ -14,14 +14,16 @@ export function TopNav({ locale }: { locale: string }) {
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
-        <Link className={styles.brand} href={`/${locale}`} aria-label="Forago home">
+        <Link
+          className={styles.brand}
+          href={`/${locale}`}
+          aria-label="Forago home"
+        >
+          {/* 🍄 SVAMPE-IKONET */}
           <img
             src="/forago-mushroom.svg"
-            alt=""
-            width={18}
-            height={18}
+            alt="Forago"
             className={styles.brandIcon}
-            aria-hidden="true"
           />
           <span className={styles.word}>Forago</span>
         </Link>
@@ -34,21 +36,18 @@ export function TopNav({ locale }: { locale: string }) {
             href={`/${locale}/guides`}
           >
             <span className={styles.icon} aria-hidden="true">
-              {/* book */}
               <svg viewBox="0 0 24 24">
                 <path
                   d="M7 4h10a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2V6a2 2 0 0 1 2-2Z"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="1.8"
-                  strokeLinejoin="round"
                 />
                 <path
                   d="M7 4v13"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="1.8"
-                  strokeLinecap="round"
                 />
               </svg>
             </span>
@@ -56,18 +55,18 @@ export function TopNav({ locale }: { locale: string }) {
           </Link>
 
           <Link
-            className={`${styles.link} ${isActive(`/login`) ? styles.active : ""}`}
+            className={`${styles.link} ${
+              isActive(`/login`) ? styles.active : ""
+            }`}
             href="/login"
           >
             <span className={styles.icon} aria-hidden="true">
-              {/* user */}
               <svg viewBox="0 0 24 24">
                 <path
                   d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm7 9a7 7 0 0 0-14 0"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="1.8"
-                  strokeLinecap="round"
                 />
               </svg>
             </span>
