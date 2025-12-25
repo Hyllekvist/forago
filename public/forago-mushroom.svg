@@ -1,18 +1,83 @@
-<svg
-  width="64"
-  height="64"
-  viewBox="0 0 64 64"
-  fill="none"
-  xmlns="http://www.w3.org/2000/svg"
->
-  <!-- Hat -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Forago mushroom">
+  <defs>
+    <!-- Cap gradient -->
+    <radialGradient id="capGrad" cx="28%" cy="24%" r="80%">
+      <stop offset="0%" stop-color="#ff6b6b"/>
+      <stop offset="45%" stop-color="#e53935"/>
+      <stop offset="100%" stop-color="#b71c1c"/>
+    </radialGradient>
+
+    <!-- Stem gradient -->
+    <linearGradient id="stemGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fff2d6"/>
+      <stop offset="100%" stop-color="#e7d2b0"/>
+    </linearGradient>
+
+    <!-- Soft shadow -->
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity=".22"/>
+    </filter>
+  </defs>
+
+  <!-- Ground shadow -->
+  <ellipse cx="32" cy="56" rx="15" ry="4.5" fill="#000" opacity=".18"/>
+
+  <!-- Cap -->
   <path
-    d="M12 30C12 18.954 21.402 10 32 10C42.598 10 52 18.954 52 30C52 31.657 50.657 33 49 33H15C13.343 33 12 31.657 12 30Z"
-    fill="currentColor"
+    d="M10.8 30.2C10.8 18.9 20.9 10 32 10s21.2 8.9 21.2 20.2c0 2.2-1.8 4-4 4H14.8c-2.2 0-4-1.8-4-4Z"
+    fill="url(#capGrad)"
+    filter="url(#soft)"
   />
-  <!-- Stilk -->
+
+  <!-- Cap shine -->
   <path
-    d="M24 33H40V48C40 51.314 37.314 54 34 54H30C26.686 54 24 51.314 24 48V33Z"
-    fill="currentColor"
+    d="M18 22c3.8-5.6 9.4-8.8 15.6-8.8 2.3 0 4.5.4 6.5 1.1"
+    fill="none"
+    stroke="#fff"
+    stroke-opacity=".35"
+    stroke-width="4"
+    stroke-linecap="round"
+  />
+
+  <!-- Spots -->
+  <g fill="#fff" opacity=".96">
+    <circle cx="22" cy="22" r="5.2"/>
+    <circle cx="36.5" cy="18.5" r="4.2"/>
+    <circle cx="44.5" cy="26" r="4.8"/>
+    <circle cx="30" cy="27.5" r="3.8"/>
+  </g>
+
+  <!-- Spots subtle shading -->
+  <g fill="#000" opacity=".06">
+    <circle cx="23.2" cy="23.2" r="5.2"/>
+    <circle cx="37.6" cy="19.6" r="4.2"/>
+    <circle cx="45.8" cy="27.2" r="4.8"/>
+    <circle cx="31.1" cy="28.6" r="3.8"/>
+  </g>
+
+  <!-- Stem -->
+  <path
+    d="M24 34h16v14.2C40 52.5 37.1 56 32 56s-8-3.5-8-7.8V34Z"
+    fill="url(#stemGrad)"
+    filter="url(#soft)"
+  />
+
+  <!-- Stem inner shade -->
+  <path
+    d="M31.5 34h6.7v14.4c0 2.6-1.9 5-4.8 6.2"
+    fill="none"
+    stroke="#000"
+    stroke-opacity=".10"
+    stroke-width="3"
+    stroke-linecap="round"
+  />
+
+  <!-- Under-cap rim -->
+  <path
+    d="M14.8 34h34.4"
+    stroke="#000"
+    stroke-opacity=".18"
+    stroke-width="3"
+    stroke-linecap="round"
   />
 </svg>
