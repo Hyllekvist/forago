@@ -22,3 +22,4 @@ export function MapTopbar({ mode, onToggleMode }: Props) {
     </div>
   );
 }
+ 
