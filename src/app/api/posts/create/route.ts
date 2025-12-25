@@ -35,7 +35,7 @@ export async function POST(req: Request) {
       type,
       title,
       body,
-      user_id: auth.user.id,
+      author_id: auth.user.id,
     })
     .select("id")
     .single();
