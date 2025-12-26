@@ -5,26 +5,39 @@ export async function GET(
   _req: Request,
   { params }: { params: { spotId: string } }
 ) {
-  try {
-    const spotId = String(params?.spotId ?? "").trim();
-    if (!spotId) {
-      return NextResponse.json({ ok: false, error: "Missing spotId" }, { status: 400 });
-    }
+  const supabase = await supabaseServer();
+  const spotId = params.spotId;
 
-    const supabase = await supabaseServer();
-    const { data, error } = await supabase.rpc("spot_find_stats", { p_spot_id: spotId });
+  // total
+  const { count: totalCount, error: totalErr } = await supabase
+    .from("finds")
+    .select("*", { count: "exact", head: true })
+    .eq("spot_id", spotId);
 
-    if (error) {
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
-    }
-
-    const row = Array.isArray(data) && data.length ? data[0] : null;
-
-    return NextResponse.json({
-      ok: true,
-      stats: row ?? { spot_id: spotId, total_count: 0, last_14d_count: 0, last_30d_count: 0 },
-    });
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message ?? "Unknown error" }, { status: 500 });
+  if (totalErr) {
+    return NextResponse.json({ ok: false, error: totalErr.message }, { status: 500 });
   }
+
+  // sidste 30 dage
+  const since = new Date();
+  since.setDate(since.getDate() - 30);
+
+  const { count: recentCount, error: recentErr } = await supabase
+    .from("finds")
+    .select("*", { count: "exact", head: true })
+    .eq("spot_id", spotId)
+    .gte("created_at", since.toISOString());
+
+  if (recentErr) {
+    return NextResponse.json({ ok: false, error: recentErr.message }, { status: 500 });
+  }
+
+  return NextResponse.json({
+    ok: true,
+    stats: {
+      spot_id: spotId,
+      total_count: totalCount ?? 0,
+      last_30d_count: recentCount ?? 0,
+    },
+  });
 }
