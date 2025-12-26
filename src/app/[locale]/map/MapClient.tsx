@@ -15,10 +15,7 @@ type Props = {
   spots: Spot[];
 };
 
-function haversineKm(
-  a: { lat: number; lng: number },
-  b: { lat: number; lng: number }
-) {
+function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
   const dLng = ((b.lng - a.lng) * Math.PI) / 180;
@@ -37,16 +34,16 @@ export default function MapClient({ spots }: Props) {
   const [mode, setMode] = useState<Mode>("daily");
   const [activeInsight, setActiveInsight] = useState<InsightKey | null>(null);
 
-  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(
-    null
-  );
+  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [mapApi, setMapApi] = useState<LeafletLikeMap | null>(null);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [visibleIds, setVisibleIds] = useState<string[]>([]);
   const [sheetExpanded, setSheetExpanded] = useState(false);
 
-  // --- get user position
+  // ✅ NEW: show “Finder spots…” while the user is actively moving the map
+  const [isPanning, setIsPanning] = useState(false);
+
   useEffect(() => {
     if (!("geolocation" in navigator)) return;
     navigator.geolocation.getCurrentPosition(
@@ -55,6 +52,23 @@ export default function MapClient({ spots }: Props) {
       { enableHighAccuracy: true, timeout: 7000, maximumAge: 60_000 }
     );
   }, []);
+
+  const insights = useMemo(() => {
+    const total = spots.length;
+
+    const nearbyCount = userPos
+      ? spots.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2).length
+      : 0;
+
+    const seasonNowCount = Math.min(total, Math.max(0, Math.round(total * 0.35)));
+    const peakCount = Math.min(total, Math.max(0, Math.round(total * 0.12)));
+
+    return {
+      season_now: { label: "I sæson nu", value: seasonNowCount, hint: "Arter" },
+      peak: { label: "Peak", value: peakCount, hint: "I området" },
+      nearby: { label: "Tæt på dig", value: nearbyCount, hint: "< 2 km" },
+    } as const;
+  }, [spots, userPos]);
 
   const spotsById = useMemo(() => {
     const m = new Map<string, Spot>();
@@ -71,25 +85,6 @@ export default function MapClient({ spots }: Props) {
     return visibleIds.map((id) => spotsById.get(id)).filter(Boolean) as Spot[];
   }, [visibleIds, spotsById]);
 
-  // --- compute insights (MVP)
-  const insights = useMemo(() => {
-    const total = spots.length;
-
-    const nearbyCount = userPos
-      ? spots.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2)
-          .length
-      : 0;
-
-    const seasonNowCount = Math.min(total, Math.max(0, Math.round(total * 0.35)));
-    const peakCount = Math.min(total, Math.max(0, Math.round(total * 0.12)));
-
-    return {
-      season_now: { label: "I sæson nu", value: seasonNowCount, hint: "Arter" },
-      peak: { label: "Peak", value: peakCount, hint: "I området" },
-      nearby: { label: "Tæt på dig", value: nearbyCount, hint: "< 2 km" },
-    } as const;
-  }, [spots, userPos]);
-
   const filteredSpots = useMemo(() => {
     if (!activeInsight) return spots;
 
@@ -100,29 +95,13 @@ export default function MapClient({ spots }: Props) {
         .sort((a, b) => a.d - b.d)
         .map((x) => x.s);
     }
-
     return spots;
   }, [spots, activeInsight, userPos]);
-
-  const panUpForPeek = useCallback(() => {
-    if (!mapApi) return;
-
-    // hvis din LeafletLikeMap wrapper understøtter panBy, brug den:
-    const anyApi = mapApi as any;
-    if (typeof anyApi.panBy === "function") {
-      // negativ Y = pan op (så marker kommer fri af bottomDock)
-      anyApi.panBy([0, -160], { animate: true });
-      return;
-    }
-
-    // fallback: ingen panBy -> gør ingenting (ok)
-  }, [mapApi]);
 
   const onToggleMode = useCallback(() => {
     setMode((m) => (m === "daily" ? "forage" : "daily"));
     setSheetExpanded(false);
     setSelectedId(null);
-    setActiveInsight(null);
   }, []);
 
   const onPickInsight = useCallback(
@@ -138,32 +117,27 @@ export default function MapClient({ spots }: Props) {
     [mapApi, userPos]
   );
 
-  const onSelectSpot = useCallback(
-    (id: string) => {
-      setSelectedId(id);
-      setSheetExpanded(false);
-      // næste tick: pan op så markøren ikke “drukner” under peek
-      requestAnimationFrame(() => panUpForPeek());
-    },
-    [panUpForPeek]
-  );
+  const onSelectSpot = useCallback((id: string) => {
+    setSelectedId(id);
+    setSheetExpanded(false);
+  }, []);
 
   const onQuickLog = useCallback((id: string) => {
     setSelectedId(id);
     setSheetExpanded(false);
-    requestAnimationFrame(() => panUpForPeek());
-  }, [panUpForPeek]);
+  }, []);
+
+  const sheetTitle = isPanning
+    ? "Finder spots…"
+    : visibleIds?.length
+      ? `${visibleIds.length} relevante spots i view`
+      : "Flyt kortet for at finde spots";
 
   return (
     <div className={styles.page}>
       <MapTopbar mode={mode} onToggleMode={onToggleMode} />
 
-      <InsightStrip
-        mode={mode}
-        active={activeInsight}
-        insights={insights}
-        onPick={onPickInsight}
-      />
+      <InsightStrip mode={mode} active={activeInsight} insights={insights} onPick={onPickInsight} />
 
       <div className={styles.mapShell}>
         <LeafletMap
@@ -173,9 +147,10 @@ export default function MapClient({ spots }: Props) {
           onSelect={onSelectSpot}
           onMapReady={setMapApi}
           onVisibleChange={setVisibleIds}
+          // ✅ NEW (you add this prop in LeafletMap)
+          onPanningChange={setIsPanning}
         />
 
-        {/* Én bottom surface ad gangen */}
         <div className={styles.bottomDock}>
           {selectedSpot ? (
             <SpotPeekCard
@@ -190,20 +165,13 @@ export default function MapClient({ spots }: Props) {
               mode={mode}
               expanded={sheetExpanded}
               onToggle={() => setSheetExpanded((v) => !v)}
-              title={
-                visibleIds?.length
-                  ? `${visibleIds.length} relevante spots i view`
-                  : "Flyt kortet for at finde spots"
-              }
+              title={sheetTitle}
               items={visibleSpots}
               selectedId={selectedId}
               onSelect={(id) => {
                 onSelectSpot(id);
                 const s = spotsById.get(id);
-                if (s && mapApi) {
-                  mapApi.flyTo(s.lat, s.lng, Math.max(mapApi.getZoom(), 14));
-                  requestAnimationFrame(() => panUpForPeek());
-                }
+                if (s && mapApi) mapApi.flyTo(s.lat, s.lng, Math.max(mapApi.getZoom(), 14));
               }}
               onLog={onQuickLog}
             />
