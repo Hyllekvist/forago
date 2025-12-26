@@ -166,15 +166,15 @@ export default function MapClient({ spots }: Props) {
       setLogState({ spotId, status: "saving" });
 
       // Du kan skifte endpoint senere – her er det “ren” API flow.
-      const res = await fetch("/api/finds/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          spot_id: spotId,
-          observed_at: new Date().toISOString(),
-          notes: "",
-        }),
-      });
+      await fetch("/api/finds/create", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    species_id: selectedSpot.species_id,
+    observed_at: new Date().toISOString(),
+    visibility: "private",
+  }),
+});
 
       const json = await res.json().catch(() => ({}));
 
