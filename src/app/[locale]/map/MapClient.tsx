@@ -1,4 +1,3 @@
-// src/app/[locale]/map/MapClient.tsx
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
@@ -16,10 +15,7 @@ type Props = {
   spots: Spot[];
 };
 
-function haversineKm(
-  a: { lat: number; lng: number },
-  b: { lat: number; lng: number }
-) {
+function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
   const dLng = ((b.lng - a.lng) * Math.PI) / 180;
@@ -38,9 +34,7 @@ export default function MapClient({ spots }: Props) {
   const [mode, setMode] = useState<Mode>("daily");
   const [activeInsight, setActiveInsight] = useState<InsightKey | null>(null);
 
-  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(
-    null
-  );
+  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [mapApi, setMapApi] = useState<LeafletLikeMap | null>(null);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -68,8 +62,7 @@ export default function MapClient({ spots }: Props) {
     const total = spots.length;
 
     const nearbyCount = userPos
-      ? spots.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2)
-          .length
+      ? spots.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2).length
       : 0;
 
     const seasonNowCount = Math.min(total, Math.max(0, Math.round(total * 0.35)));
@@ -108,6 +101,7 @@ export default function MapClient({ spots }: Props) {
         .map((x) => x.s);
     }
 
+    // MVP: season_now/peak filtrerer ikke hårdt endnu
     return spots;
   }, [spots, activeInsight, userPos]);
 
@@ -115,6 +109,7 @@ export default function MapClient({ spots }: Props) {
     setMode((m) => (m === "daily" ? "forage" : "daily"));
     setSheetExpanded(false);
     setSelectedId(null);
+    setLogError(null);
   }, []);
 
   const onPickInsight = useCallback(
@@ -122,6 +117,7 @@ export default function MapClient({ spots }: Props) {
       setActiveInsight((prev) => (prev === k ? null : k));
       setSheetExpanded(true);
       setSelectedId(null);
+      setLogError(null);
 
       if (k === "nearby" && userPos && mapApi) {
         mapApi.flyTo(userPos.lat, userPos.lng, 13);
@@ -130,33 +126,39 @@ export default function MapClient({ spots }: Props) {
     [mapApi, userPos]
   );
 
-  // selection + center (pan up so marker sits above peek + bottom nav)
+  // selection + center (kun her — LeafletMap må ikke selv flyTo ved click)
   const onSelectSpot = useCallback(
     (id: string) => {
       setSelectedId(id);
       setSheetExpanded(false);
+      setLogError(null);
 
       const s = spotsById.get(id);
       if (!s || !mapApi) return;
 
       const targetZoom = Math.max(mapApi.getZoom(), 14);
       mapApi.flyTo(s.lat, s.lng, targetZoom);
-      mapApi.panBy?.(0, -140);
+
+      // løft markøren lidt op over peek + bottom nav
+      mapApi.panBy(0, -140);
     },
     [mapApi, spotsById]
   );
 
-  // ✅ single source of truth for logging
+  // ✅ log via species_id (single source of truth)
   const onQuickLog = useCallback(async (spot: Spot) => {
     try {
       setIsLogging(true);
       setLogError(null);
 
+      const species_id = (spot as any)?.species_id ?? null;
+      if (!species_id) throw new Error("Spot mangler species_id");
+
       const res = await fetch("/api/finds/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          species_slug: spot.species_slug ?? null,
+          species_id,
           observed_at: new Date().toISOString(),
           visibility: "private",
           notes: null,
@@ -166,9 +168,7 @@ export default function MapClient({ spots }: Props) {
       });
 
       const json = await res.json();
-      if (!res.ok || !json?.ok) {
-        throw new Error(json?.error ?? "Kunne ikke logge fund");
-      }
+      if (!res.ok || !json?.ok) throw new Error(json?.error ?? "Kunne ikke logge fund");
 
       // UX: luk peek på success
       setSelectedId(null);
@@ -216,24 +216,24 @@ export default function MapClient({ spots }: Props) {
               onClose={() => setSelectedId(null)}
               onLog={() => void onQuickLog(selectedSpot)}
               onLearn={() => {
-                // TODO: route to species/spot page later
+                // TODO: route til species/spot side senere
                 setSelectedId(null);
               }}
             />
           ) : (
-          <MapSheet
-  mode={mode}
-  expanded={sheetExpanded}
-  onToggle={() => setSheetExpanded((v) => !v)}
-  title={sheetTitle}
-  items={visibleSpots}
-  selectedId={selectedId}
-  onSelect={(id) => onSelectSpot(id)}
-  onLog={(id: string) => {
-    const s = spotsById.get(id);
-    if (s) void onQuickLog(s);
-  }}
-/>
+            <MapSheet
+              mode={mode}
+              expanded={sheetExpanded}
+              onToggle={() => setSheetExpanded((v) => !v)}
+              title={sheetTitle}
+              items={visibleSpots}
+              selectedId={selectedId}
+              onSelect={(id) => onSelectSpot(id)}
+              onLog={(id: string) => {
+                const s = spotsById.get(id);
+                if (s) void onQuickLog(s);
+              }}
+            />
           )}
         </div>
 
