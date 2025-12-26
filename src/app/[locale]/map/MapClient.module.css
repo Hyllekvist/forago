@@ -4,48 +4,35 @@
   color: var(--ink);
 }
 
-/* Én sandhed for safe-områder */
-.page {
-  --topPad: 12px;
-  --sidePad: 12px;
-
-  /* Brug jeres token for navhøjde + iOS safe area */
-  --navPad: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom));
-  --uiBottom: calc(var(--navPad) + 12px); /* luft over nav */
-}
-
-/* Map fylder hele viewport — UI ligger ovenpå */
-.mapShell {
-  position: relative;
-  height: 100svh;
-  width: 100%;
-  z-index: 0;
-}
-
-/* Peek card (Spot preview) */
-.peekWrap {
+/* Overlay root — ligger ovenpå map og kender bottomnav */
+.overlayRoot{
   position: absolute;
-  left: var(--sidePad);
-  right: var(--sidePad);
-  bottom: var(--uiBottom);      /* 🔥 aldrig bag bottom nav */
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+
+  /* 🔥 én sandhed */
+  --safeBottom: calc(var(--bottom-nav-h) + 12px + env(safe-area-inset-bottom));
+}
+
+/* Peek card */
+.peekWrap{
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: calc(var(--safeBottom) + 64px); /* 🔥 over sheet header */
   z-index: 80;
   pointer-events: none;
 }
+.peekWrap > *{ pointer-events: auto; }
 
-.peekWrap > * {
-  pointer-events: auto;
-}
-
-/* Bottom sheet wrapper (liste) */
-.sheetWrap {
+/* Sheet */
+.sheetWrap{
   position: absolute;
-  left: var(--sidePad);
-  right: var(--sidePad);
-  bottom: var(--uiBottom);      /* 🔥 samme baseline som peek */
+  left: 12px;
+  right: 12px;
+  bottom: var(--safeBottom);
   z-index: 70;
   pointer-events: none;
 }
-
-.sheetWrap > * {
-  pointer-events: auto;
-}
+.sheetWrap > *{ pointer-events: auto; }
