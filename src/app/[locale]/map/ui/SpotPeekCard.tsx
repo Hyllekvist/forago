@@ -1,7 +1,7 @@
 // src/app/[locale]/map/ui/SpotPeekCard.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import styles from "./SpotPeekCard.module.css";
 import type { Spot } from "../LeafletMap";
 
@@ -9,27 +9,19 @@ type Props = {
   spot: Spot;
   mode: "daily" | "forage";
   userPos: { lat: number; lng: number } | null;
+  isLogging?: boolean;
+  logOk?: boolean;
   onClose: () => void;
-  onLog: () => Promise<void> | void; // 👈 vigtig (så vi kan await)
+  onLog: () => void;
   onLearn: () => void;
 };
 
 function emojiForSlug(slug?: string | null) {
   const s = (slug ?? "").toLowerCase();
   if (!s) return "📍";
-  if (
-    s.includes("svamp") ||
-    s.includes("mush") ||
-    s.includes("chanter") ||
-    s.includes("kantarel")
-  )
+  if (s.includes("svamp") || s.includes("mush") || s.includes("chanter") || s.includes("kantarel"))
     return "🍄";
-  if (
-    s.includes("bær") ||
-    s.includes("berry") ||
-    s.includes("blåb") ||
-    s.includes("hindb")
-  )
+  if (s.includes("bær") || s.includes("berry") || s.includes("blåb") || s.includes("hindb"))
     return "🫐";
   if (s.includes("urt") || s.includes("herb")) return "🌿";
   if (s.includes("nød") || s.includes("nut")) return "🌰";
@@ -83,38 +75,21 @@ function isIOS() {
   return /iPad|iPhone|iPod/.test(navigator.userAgent);
 }
 
-export function SpotPeekCard({ spot, mode, userPos, onClose, onLog, onLearn }: Props) {
-  const [logging, setLogging] = useState(false);
-  const [logged, setLogged] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // reset state when switching spot
-  useEffect(() => {
-    setLogging(false);
-    setLogged(false);
-    setError(null);
-  }, [spot.id]);
-
-  // auto close after success
-  useEffect(() => {
-    if (!logged) return;
-    const t = setTimeout(() => onClose(), 1500);
-    return () => clearTimeout(t);
-  }, [logged, onClose]);
-
+export function SpotPeekCard({
+  spot,
+  mode,
+  userPos,
+  isLogging,
+  logOk,
+  onClose,
+  onLog,
+  onLearn,
+}: Props) {
   const emoji = emojiForSlug(spot.species_slug);
-  const label =
-    mode === "forage" ? "Muligt fund" : spot.species_slug ? "Spot" : "Lokation";
+  const label = mode === "forage" ? "Muligt fund" : spot.species_slug ? "Spot" : "Lokation";
 
-  const distance = useMemo(
-    () => formatDistance(userPos, spot),
-    [userPos, spot.lat, spot.lng]
-  );
-
-  const freshness = useMemo(
-    () => formatFreshness((spot as any)?.last_seen_at ?? null),
-    [(spot as any)?.last_seen_at]
-  );
+  const distance = useMemo(() => formatDistance(userPos, spot), [userPos, spot.lat, spot.lng]);
+  const freshness = useMemo(() => formatFreshness((spot as any).last_seen_at ?? null), [spot]);
 
   const mapsHref = useMemo(() => {
     const q = encodeURIComponent(`${spot.lat},${spot.lng}`);
@@ -122,19 +97,7 @@ export function SpotPeekCard({ spot, mode, userPos, onClose, onLog, onLearn }: P
     return `https://www.google.com/maps/search/?api=1&query=${q}`;
   }, [spot.lat, spot.lng]);
 
-  async function handleLog() {
-    if (logging || logged) return;
-    try {
-      setLogging(true);
-      setError(null);
-      await onLog();
-      setLogged(true);
-    } catch (e: any) {
-      setError(e?.message ?? "Kunne ikke logge fund");
-    } finally {
-      setLogging(false);
-    }
-  }
+  const logLabel = logOk ? "✅ Logget" : isLogging ? "Logger…" : "Log fund";
 
   return (
     <section className={styles.card} role="dialog" aria-label="Selected spot">
@@ -145,6 +108,7 @@ export function SpotPeekCard({ spot, mode, userPos, onClose, onLog, onLearn }: P
         onClick={onClose}
         aria-label="Close"
         type="button"
+        disabled={!!isLogging}
       >
         <span aria-hidden>✕</span>
       </button>
@@ -173,50 +137,43 @@ export function SpotPeekCard({ spot, mode, userPos, onClose, onLog, onLearn }: P
             <span className={styles.pill}>
               {spot.species_slug ? `#${spot.species_slug}` : "#unclassified"}
             </span>
-            <span className={styles.pillAccent}>
-              {mode === "forage" ? "Peak potential" : "I nærheden"}
-            </span>
+            <span className={styles.pillAccent}>{mode === "forage" ? "Peak potential" : "I nærheden"}</span>
           </div>
         </div>
       </header>
 
       <div className={styles.actions}>
-        <a className={styles.primary} href={mapsHref} target="_blank" rel="noreferrer">
+        <a
+          className={styles.primary}
+          href={mapsHref}
+          target="_blank"
+          rel="noreferrer"
+          aria-disabled={isLogging ? "true" : "false"}
+          onClick={(e) => {
+            if (isLogging) e.preventDefault();
+          }}
+        >
           <span className={styles.primaryIcon} aria-hidden>
             ➜
           </span>
           Navigér
         </a>
 
-        {!logged ? (
-          <button
-            className={styles.secondary}
-            onClick={handleLog}
-            type="button"
-            disabled={logging}
-          >
-            {logging ? "Logger…" : "Log fund"}
-          </button>
-        ) : (
-          <div className={styles.success} role="status" aria-live="polite">
-            ✔ Fund logget
-          </div>
-        )}
+        <button
+          className={styles.secondary}
+          onClick={() => void onLog()}
+          type="button"
+          disabled={!!isLogging || !!logOk}
+        >
+          {logLabel}
+        </button>
 
-        <button className={styles.ghost} onClick={onLearn} type="button">
+        <button className={styles.ghost} onClick={onLearn} type="button" disabled={!!isLogging}>
           Lær mere
         </button>
       </div>
 
-      {error ? (
-        <div className={styles.error} role="status" aria-live="polite">
-          {error}
-        </div>
-      ) : null}
-
-      <div className={styles.hint}>
-        Tip: Tryk på flere pins for at browse. Zoom ind for flere detaljer.
-      </div>
+      <div className={styles.hint}>Tip: Tryk på flere pins for at browse. Zoom ind for flere detaljer.</div>
     </section>
   );
 }
