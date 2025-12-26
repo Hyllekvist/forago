@@ -221,16 +221,19 @@ export default function MapClient({ spots }: Props) {
               }}
             />
           ) : (
-            <MapSheet
-              mode={mode}
-              expanded={sheetExpanded}
-              onToggle={() => setSheetExpanded((v) => !v)}
-              title={sheetTitle}
-              items={visibleSpots}
-              selectedId={selectedId}
-              onSelect={(id) => onSelectSpot(id)}
-              onLog={(spot) => void onQuickLog(spot)}
-            />
+          <MapSheet
+  mode={mode}
+  expanded={sheetExpanded}
+  onToggle={() => setSheetExpanded((v) => !v)}
+  title={sheetTitle}
+  items={visibleSpots}
+  selectedId={selectedId}
+  onSelect={(id) => onSelectSpot(id)}
+  onLog={(id: string) => {
+    const s = spotsById.get(id);
+    if (s) void onQuickLog(s);
+  }}
+/>
           )}
         </div>
 
