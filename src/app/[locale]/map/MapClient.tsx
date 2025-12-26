@@ -1,7 +1,7 @@
 // src/app/[locale]/map/MapClient.tsx
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import styles from "./MapClient.module.css";
 
 import LeafletMap, { type Spot, type LeafletLikeMap } from "./LeafletMap";
@@ -35,13 +35,24 @@ export default function MapClient({ spots }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [visibleIds, setVisibleIds] = useState<string[]>([]);
   const [sheetExpanded, setSheetExpanded] = useState(false);
-
   const [isPanning, setIsPanning] = useState(false);
 
-  // --- logging feedback (Step 1)
+  // logging feedback
   const [isLogging, setIsLogging] = useState(false);
   const [logError, setLogError] = useState<string | null>(null);
   const [logOk, setLogOk] = useState(false);
+
+  // prevents double-submit + lets us avoid stale deps
+  const inFlightRef = useRef(false);
+  const okTimerRef = useRef<number | null>(null);
+  const errTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (okTimerRef.current) window.clearTimeout(okTimerRef.current);
+      if (errTimerRef.current) window.clearTimeout(errTimerRef.current);
+    };
+  }, []);
 
   // --- geolocation
   useEffect(() => {
@@ -133,51 +144,59 @@ export default function MapClient({ spots }: Props) {
     [mapApi, spotsById]
   );
 
-  // ✅ single source of truth for logging + UX feedback
+  // ✅ single source of truth for logging + Step 1 logs
   const onQuickLog = useCallback(async (spot: Spot) => {
-    if (isLogging) return;
+    if (inFlightRef.current) return;
+
+    // clear old timers
+    if (okTimerRef.current) window.clearTimeout(okTimerRef.current);
+    if (errTimerRef.current) window.clearTimeout(errTimerRef.current);
+
+    const payload = {
+      species_slug: spot.species_slug ?? null,
+      observed_at: new Date().toISOString(),
+      visibility: "private",
+      notes: null,
+      country: "DK",
+      geo_precision_km: 1,
+    };
 
     try {
+      inFlightRef.current = true;
       setIsLogging(true);
       setLogError(null);
       setLogOk(false);
 
+      console.log("[log] submit payload", payload);
+
       const res = await fetch("/api/finds/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          species_slug: spot.species_slug ?? null,
-          observed_at: new Date().toISOString(),
-          visibility: "private",
-          notes: null,
-          country: "DK",
-          geo_precision_km: 1,
-        }),
+        body: JSON.stringify(payload),
       });
 
-      const json = await res.json();
+      const json = await res.json().catch(() => null);
+
+      console.log("[log] status", res.status, json);
+
       if (!res.ok || !json?.ok) {
         throw new Error(json?.error ?? "Kunne ikke logge fund");
       }
 
-      console.log("[finds/create] ok", json.find);
-
-      // ✅ success feedback
       setLogOk(true);
 
-      // luk peek efter en kort “✅ logget”
-      window.setTimeout(() => {
+      okTimerRef.current = window.setTimeout(() => {
         setSelectedId(null);
         setLogOk(false);
       }, 1200);
     } catch (e: any) {
       setLogError(e?.message ?? "Ukendt fejl");
-      // auto-hide error efter lidt tid (valgfrit)
-      window.setTimeout(() => setLogError(null), 3500);
+      errTimerRef.current = window.setTimeout(() => setLogError(null), 3500);
     } finally {
+      inFlightRef.current = false;
       setIsLogging(false);
     }
-  }, [isLogging]);
+  }, []);
 
   const sheetTitle = isPanning
     ? "Finder spots…"
@@ -189,12 +208,7 @@ export default function MapClient({ spots }: Props) {
     <div className={styles.page}>
       <MapTopbar mode={mode} onToggleMode={onToggleMode} />
 
-      <InsightStrip
-        mode={mode}
-        active={activeInsight}
-        insights={insights}
-        onPick={onPickInsight}
-      />
+      <InsightStrip mode={mode} active={activeInsight} insights={insights} onPick={onPickInsight} />
 
       <div className={styles.mapShell}>
         <LeafletMap
