@@ -139,14 +139,24 @@ export default function MapClient({ spots }: Props) {
   );
 
   // keep this as a stub until you wire real log flow
-  const onQuickLog = useCallback(
-    (id: string) => {
-      // for now: ensure the same selected behavior (and centering)
-      onSelectSpot(id);
-    },
-    [onSelectSpot]
-  );
+const onQuickLog = useCallback(async (spotId: string) => {
+  try {
+    await fetch("/api/finds/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        spot_id: spotId,
+        observed_at: new Date().toISOString(),
+        notes: "",
+      }),
+    });
 
+    // UX: luk peek, evt. toast senere
+    setSelectedId(null);
+  } catch {
+    // senere: toast error
+  }
+}, []);
   const sheetTitle = isPanning
     ? "Finder spots…"
     : visibleIds?.length
