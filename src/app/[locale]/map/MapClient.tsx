@@ -1,4 +1,4 @@
-"use client";  
+"use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import styles from "./MapClient.module.css";
@@ -44,10 +44,9 @@ export default function MapClient({ spots }: Props) {
   // --- get user position (low-friction default)
   useEffect(() => {
     if (!("geolocation" in navigator)) return;
+
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-      },
+      (pos) => setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
       () => {
         // ignore; LeafletMap has DK fallback center
       },
@@ -55,17 +54,14 @@ export default function MapClient({ spots }: Props) {
     );
   }, []);
 
-  // --- compute “insights” (MVP: simple + usable; upgrade later with seasonality)
+  // --- compute “insights” (MVP)
   const insights = useMemo(() => {
     const total = spots.length;
 
-    // nearby: within 2km
     const nearbyCount = userPos
       ? spots.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2).length
       : 0;
 
-    // "season_now" + "peak" placeholders: use whatever you have later (season model)
-    // For now, we approximate:
     const seasonNowCount = Math.min(total, Math.max(0, Math.round(total * 0.35)));
     const peakCount = Math.min(total, Math.max(0, Math.round(total * 0.12)));
 
@@ -78,7 +74,7 @@ export default function MapClient({ spots }: Props) {
 
   const spotsById = useMemo(() => {
     const m = new Map<string, Spot>();
-    spots.forEach((s) => m.set(s.id, s));
+    for (const s of spots) m.set(s.id, s);
     return m;
   }, [spots]);
 
@@ -102,8 +98,6 @@ export default function MapClient({ spots }: Props) {
         .map((x) => x.s);
     }
 
-    // MVP: season_now/peak don’t filter hard yet (until we have seasonality data)
-    // But we still “feel” responsive by zooming to user/area.
     return spots;
   }, [spots, activeInsight, userPos]);
 
@@ -117,7 +111,6 @@ export default function MapClient({ spots }: Props) {
       setActiveInsight((prev) => (prev === k ? null : k));
       setSheetExpanded(true);
 
-      // gentle map motion for perceived intelligence
       if (k === "nearby" && userPos && mapApi) {
         mapApi.flyTo(userPos.lat, userPos.lng, 13);
       }
@@ -125,17 +118,12 @@ export default function MapClient({ spots }: Props) {
     [mapApi, userPos]
   );
 
-  const onSelectSpot = useCallback(
-    (id: string) => {
-      setSelectedId(id);
-      setSheetExpanded(false); // spot peek is the moment
-    },
-    []
-  );
+  const onSelectSpot = useCallback((id: string) => {
+    setSelectedId(id);
+    setSheetExpanded(false);
+  }, []);
 
   const onQuickLog = useCallback((id: string) => {
-    // hook this to your log flow later
-    // for now: just focus + keep selected
     setSelectedId(id);
     setSheetExpanded(false);
   }, []);
@@ -143,14 +131,9 @@ export default function MapClient({ spots }: Props) {
   return (
     <div className={styles.page}>
       <MapTopbar mode={mode} onToggleMode={onToggleMode} />
+      <InsightStrip mode={mode} active={activeInsight} insights={insights} onPick={onPickInsight} />
 
-      <InsightStrip
-        mode={mode}
-        active={activeInsight}
-        insights={insights}
-        onPick={onPickInsight}
-      />
-
+      {/* IMPORTANT: map stays full-bleed, overlays are inside overlayRoot */}
       <div className={styles.mapShell}>
         <LeafletMap
           spots={filteredSpots}
@@ -161,40 +144,40 @@ export default function MapClient({ spots }: Props) {
           onVisibleChange={setVisibleIds}
         />
 
-        {selectedSpot && (
-          <div className={styles.peekWrap}>
-            <SpotPeekCard
-              spot={selectedSpot}
+        {/* One overlay root that knows safe-bottom */}
+        <div className={styles.overlayRoot}>
+          {selectedSpot && (
+            <div className={styles.peekWrap}>
+              <SpotPeekCard
+                spot={selectedSpot}
+                mode={mode}
+                onClose={() => setSelectedId(null)}
+                onLog={() => onQuickLog(selectedSpot.id)}
+                onLearn={() => setSelectedId(null)}
+              />
+            </div>
+          )}
+
+          <div className={styles.sheetWrap}>
+            <MapSheet
               mode={mode}
-              onClose={() => setSelectedId(null)}
-              onLog={() => onQuickLog(selectedSpot.id)}
-              onLearn={() => {
-                // navigate later; for now close
-                setSelectedId(null);
+              expanded={sheetExpanded}
+              onToggle={() => setSheetExpanded((v) => !v)}
+              title={
+                visibleIds?.length
+                  ? `${visibleIds.length} relevante spots i view`
+                  : "Flyt kortet for at finde spots"
+              }
+              items={visibleSpots}
+              selectedId={selectedId}
+              onSelect={(id) => {
+                onSelectSpot(id);
+                const s = spotsById.get(id);
+                if (s && mapApi) mapApi.flyTo(s.lat, s.lng, Math.max(mapApi.getZoom(), 14));
               }}
+              onLog={onQuickLog}
             />
           </div>
-        )}
-
-        <div className={styles.sheetWrap}>
-          <MapSheet
-            mode={mode}
-            expanded={sheetExpanded}
-            onToggle={() => setSheetExpanded((v) => !v)}
-            title={
-              visibleIds?.length
-                ? `${visibleIds.length} relevante spots i view`
-                : "Flyt kortet for at finde spots"
-            }
-            items={visibleSpots}
-            selectedId={selectedId}
-            onSelect={(id) => {
-              onSelectSpot(id);
-              const s = spotsById.get(id);
-              if (s && mapApi) mapApi.flyTo(s.lat, s.lng, Math.max(mapApi.getZoom(), 14));
-            }}
-            onLog={onQuickLog}
-          />
         </div>
       </div>
     </div>
