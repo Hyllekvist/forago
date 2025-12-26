@@ -153,11 +153,11 @@ export function SpotPeekCard({
 
   const effectiveCounts = counts ?? localCounts;
 
-  const socialLine = countsLoading
-    ? "Henter aktivitet…"
-    : effectiveCounts
-      ? `${effectiveCounts.total} logs · ${effectiveCounts.qtr} nyligt`
-      : "Ingen logs endnu";
+const socialLine = countsLoading
+  ? "Henter aktivitet…"
+  : effectiveCounts
+    ? `${effectiveCounts.total} community logs · ${effectiveCounts.qtr} denne sæson`
+    : "Ingen community logs endnu";
 
   return (
     <section className={styles.card} role="dialog" aria-label="Selected spot">
