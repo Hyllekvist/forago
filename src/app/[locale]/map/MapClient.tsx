@@ -43,6 +43,10 @@ export default function MapClient({ spots }: Props) {
   const [logError, setLogError] = useState<string | null>(null);
   const [logOk, setLogOk] = useState(false);
 
+  // spot counters (total + this quarter)
+  const [spotCounts, setSpotCounts] = useState<{ total: number; qtr: number } | null>(null);
+
+  // --- geolocation
   useEffect(() => {
     if (!("geolocation" in navigator)) return;
     navigator.geolocation.getCurrentPosition(
@@ -101,6 +105,9 @@ export default function MapClient({ spots }: Props) {
     setMode((m) => (m === "daily" ? "forage" : "daily"));
     setSheetExpanded(false);
     setSelectedId(null);
+    setSpotCounts(null);
+    setLogOk(false);
+    setLogError(null);
   }, []);
 
   const onPickInsight = useCallback(
@@ -108,6 +115,7 @@ export default function MapClient({ spots }: Props) {
       setActiveInsight((prev) => (prev === k ? null : k));
       setSheetExpanded(true);
       setSelectedId(null);
+      setSpotCounts(null);
 
       if (k === "nearby" && userPos && mapApi) {
         mapApi.flyTo(userPos.lat, userPos.lng, 13);
@@ -116,6 +124,7 @@ export default function MapClient({ spots }: Props) {
     [mapApi, userPos]
   );
 
+  // selection + center (pan up so marker sits above peek + bottom nav)
   const onSelectSpot = useCallback(
     (id: string) => {
       setSelectedId(id);
@@ -131,7 +140,33 @@ export default function MapClient({ spots }: Props) {
     [mapApi, spotsById]
   );
 
-  // ✅ logging: sender spot_id + species_slug
+  // fetch counters whenever selected spot changes
+  useEffect(() => {
+    if (!selectedSpot?.id) {
+      setSpotCounts(null);
+      return;
+    }
+
+    const ac = new AbortController();
+
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/spots/counts?spot_id=${encodeURIComponent(selectedSpot.id)}`,
+          { signal: ac.signal }
+        );
+        const json = await res.json();
+        if (!res.ok || !json?.ok) return;
+        setSpotCounts({ total: Number(json.total ?? 0), qtr: Number(json.qtr ?? 0) });
+      } catch {
+        // ignore
+      }
+    })();
+
+    return () => ac.abort();
+  }, [selectedSpot?.id]);
+
+  // single source of truth for logging + UX feedback
   const onQuickLog = useCallback(
     async (spot: Spot) => {
       if (isLogging) return;
@@ -145,14 +180,15 @@ export default function MapClient({ spots }: Props) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            spot_id: spot.id, // 🔥 den manglede
+            spot_id: spot.id, // ✅ important: count is per location
             species_slug: spot.species_slug ?? null,
             observed_at: new Date().toISOString(),
-            visibility: "private",
-            notes: "",
+            // NOTE: hvis du vil tælle i counteren, skal du logge som public_aggregate
+            visibility: "public_aggregate",
+            notes: null,
             country: "DK",
             geo_precision_km: 1,
-            photo_urls: [], // 🔥 NOT NULL i DB
+            photo_urls: [],
           }),
         });
 
@@ -161,7 +197,13 @@ export default function MapClient({ spots }: Props) {
           throw new Error(json?.error ?? "Kunne ikke logge fund");
         }
 
+        // success feedback
         setLogOk(true);
+
+        // refresh counts (optimistisk + fetch)
+        setSpotCounts((prev) =>
+          prev ? { total: prev.total + 1, qtr: prev.qtr + 1 } : { total: 1, qtr: 1 }
+        );
 
         window.setTimeout(() => {
           setSelectedId(null);
@@ -206,6 +248,9 @@ export default function MapClient({ spots }: Props) {
               spot={selectedSpot}
               mode={mode}
               userPos={userPos}
+              counts={spotCounts}
+              isLogging={isLogging}
+              logOk={logOk}
               onClose={() => setSelectedId(null)}
               onLog={() => void onQuickLog(selectedSpot)}
               onLearn={() => setSelectedId(null)}
@@ -229,7 +274,6 @@ export default function MapClient({ spots }: Props) {
 
         {logError ? <div className={styles.toastError}>{logError}</div> : null}
         {isLogging ? <div className={styles.toastInfo}>Logger fund…</div> : null}
-        {logOk ? <div className={styles.toastInfo}>✅ Logget</div> : null}
       </div>
     </div>
   );
