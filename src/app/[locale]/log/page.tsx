@@ -1,11 +1,6 @@
+// src/app/[locale]/log/page.tsx
 import styles from "./LogPage.module.css";
 import { supabaseServer } from "@/lib/supabase/server";
-import { LogClient, type FindRow } from "./LogClient";
-
-type Locale = "dk" | "en" | "se" | "de";
-function safeLocale(v: unknown): Locale {
-  return v === "dk" || v === "en" || v === "se" || v === "de" ? v : "dk";
-}
 
 type SpeciesRow = {
   id: string;
@@ -14,54 +9,52 @@ type SpeciesRow = {
   scientific_name: string | null;
 };
 
-type FindRowRaw = Omit<FindRow, "species"> & {
-  // supabase kan returnere relationer som array
-  species?: SpeciesRow[] | SpeciesRow | null;
+type FindRow = {
+  id: string;
+  created_at: string;
+  observed_at: string | null;
+  notes: string | null;
+  photo_urls: string[];
+  visibility: string;
+  spot_id: string;
+  species_id: string | null;
+  species: SpeciesRow | null; // ✅ vi normaliserer til object
 };
 
-function normalizeFinds(rows: FindRowRaw[]): FindRow[] {
-  return (rows ?? []).map((r) => {
-    const spAny = (r as any).species;
-    const species =
-      Array.isArray(spAny) ? (spAny[0] ?? null) : spAny ?? null;
+function normalizeFind(row: any): FindRow {
+  const sp = Array.isArray(row?.species) ? row.species[0] ?? null : row?.species ?? null;
 
-    return {
-      id: r.id,
-      created_at: r.created_at,
-      observed_at: r.observed_at ?? null,
-      notes: r.notes ?? null,
-      photo_urls: r.photo_urls ?? null,
-      visibility: r.visibility ?? null,
-      spot_id: r.spot_id ?? null,
-      species_id: r.species_id ?? null,
-      species: species
-        ? {
-            id: species.id,
-            slug: species.slug,
-            primary_group: species.primary_group,
-            scientific_name: species.scientific_name ?? null,
-          }
-        : null,
-    };
-  });
+  return {
+    id: String(row?.id ?? ""),
+    created_at: String(row?.created_at ?? ""),
+    observed_at: row?.observed_at ? String(row.observed_at) : null,
+    notes: typeof row?.notes === "string" ? row.notes : null,
+    photo_urls: Array.isArray(row?.photo_urls) ? row.photo_urls : [],
+    visibility: String(row?.visibility ?? "private"),
+    spot_id: String(row?.spot_id ?? ""),
+    species_id: row?.species_id ? String(row.species_id) : null,
+    species: sp
+      ? {
+          id: String(sp.id),
+          slug: String(sp.slug),
+          primary_group: String(sp.primary_group),
+          scientific_name: sp.scientific_name ? String(sp.scientific_name) : null,
+        }
+      : null,
+  };
 }
 
-export default async function LogPage({ params }: { params: { locale: string } }) {
-  const locale = safeLocale(params?.locale);
+export default async function LogPage() {
   const supabase = await supabaseServer();
 
   const { data: auth } = await supabase.auth.getUser();
-  const user = auth?.user;
+  const userId = auth?.user?.id;
 
-  if (!user) {
+  if (!userId) {
     return (
       <main className={styles.page}>
-        <header className={styles.header}>
-          <h1 className={styles.h1}>{locale === "dk" ? "Mine fund" : "My finds"}</h1>
-          <p className={styles.sub}>
-            {locale === "dk" ? "Log ind for at se dine fund." : "Sign in to see your finds."}
-          </p>
-        </header>
+        <h1 className={styles.h1}>Mine fund</h1>
+        <p className={styles.sub}>Du skal være logget ind.</p>
       </main>
     );
   }
@@ -86,28 +79,60 @@ export default async function LogPage({ params }: { params: { locale: string } }
       )
     `
     )
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(100);
 
-  const initial = normalizeFinds(((finds ?? []) as unknown) as FindRowRaw[]);
+  if (error) {
+    return (
+      <main className={styles.page}>
+        <h1 className={styles.h1}>Mine fund</h1>
+        <p className={styles.sub}>{error.message}</p>
+      </main>
+    );
+  }
+
+  const initial: FindRow[] = (finds ?? []).map(normalizeFind);
 
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <h1 className={styles.h1}>{locale === "dk" ? "Mine fund" : "My finds"}</h1>
-        <p className={styles.sub}>
-          {error
-            ? locale === "dk"
-              ? "Kunne ikke hente fund lige nu."
-              : "Could not load finds right now."
-            : locale === "dk"
-              ? "Dine seneste logs."
-              : "Your latest logs."}
-        </p>
+        <h1 className={styles.h1}>Mine fund</h1>
+        <p className={styles.sub}>Dine seneste logs.</p>
       </header>
 
-      <LogClient locale={locale} initialFinds={initial} />
+      <div className={styles.kpiRow}>
+        <div className={styles.kpi}>
+          <div className={styles.kpiLabel}>Total</div>
+          <div className={styles.kpiValue}>{initial.length}</div>
+        </div>
+      </div>
+
+      <section className={styles.list}>
+        {initial.map((f) => (
+          <article key={f.id} className={styles.card}>
+            <div className={styles.cardTop}>
+              <div className={styles.title}>{f.species?.slug ?? "ukendt"}</div>
+              <div className={styles.meta}>{f.species?.primary_group ?? ""}</div>
+            </div>
+
+            <div className={styles.rows}>
+              <div className={styles.row}>
+                <span>Spot</span>
+                <span>{f.spot_id}</span>
+              </div>
+              <div className={styles.row}>
+                <span>Synlighed</span>
+                <span>{f.visibility}</span>
+              </div>
+              <div className={styles.row}>
+                <span>Billeder</span>
+                <span>{f.photo_urls?.length ?? 0}</span>
+              </div>
+            </div>
+          </article>
+        ))}
+      </section>
     </main>
   );
 }
