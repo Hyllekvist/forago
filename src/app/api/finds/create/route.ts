@@ -7,36 +7,54 @@ type Body = {
   species_slug?: string | null;
   observed_at?: string | null;
   notes?: string | null;
-  visibility?: "private" | "public" | string | null;
+  visibility?: "private" | "friends" | "public_aggregate" | string | null;
   country?: string | null;
-  geo_cell?: string | null;
   geo_precision_km?: number | null;
   photo_urls?: string[] | null;
-  quality_score?: number | null;
 };
+
+function asText(v: unknown) {
+  return typeof v === "string" ? v.trim() : "";
+}
+
+function asIsoDateOrNow(v: unknown) {
+  // Hvis din DB kolonne er DATE, er YYYY-MM-DD bedst.
+  // Hvis den er TIMESTAMP, accepterer den også YYYY-MM-DD fint.
+  const s = asText(v);
+  if (!s) return new Date().toISOString().slice(0, 10);
+  const t = Date.parse(s);
+  if (Number.isNaN(t)) return new Date().toISOString().slice(0, 10);
+  return new Date(t).toISOString().slice(0, 10);
+}
 
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Body;
 
+    const species_id_in = asText(body?.species_id);
+    const species_slug_in = asText(body?.species_slug).toLowerCase();
+
+    if (!species_id_in && !species_slug_in) {
+      return NextResponse.json(
+        { ok: false, error: "Missing species_id or species_slug" },
+        { status: 400 }
+      );
+    }
+
     const supabase = await supabaseServer();
 
-    // auth (optional)
+    // auth user (ok hvis null, men du har profiles-fk, så den skal typisk findes)
     const { data: auth } = await supabase.auth.getUser();
     const user_id = auth?.user?.id ?? null;
 
-    // 1) Resolve species_id (from species_id OR species_slug)
-    let species_id = (body?.species_id ?? null)?.toString().trim() || null;
+    // resolve species_id
+    let species_id = species_id_in || null;
 
-    const species_slug =
-      (body?.species_slug ?? null)?.toString().trim().toLowerCase() || null;
-
-    if (!species_id && species_slug) {
-      // 🔧 HER: hvis din tabel/kolonne ikke hedder species/slug, ret her
+    if (!species_id) {
       const { data: sp, error: spErr } = await supabase
         .from("species")
-        .select("id")
-        .eq("slug", species_slug)
+        .select("id, slug")
+        .eq("slug", species_slug_in)
         .maybeSingle();
 
       if (spErr) {
@@ -45,40 +63,40 @@ export async function POST(req: Request) {
           { status: 500 }
         );
       }
-      species_id = sp?.id ?? null;
+
+      if (!sp?.id) {
+        return NextResponse.json(
+          { ok: false, error: `Unknown species_slug: ${species_slug_in}` },
+          { status: 400 }
+        );
+      }
+
+      species_id = sp.id;
     }
 
-    if (!species_id) {
-      return NextResponse.json(
-        { ok: false, error: "Missing species_id" },
-        { status: 400 }
-      );
-    }
-
-    // 2) Optional fields
+    // normalize optional fields
+    const observed_at = asIsoDateOrNow(body?.observed_at);
     const notes = typeof body?.notes === "string" ? body.notes : null;
-    const observed_at =
-      typeof body?.observed_at === "string" && body.observed_at
-        ? body.observed_at
-        : new Date().toISOString();
-
     const visibility =
-      typeof body?.visibility === "string" && body.visibility
+      body?.visibility === "private" ||
+      body?.visibility === "friends" ||
+      body?.visibility === "public_aggregate"
         ? body.visibility
         : "private";
 
     const country = typeof body?.country === "string" ? body.country : null;
-    const geo_cell = typeof body?.geo_cell === "string" ? body.geo_cell : null;
 
     const geo_precision_km =
-      typeof body?.geo_precision_km === "number" ? body.geo_precision_km : null;
+      body?.geo_precision_km === 1 ||
+      body?.geo_precision_km === 2 ||
+      body?.geo_precision_km === 5 ||
+      body?.geo_precision_km === 10
+        ? body.geo_precision_km
+        : 1;
 
     const photo_urls = Array.isArray(body?.photo_urls) ? body.photo_urls : null;
 
-    const quality_score =
-      typeof body?.quality_score === "number" ? body.quality_score : null;
-
-    // 3) Insert
+    // INSERT (ingen flere null species_id)
     const { data, error } = await supabase
       .from("finds")
       .insert({
@@ -86,14 +104,12 @@ export async function POST(req: Request) {
         species_id,
         observed_at,
         notes,
-        visibility,
-        country,
-        geo_cell,
-        geo_precision_km,
         photo_urls,
-        quality_score,
+        country,
+        geo_precision_km,
+        visibility,
       })
-      .select("id, species_id, observed_at, created_at")
+      .select("id, user_id, species_id, observed_at, created_at")
       .single();
 
     if (error) {
