@@ -138,9 +138,13 @@ export function SpotPeekCard({ spot, mode, userPos, onClose, onLog, onLearn }: P
           Navigér
         </a>
 
-        <button className={styles.secondary} onClick={onLog} type="button">
-          Log fund
-        </button>
+<button
+  className={styles.secondary}
+  onClick={() => void onLog()}
+  type="button"
+>
+  Log fund
+</button>
 
         <button className={styles.ghost} onClick={onLearn} type="button">
           Lær mere
