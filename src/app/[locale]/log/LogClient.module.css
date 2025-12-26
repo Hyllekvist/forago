@@ -1,153 +1,132 @@
-.wrap { 
-  display: grid;
-  gap: 14px;
-  padding-bottom: 24px;
+.page{
+  min-height: 100vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+
+  padding: 22px 16px calc(110px + env(safe-area-inset-bottom));
+  background:
+    radial-gradient(1200px 700px at 20% 0%, rgba(16,185,129,0.18), rgba(0,0,0,0) 55%),
+    linear-gradient(180deg, rgba(2, 12, 18, 1), rgba(2, 6, 23, 1));
+  color: rgba(255,255,255,0.92);
 }
 
-.topRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.header{
+  max-width: 920px;
+  margin: 0 auto 14px;
+}
+
+.titleRow{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap: 14px;
+}
+
+.h1{
+  margin:0;
+  font-size: 34px;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+.sub{
+  margin: 8px 0 0;
+  color: rgba(255,255,255,0.70);
+}
+
+.totalCard{
+  min-width: 86px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 18px 46px rgba(0,0,0,0.30);
+  text-align:right;
+}
+
+.totalLabel{
+  font-size: 12px;
+  color: rgba(255,255,255,0.68);
+}
+
+.totalValue{
+  font-size: 20px;
+  font-weight: 850;
+}
+
+.list{
+  max-width: 920px;
+  margin: 0 auto;
+  display: grid;
   gap: 12px;
 }
 
-.kpi {
-  display: grid;
-  gap: 2px;
-}
-
-.kpiLabel {
-  font-size: 12px;
-  opacity: 0.7;
-}
-
-.kpiValue {
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
-.refresh {
-  height: 40px;
-  padding: 0 14px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.16);
-  background: rgba(2,6,23,0.55);
-  color: rgba(255,255,255,0.92);
-}
-
-.refresh:disabled {
-  opacity: 0.65;
-}
-
-.error {
-  border: 1px solid rgba(239,68,68,0.35);
-  background: rgba(239,68,68,0.10);
-  color: rgba(255,255,255,0.92);
-  padding: 10px 12px;
-  border-radius: 12px;
-}
-
-.empty {
+.card{
+  border-radius: 18px;
+  background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(2,6,23,0.35);
-  color: rgba(255,255,255,0.84);
-  padding: 14px 12px;
-  border-radius: 14px;
+  box-shadow: 0 18px 46px rgba(0,0,0,0.30);
+  padding: 14px 14px 12px;
 }
 
-.list {
-  display: grid;
-  gap: 14px;
-}
-
-.day {
-  display: grid;
-  gap: 10px;
-}
-
-.dayHeader {
-  font-size: 12px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  opacity: 0.7;
-  padding: 0 2px;
-}
-
-.card {
-  border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(15,23,42,0.65);
-  padding: 12px 12px;
-  box-shadow: 0 18px 44px rgba(0,0,0,0.25);
-}
-
-.cardTop {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
+.cardTop{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap: 12px;
   margin-bottom: 10px;
 }
 
-.title {
-  font-size: 16px;
-  font-weight: 800;
-  letter-spacing: -0.01em;
+.nameBlock{
+  min-width:0;
 }
 
-.meta {
-  font-size: 12px;
-  opacity: 0.75;
+.name{
+  font-size: 18px;
+  font-weight: 850;
+  text-transform: lowercase;
 }
 
-.row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 6px 0;
-  border-top: 1px solid rgba(255,255,255,0.08);
-}
-
-.row:first-of-type {
-  border-top: 0;
-}
-
-.label {
-  font-size: 12px;
-  opacity: 0.7;
-}
-
-.value {
-  font-size: 12px;
-  opacity: 0.95;
-}
-
-.notes {
-  margin-top: 10px;
+.sciname{
+  margin-top: 3px;
   font-size: 13px;
-  opacity: 0.9;
-  padding: 10px 10px;
-  border-radius: 12px;
-  background: rgba(2,6,23,0.40);
-  border: 1px solid rgba(255,255,255,0.10);
+  color: rgba(255,255,255,0.62);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  max-width: 100%;
 }
 
-.photosRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid rgba(255,255,255,0.08);
+.badge{
+  flex: 0 0 auto;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(16,185,129,0.14);
+  border: 1px solid rgba(16,185,129,0.25);
+  color: rgba(209,250,229,0.95);
 }
 
-.photosLabel {
-  font-size: 12px;
-  opacity: 0.7;
+.metaGrid{
+  display:grid;
+  gap: 8px;
 }
-.photosValue {
-  font-size: 12px;
-  opacity: 0.95;
+
+.metaRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,0.10);
+}
+
+.metaKey{
+  color: rgba(255,255,255,0.62);
+  font-size: 13px;
+}
+
+.metaVal{
+  font-size: 13px;
+  color: rgba(255,255,255,0.92);
 }
