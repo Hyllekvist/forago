@@ -22,7 +22,8 @@ export type LeafletLikeMap = {
   zoomOut: () => void;
   flyTo: (lat: number, lng: number, zoom?: number) => void;
   getZoom: () => number;
-  getBoundsBbox: () => [number, number, number, number]; // [west,south,east,north]
+  getBoundsBbox: () => [number, number, number, number];
+  panToWithOffset: (lat: number, lng: number, offsetYpx: number, zoom?: number) => void;
 };
 
 function bboxFromLeaflet(map: LeafletMapType): [number, number, number, number] {
@@ -173,16 +174,31 @@ function ClusterLayer({
   }, [points]);
 
   // expose map api once
-  useEffect(() => {
-    onMapReady?.({
-      zoomIn: () => map.zoomIn(),
-      zoomOut: () => map.zoomOut(),
-      flyTo: (lat, lng, zoom = 12) => map.flyTo([lat, lng], zoom, { animate: true, duration: 0.5 }),
-      getZoom: () => map.getZoom(),
-      getBoundsBbox: () => bboxFromLeaflet(map),
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+useEffect(() => {
+  onMapReady?.({
+    zoomIn: () => map.zoomIn(),
+    zoomOut: () => map.zoomOut(),
+    flyTo: (lat, lng, zoom = 12) =>
+      map.flyTo([lat, lng], zoom, { animate: true, duration: 0.5 }),
+    getZoom: () => map.getZoom(),
+    getBoundsBbox: () => bboxFromLeaflet(map),
+
+    panToWithOffset: (lat, lng, offsetYpx, zoom) => {
+      const z = zoom ?? map.getZoom();
+
+      // Sørg for min zoom så det føles “valgt”
+      const targetZoom = Math.max(z, 14);
+      if (map.getZoom() !== targetZoom) map.setZoom(targetZoom, { animate: true });
+
+      // Leaflet: flyt "center" ned, så marker kommer op
+      const target = map.project([lat, lng], targetZoom).subtract([0, offsetYpx]);
+      const targetLatLng = map.unproject(target, targetZoom);
+
+      map.panTo(targetLatLng, { animate: true, duration: 0.45 });
+    },
+  });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
 
   // initial visible list (once)
   useEffect(() => {
