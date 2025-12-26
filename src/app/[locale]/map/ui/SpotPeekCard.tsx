@@ -5,13 +5,10 @@ import { useMemo } from "react";
 import styles from "./SpotPeekCard.module.css";
 import type { Spot } from "../LeafletMap";
 
-type LatLng = { lat: number; lng: number };
-
 type Props = {
   spot: Spot;
   mode: "daily" | "forage";
-  userPos?: LatLng | null;          // ✅ NEW
-  lastSeenAt?: string | null;       // ✅ optional (ISO string) - hvis I har det
+  userPos: { lat: number; lng: number } | null; // ✅ new
   onClose: () => void;
   onLog: () => void;
   onLearn: () => void;
@@ -29,7 +26,7 @@ function emojiForSlug(slug?: string | null) {
   return "📍";
 }
 
-function haversineKm(a: LatLng, b: LatLng) {
+function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
   const dLng = ((b.lng - a.lng) * Math.PI) / 180;
@@ -44,60 +41,61 @@ function haversineKm(a: LatLng, b: LatLng) {
   return 2 * R * Math.asin(Math.sqrt(q));
 }
 
-function formatDistance(userPos: LatLng | null | undefined, spot: Spot) {
-  if (!userPos) return null;
+function formatDistance(userPos: { lat: number; lng: number } | null, spot: Spot) {
+  if (!userPos) return "—";
   const km = haversineKm(userPos, { lat: spot.lat, lng: spot.lng });
   if (km < 1) return `${Math.round(km * 1000)} m`;
-  return `${km.toFixed(1)} km`;
+  return `${km.toFixed(km < 10 ? 1 : 0)} km`;
 }
 
-function formatRelativeDa(iso?: string | null) {
+function formatFreshness(iso?: string | null) {
   if (!iso) return null;
-  const d = new Date(iso);
-  const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
-  if (!Number.isFinite(diffMs)) return null;
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return null;
 
-  const mins = Math.round(diffMs / 60000);
-  if (mins < 60) return mins <= 1 ? "lige nu" : `${mins} min siden`;
+  const now = Date.now();
+  const diffMs = Math.max(0, now - t);
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-  const hours = Math.round(mins / 60);
-  if (hours < 24) return hours === 1 ? "1 time siden" : `${hours} timer siden`;
-
-  const days = Math.round(hours / 24);
+  if (days === 0) return "i dag";
   if (days === 1) return "i går";
-  if (days < 7) return `${days} dage siden`;
-  if (days < 30) {
-    const w = Math.round(days / 7);
-    return w === 1 ? "1 uge siden" : `${w} uger siden`;
-  }
-  return d.toLocaleDateString("da-DK");
+  if (days < 7) return `for ${days} dage siden`;
+  const weeks = Math.floor(days / 7);
+  if (weeks === 1) return "for 1 uge siden";
+  if (weeks < 5) return `for ${weeks} uger siden`;
+  const months = Math.floor(days / 30);
+  if (months === 1) return "for 1 måned siden";
+  return `for ${months} måneder siden`;
 }
 
-export function SpotPeekCard({
-  spot,
-  mode,
-  userPos = null,
-  lastSeenAt = null,
-  onClose,
-  onLog,
-  onLearn,
-}: Props) {
+function isIOS() {
+  if (typeof navigator === "undefined") return false;
+  return /iPad|iPhone|iPod/.test(navigator.userAgent);
+}
+
+export function SpotPeekCard({ spot, mode, userPos, onClose, onLog, onLearn }: Props) {
   const emoji = emojiForSlug(spot.species_slug);
   const label = mode === "forage" ? "Muligt fund" : spot.species_slug ? "Spot" : "Lokation";
 
   const distance = useMemo(() => formatDistance(userPos, spot), [userPos, spot.lat, spot.lng]);
-  const freshness = useMemo(() => formatRelativeDa(lastSeenAt), [lastSeenAt]);
 
-  const mapsHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-    `${spot.lat},${spot.lng}`
-  )}`;
+  const freshness = useMemo(
+    () => formatFreshness(spot.last_seen_at ?? null),
+    [spot.last_seen_at]
+  );
+
+  const mapsHref = useMemo(() => {
+    const q = encodeURIComponent(`${spot.lat},${spot.lng}`);
+    // Apple Maps på iOS, ellers Google Maps
+    if (isIOS()) return `http://maps.apple.com/?q=${q}`;
+    return `https://www.google.com/maps/search/?api=1&query=${q}`;
+  }, [spot.lat, spot.lng]);
 
   return (
     <section className={styles.card} role="dialog" aria-label="Selected spot">
       <div className={styles.bg} aria-hidden />
 
-      <button className={styles.close} onClick={onClose} aria-label="Close">
+      <button className={styles.close} onClick={onClose} aria-label="Close" type="button">
         <span aria-hidden>✕</span>
       </button>
 
@@ -109,14 +107,8 @@ export function SpotPeekCard({
         <div className={styles.headMain}>
           <div className={styles.kickerRow}>
             <span className={styles.kicker}>{label}</span>
-
-            {distance ? (
-              <>
-                <span className={styles.dot} aria-hidden />
-                <span className={styles.meta}>{distance}</span>
-              </>
-            ) : null}
-
+            <span className={styles.dot} aria-hidden />
+            <span className={styles.meta}>{distance}</span>
             {freshness ? (
               <>
                 <span className={styles.dot} aria-hidden />
@@ -132,7 +124,7 @@ export function SpotPeekCard({
               {spot.species_slug ? `#${spot.species_slug}` : "#unclassified"}
             </span>
             <span className={styles.pillAccent}>
-              {mode === "forage" ? "Peak potential" : distance && distance.includes("m") ? "Meget tæt på" : "I nærheden"}
+              {mode === "forage" ? "Peak potential" : "I nærheden"}
             </span>
           </div>
         </div>
