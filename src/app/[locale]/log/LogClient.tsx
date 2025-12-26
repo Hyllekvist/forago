@@ -2,7 +2,7 @@
 
 import styles from "./LogClient.module.css";
 
-type FindRow = {
+export type FindRow = {
   id: string;
   created_at: string;
   observed_at: string;
@@ -17,7 +17,11 @@ type FindRow = {
   };
 };
 
-export default function LogClient({ initial }: { initial: FindRow[] }) {
+type Props = {
+  initial: FindRow[];
+};
+
+export default function LogClient({ initial }: Props) {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
