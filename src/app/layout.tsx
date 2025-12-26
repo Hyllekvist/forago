@@ -1,14 +1,23 @@
-// src/app/layout.tsx
+// app/layout.tsx
 import "./globals.css";
 
-export const metadata = {
-  title: "Forago",
-  description: "Find, understand and use wild food — privacy-first.",
-};
+const THEME_SCRIPT = `
+(() => {
+  try {
+    const stored = localStorage.getItem("theme"); // "dark" | "light" | null
+    const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const theme = stored || (prefersDark ? "dark" : "light");
+    document.documentElement.dataset.theme = theme;
+  } catch (e) {}
+})();
+`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="da" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body>{children}</body>
     </html>
   );
