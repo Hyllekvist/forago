@@ -15,7 +15,8 @@ export type Spot = {
   lng: number;
   title?: string | null;
   species_slug?: string | null;
- last_seen_at?: string | null;
+  species_id?: string | null;   // ✅ ADD
+  last_seen_at?: string | null;
 };
 
 export type LeafletLikeMap = {
