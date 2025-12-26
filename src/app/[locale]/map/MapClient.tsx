@@ -182,14 +182,34 @@ export default function MapClient({ spots }: Props) {
     }
   }, [selectedSpot]);
 
-  const onQuickLog = useCallback(
-    (id: string) => {
-      // keep behavior consistent: select then log from selected context
-      onSelectSpot(id);
-      // logging is via button (onLogSelected). If you want auto-log, call onLogSelected after a tick.
-    },
-    [onSelectSpot]
-  );
+const onQuickLog = useCallback(async (spot: Spot) => {
+  try {
+    const res = await fetch("/api/finds/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        // vi har slug på spot — API resolver til species_id
+        species_slug: spot.species_slug ?? null,
+        observed_at: new Date().toISOString(),
+        visibility: "private",
+        notes: null,
+        country: "DK",
+        geo_precision_km: 1,
+      }),
+    });
+
+    const json = await res.json();
+    if (!res.ok || !json?.ok) {
+      console.error("[finds/create] failed", json);
+      return;
+    }
+
+    // lille feedback uden at bygge toast-system endnu:
+    console.log("[finds/create] ok", json.find);
+  } catch (e) {
+    console.error("[finds/create] error", e);
+  }
+}, []);
 
   const sheetTitle = isPanning
     ? "Finder spots…"
