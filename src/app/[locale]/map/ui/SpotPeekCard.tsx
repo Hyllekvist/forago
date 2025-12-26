@@ -11,51 +11,52 @@ type Props = {
   onLearn: () => void;
 };
 
-function prettySpecies(slug?: string | null) {
-  if (!slug) return null;
-  return slug
-    .replace(/[-_]+/g, " ")
-    .replace(/\b\w/g, (m) => m.toUpperCase());
+function emojiForSpot(spot: Spot) {
+  const slug = (spot.species_slug ?? "").toLowerCase();
+  if (slug.includes("kantarel") || slug.includes("svamp")) return "🍄";
+  if (slug.includes("ramsl")) return "🌿";
+  if (slug.includes("hyld")) return "🌸";
+  return "📍";
 }
 
 export function SpotPeekCard({ spot, mode, onClose, onLog, onLearn }: Props) {
-  const species = prettySpecies(spot.species_slug);
-  const title = spot.title ?? species ?? "Ukendt spot";
+  const tag = spot.species_slug ? `#${spot.species_slug}` : "Fund-spot";
+  const title = spot.title ?? "Ukendt spot";
 
   return (
-    <div className={styles.card} data-mode={mode} role="dialog" aria-label="Spot details">
-      <div className={styles.glow} aria-hidden />
-
-      <button className={styles.close} onClick={onClose} aria-label="Close">
-        ✕
-      </button>
-
-      <div className={styles.hero}>
-        <div className={styles.heroLeft}>
-          <div className={styles.badge}>
-            {mode === "forage" ? "⚡ Peak i området" : "📍 Fund-spot"}
-          </div>
-
-          <div className={styles.title}>{title}</div>
-
-          <div className={styles.meta}>
-            {species ? <span className={styles.tag}>{species}</span> : <span className={styles.tag}>Spot</span>}
-            <span className={styles.dot}>•</span>
-            <span className={styles.muted}>Tryk for at logge eller lære</span>
-          </div>
+    <div className={styles.card} role="dialog" aria-label="Valgt spot">
+      <div className={styles.topRow}>
+        <div className={styles.modePill}>
+          <span className={styles.modeDot} aria-hidden />
+          {mode === "forage" ? "Forage" : "Daily"}
         </div>
 
-        <div className={styles.heroRight} aria-hidden>
-          <div className={styles.pulse} />
+        <button className={styles.close} onClick={onClose} aria-label="Luk">
+          ✕
+        </button>
+      </div>
+
+      <div className={styles.head}>
+        <div className={styles.avatar} aria-hidden>
+          {emojiForSpot(spot)}
+        </div>
+
+        <div className={styles.headText}>
+          <div className={styles.kicker}>{tag}</div>
+          <div className={styles.title}>{title}</div>
+          <div className={styles.hint}>Tryk for at logge eller lære</div>
         </div>
       </div>
 
       <div className={styles.actions}>
         <button className={styles.primary} onClick={onLog}>
-          Log fund
+          <span className={styles.btnTitle}>Log fund</span>
+          <span className={styles.btnSub}>+ foto • note • GPS</span>
         </button>
+
         <button className={styles.secondary} onClick={onLearn}>
-          Lær mere
+          <span className={styles.btnTitle}>Lær mere</span>
+          <span className={styles.btnSub}>Sank sikkert</span>
         </button>
       </div>
     </div>
