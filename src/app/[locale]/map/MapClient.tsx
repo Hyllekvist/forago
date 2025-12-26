@@ -1,4 +1,4 @@
-"use client"; 
+"use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import styles from "./MapClient.module.css";
@@ -15,7 +15,10 @@ type Props = {
   spots: Spot[];
 };
 
-function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+function haversineKm(
+  a: { lat: number; lng: number },
+  b: { lat: number; lng: number }
+) {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
   const dLng = ((b.lng - a.lng) * Math.PI) / 180;
@@ -34,16 +37,19 @@ export default function MapClient({ spots }: Props) {
   const [mode, setMode] = useState<Mode>("daily");
   const [activeInsight, setActiveInsight] = useState<InsightKey | null>(null);
 
-  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
+  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(
+    null
+  );
   const [mapApi, setMapApi] = useState<LeafletLikeMap | null>(null);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [visibleIds, setVisibleIds] = useState<string[]>([]);
   const [sheetExpanded, setSheetExpanded] = useState(false);
 
-  // ✅ NEW: show “Finder spots…” while the user is actively moving the map
+  // ✅ show “Finder spots…” while user is actively panning/zooming
   const [isPanning, setIsPanning] = useState(false);
 
+  // --- geolocation
   useEffect(() => {
     if (!("geolocation" in navigator)) return;
     navigator.geolocation.getCurrentPosition(
@@ -53,11 +59,14 @@ export default function MapClient({ spots }: Props) {
     );
   }, []);
 
+  // --- insights (MVP)
   const insights = useMemo(() => {
     const total = spots.length;
 
     const nearbyCount = userPos
-      ? spots.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2).length
+      ? spots.filter(
+          (s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2
+        ).length
       : 0;
 
     const seasonNowCount = Math.min(total, Math.max(0, Math.round(total * 0.35)));
@@ -95,6 +104,7 @@ export default function MapClient({ spots }: Props) {
         .sort((a, b) => a.d - b.d)
         .map((x) => x.s);
     }
+
     return spots;
   }, [spots, activeInsight, userPos]);
 
@@ -117,24 +127,36 @@ export default function MapClient({ spots }: Props) {
     [mapApi, userPos]
   );
 
-const onSelectSpot = useCallback(
-  (id: string) => {
-    setSelectedId(id);
-    setSheetExpanded(false);
+  // ✅ center selection in a way that respects bottomDock (pan up after flyTo)
+  const centerSelected = useCallback(
+    (id: string) => {
+      const s = spotsById.get(id);
+      if (!s || !mapApi) return;
 
-    const s = spotsById.get(id);
-    if (s && mapApi) {
-      // offset så pin ender over peek-card + bottom nav
-      const offsetY = 170; // tweak 140–220 afhængigt af card height
-      mapApi.panToWithOffset(s.lat, s.lng, offsetY, Math.max(mapApi.getZoom(), 14));
-    }
-  },
-  [mapApi, spotsById]
-);
+      const targetZoom = Math.max(mapApi.getZoom(), 14);
+      mapApi.flyTo(s.lat, s.lng, targetZoom);
+
+      // lift the pin up so it sits “above” the bottomDock/peek
+      // tweak -100..-180 depending on your card height
+      mapApi.panBy?.(0, -140);
+    },
+    [mapApi, spotsById]
+  );
+
+  const onSelectSpot = useCallback(
+    (id: string) => {
+      setSelectedId(id);
+      setSheetExpanded(false);
+      centerSelected(id);
+    },
+    [centerSelected]
+  );
+
   const onQuickLog = useCallback((id: string) => {
     setSelectedId(id);
     setSheetExpanded(false);
-  }, []);
+    centerSelected(id);
+  }, [centerSelected]);
 
   const sheetTitle = isPanning
     ? "Finder spots…"
@@ -146,7 +168,12 @@ const onSelectSpot = useCallback(
     <div className={styles.page}>
       <MapTopbar mode={mode} onToggleMode={onToggleMode} />
 
-      <InsightStrip mode={mode} active={activeInsight} insights={insights} onPick={onPickInsight} />
+      <InsightStrip
+        mode={mode}
+        active={activeInsight}
+        insights={insights}
+        onPick={onPickInsight}
+      />
 
       <div className={styles.mapShell}>
         <LeafletMap
@@ -156,8 +183,7 @@ const onSelectSpot = useCallback(
           onSelect={onSelectSpot}
           onMapReady={setMapApi}
           onVisibleChange={setVisibleIds}
-          // ✅ NEW (you add this prop in LeafletMap)
-          onPanningChange={setIsPanning}
+          onPanningChange={setIsPanning} // ✅ requires prop in LeafletMap
         />
 
         <div className={styles.bottomDock}>
@@ -179,8 +205,6 @@ const onSelectSpot = useCallback(
               selectedId={selectedId}
               onSelect={(id) => {
                 onSelectSpot(id);
-                const s = spotsById.get(id);
-                if (s && mapApi) mapApi.flyTo(s.lat, s.lng, Math.max(mapApi.getZoom(), 14));
               }}
               onLog={onQuickLog}
             />
