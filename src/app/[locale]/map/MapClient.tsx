@@ -138,7 +138,7 @@ export default function MapClient({ spots }: Props) {
 
       // lift the pin up so it sits “above” the bottomDock/peek
       // tweak -100..-180 depending on your card height
-      mapApi.panBy?.(0, -140);
+      mapApi.panBy?(0, -140);
     },
     [mapApi, spotsById]
   );
