@@ -236,14 +236,14 @@ const onQuickLog = useCallback(async (spot: Spot) => {
 
         <div className={styles.bottomDock}>
           {selectedSpot ? (
-            <SpotPeekCard
-              spot={selectedSpot}
-              mode={mode}
-              userPos={userPos}
-              onClose={() => setSelectedId(null)}
-              onLog={onLogSelected}
-              onLearn={() => setSelectedId(null)}
-            />
+<SpotPeekCard
+  spot={selectedSpot}
+  mode={mode}
+  userPos={userPos}
+  onClose={() => setSelectedId(null)}
+  onLog={onQuickLog}
+onLog={() => void onQuickLog(selectedSpot)}
+/>
           ) : (
             <MapSheet
               mode={mode}
