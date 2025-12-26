@@ -23,10 +23,7 @@ function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
   const s2 = Math.sin(dLng / 2);
   const q =
     s1 * s1 +
-    Math.cos((a.lat * Math.PI) / 180) *
-      Math.cos((b.lat * Math.PI) / 180) *
-      s2 *
-      s2;
+    Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * s2 * s2;
   return 2 * R * Math.asin(Math.sqrt(q));
 }
 
@@ -41,20 +38,17 @@ export default function MapClient({ spots }: Props) {
   const [visibleIds, setVisibleIds] = useState<string[]>([]);
   const [sheetExpanded, setSheetExpanded] = useState(false);
 
-  // --- get user position (low-friction default)
+  // --- get user position
   useEffect(() => {
     if (!("geolocation" in navigator)) return;
-
     navigator.geolocation.getCurrentPosition(
       (pos) => setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => {
-        // ignore; LeafletMap has DK fallback center
-      },
+      () => {},
       { enableHighAccuracy: true, timeout: 7000, maximumAge: 60_000 }
     );
   }, []);
 
-  // --- compute “insights” (MVP)
+  // --- compute insights (MVP)
   const insights = useMemo(() => {
     const total = spots.length;
 
@@ -74,7 +68,7 @@ export default function MapClient({ spots }: Props) {
 
   const spotsById = useMemo(() => {
     const m = new Map<string, Spot>();
-    for (const s of spots) m.set(s.id, s);
+    spots.forEach((s) => m.set(s.id, s));
     return m;
   }, [spots]);
 
@@ -130,10 +124,6 @@ export default function MapClient({ spots }: Props) {
 
   return (
     <div className={styles.page}>
-      <MapTopbar mode={mode} onToggleMode={onToggleMode} />
-      <InsightStrip mode={mode} active={activeInsight} insights={insights} onPick={onPickInsight} />
-
-      {/* IMPORTANT: map stays full-bleed, overlays are inside overlayRoot */}
       <div className={styles.mapShell}>
         <LeafletMap
           spots={filteredSpots}
@@ -144,40 +134,52 @@ export default function MapClient({ spots }: Props) {
           onVisibleChange={setVisibleIds}
         />
 
-        {/* One overlay root that knows safe-bottom */}
-        <div className={styles.overlayRoot}>
-          {selectedSpot && (
-            <div className={styles.peekWrap}>
-              <SpotPeekCard
-                spot={selectedSpot}
-                mode={mode}
-                onClose={() => setSelectedId(null)}
-                onLog={() => onQuickLog(selectedSpot.id)}
-                onLearn={() => setSelectedId(null)}
-              />
-            </div>
-          )}
-
-          <div className={styles.sheetWrap}>
-            <MapSheet
+        {/* TOP HUD (overlay — må ikke skabe scroll) */}
+        <div className={styles.hud}>
+          <MapTopbar mode={mode} onToggleMode={onToggleMode} />
+          <div className={styles.insights}>
+            <InsightStrip
               mode={mode}
-              expanded={sheetExpanded}
-              onToggle={() => setSheetExpanded((v) => !v)}
-              title={
-                visibleIds?.length
-                  ? `${visibleIds.length} relevante spots i view`
-                  : "Flyt kortet for at finde spots"
-              }
-              items={visibleSpots}
-              selectedId={selectedId}
-              onSelect={(id) => {
-                onSelectSpot(id);
-                const s = spotsById.get(id);
-                if (s && mapApi) mapApi.flyTo(s.lat, s.lng, Math.max(mapApi.getZoom(), 14));
-              }}
-              onLog={onQuickLog}
+              active={activeInsight}
+              insights={insights}
+              onPick={onPickInsight}
             />
           </div>
+        </div>
+
+        {/* Peek card */}
+        {selectedSpot && (
+          <div className={styles.peekWrap}>
+            <SpotPeekCard
+              spot={selectedSpot}
+              mode={mode}
+              onClose={() => setSelectedId(null)}
+              onLog={() => onQuickLog(selectedSpot.id)}
+              onLearn={() => setSelectedId(null)}
+            />
+          </div>
+        )}
+
+        {/* Bottom sheet */}
+        <div className={styles.sheetWrap}>
+          <MapSheet
+            mode={mode}
+            expanded={sheetExpanded}
+            onToggle={() => setSheetExpanded((v) => !v)}
+            title={
+              visibleIds?.length
+                ? `${visibleIds.length} relevante spots i view`
+                : "Flyt kortet for at finde spots"
+            }
+            items={visibleSpots}
+            selectedId={selectedId}
+            onSelect={(id) => {
+              onSelectSpot(id);
+              const s = spotsById.get(id);
+              if (s && mapApi) mapApi.flyTo(s.lat, s.lng, Math.max(mapApi.getZoom(), 14));
+            }}
+            onLog={onQuickLog}
+          />
         </div>
       </div>
     </div>
