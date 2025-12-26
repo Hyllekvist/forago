@@ -9,7 +9,6 @@
   height: 100svh;
   width: 100%;
   overflow: hidden;
-  --safeBottom: calc(var(--bottom-nav-h) + 12px + env(safe-area-inset-bottom));
 }
 
 /* Map layer */
@@ -111,64 +110,6 @@
   cursor: pointer;
 }
 
-/* ----- Bottom sheet ----- */
-.sheet{
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: var(--safeBottom);
-  z-index: 900;
-  pointer-events: none;
-}
-
-.sheetCard{
-  pointer-events: auto; /* kun kortet er klikbart */
-  border-radius: 22px;
-  border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--panel) 78%, transparent);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  box-shadow: var(--shadow-1);
-  padding: 12px;
-}
-
-.sheetHandle{
-  width: 54px;
-  height: 5px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--muted) 25%, transparent);
-  margin: 0 auto 10px;
-}
-
-.sheetTabs{
-  display:flex;
-  gap: 10px;
-  align-items:center;
-}
-
-.tab{
-  border-radius: 999px;
-  padding: 9px 12px;
-  border: 1px solid var(--line);
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-}
-
-.tabActive{
-  background: var(--panel2);
-  color: var(--ink);
-}
-
-.close{
-  margin-left: auto;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: transparent;
-  color: var(--ink);
-  padding: 8px 10px;
-  cursor: pointer;
-}
 
 /* Detail view */
 .detail{
