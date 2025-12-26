@@ -1,107 +1,159 @@
-"use client";
-
-import Link from "next/link";
-import styles from "./LogClient.module.css";
-
-export type FindRow = {
-  id: string;
-  created_at: string;
-  observed_at: string;
-  visibility: string;
-  photo_urls: string[];
-  spot_id: string;
-  species: {
-    id: string;
-    slug: string;
-    primary_group: string;
-    scientific_name: string | null;
-  } | null;
-};
-
-function prettyVisibility(v?: string | null) {
-  if (!v) return "—";
-  if (v === "public_aggregate") return "Offentlig (aggregat)";
-  if (v === "public") return "Offentlig";
-  if (v === "private") return "Privat";
-  return v;
+.page {
+  min-height: 100svh;
+  padding: 22px 16px calc(110px + env(safe-area-inset-bottom));
+  background:
+    radial-gradient(1200px 700px at 20% 0%, rgba(16, 185, 129, 0.18), rgba(0, 0, 0, 0) 55%),
+    linear-gradient(180deg, rgba(2, 12, 18, 1), rgba(2, 6, 23, 1));
+  color: rgba(255, 255, 255, 0.92);
 }
 
-export default function LogClient({ initial }: { initial: FindRow[] }) {
-  return (
-    <main className={styles.page}>
-      <header className={styles.header}>
-        <div className={styles.titleRow}>
-          <div>
-            <h1 className={styles.h1}>Mine fund</h1>
-            <p className={styles.sub}>Dine seneste logs.</p>
-          </div>
+.header {
+  max-width: 920px;
+  margin: 0 auto 14px;
+}
 
-          <div className={styles.totalCard} aria-label="Total logs">
-            <div className={styles.totalLabel}>Total</div>
-            <div className={styles.totalValue}>{initial.length}</div>
-          </div>
-        </div>
-      </header>
+.titleRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+}
 
-      <section className={styles.list} aria-label="Finds list">
-        {initial.map((f) => {
-          const slug = f.species?.slug ?? "unclassified";
-          const group = f.species?.primary_group ?? "—";
-          const sci = f.species?.scientific_name ?? null;
+.h1 {
+  margin: 0;
+  font-size: 34px;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
 
-          return (
-            <article key={f.id} className={styles.card}>
-              <div className={styles.cardTop}>
-                <div className={styles.nameBlock}>
-                  <div className={styles.name}>{slug}</div>
-                  {sci ? <div className={styles.sciname}>{sci}</div> : null}
-                </div>
+.sub {
+  margin: 8px 0 0;
+  color: rgba(255, 255, 255, 0.7);
+}
 
-                <span className={styles.badge}>{prettyVisibility(f.visibility)}</span>
-              </div>
+.totalCard {
+  min-width: 92px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.3);
+  text-align: right;
+}
 
-              <div className={styles.metaGrid}>
-                <div className={styles.metaRow}>
-                  <span className={styles.metaKey}>Dato</span>
-                  <span className={styles.metaVal}>{f.observed_at || "—"}</span>
-                </div>
+.totalLabel {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.68);
+}
 
-                <div className={styles.metaRow}>
-                  <span className={styles.metaKey}>Gruppe</span>
-                  <span className={styles.metaVal}>{group}</span>
-                </div>
+.totalValue {
+  font-size: 20px;
+  font-weight: 850;
+}
 
-                <div className={styles.metaRow}>
-                  <span className={styles.metaKey}>Spot</span>
-                  <span className={styles.metaVal}>{f.spot_id}</span>
-                </div>
+.list {
+  max-width: 920px;
+  margin: 0 auto;
+  display: grid;
+  gap: 12px;
+}
 
-                <div className={styles.metaRow}>
-                  <span className={styles.metaKey}>Billeder</span>
-                  <span className={styles.metaVal}>{f.photo_urls?.length ?? 0}</span>
-                </div>
-              </div>
+.card {
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.3);
+  padding: 14px 14px 12px;
+}
 
-              <div className={styles.cardActions}>
-                <Link
-                  className={styles.cta}
-                  href={`/map?spot=${encodeURIComponent(f.spot_id)}`}
-                >
-                  Vis på kort
-                </Link>
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
 
-                <button
-                  className={styles.secondary}
-                  type="button"
-                  onClick={() => alert("Tilføj foto (kommer)")}
-                >
-                  Tilføj foto
-                </button>
-              </div>
-            </article>
-          );
-        })}
-      </section>
-    </main>
-  );
+.nameBlock {
+  min-width: 0;
+}
+
+.name {
+  font-size: 18px;
+  font-weight: 850;
+  text-transform: lowercase;
+}
+
+.sciname {
+  margin-top: 3px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.62);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.badge {
+  flex: 0 0 auto;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.14);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: rgba(209, 250, 229, 0.95);
+}
+
+.metaGrid {
+  display: grid;
+  gap: 8px;
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.metaKey {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 13px;
+}
+
+.metaVal {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.cardActions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(16, 185, 129, 0.16);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  color: rgba(255, 255, 255, 0.95);
+  text-decoration: none;
+  font-weight: 750;
+  flex: 1;
+}
+
+.secondary {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.9);
 }
