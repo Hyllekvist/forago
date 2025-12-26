@@ -27,6 +27,16 @@ function asIsoDateOrNow(v: unknown) {
   return new Date(t).toISOString().slice(0, 10);
 }
 
+function normalizeVisibility(
+  v: unknown
+): "private" | "friends" | "public_aggregate" {
+  return v === "friends" || v === "public_aggregate" ? v : "private";
+}
+
+function normalizeGeoPrecision(v: unknown): 1 | 2 | 5 | 10 {
+  return v === 2 || v === 5 || v === 10 ? v : 1;
+}
+
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Body;
@@ -43,25 +53,22 @@ export async function POST(req: Request) {
 
     const supabase = await supabaseServer();
 
-    // auth user (ok hvis null, men du har profiles-fk, så den skal typisk findes)
+    // auth user
     const { data: auth } = await supabase.auth.getUser();
     const user_id = auth?.user?.id ?? null;
 
     // resolve species_id
-    let species_id = species_id_in || null;
+    let species_id: string | null = species_id_in || null;
 
     if (!species_id) {
       const { data: sp, error: spErr } = await supabase
         .from("species")
-        .select("id, slug")
+        .select("id")
         .eq("slug", species_slug_in)
         .maybeSingle();
 
       if (spErr) {
-        return NextResponse.json(
-          { ok: false, error: spErr.message },
-          { status: 500 }
-        );
+        return NextResponse.json({ ok: false, error: spErr.message }, { status: 500 });
       }
 
       if (!sp?.id) {
@@ -74,29 +81,16 @@ export async function POST(req: Request) {
       species_id = sp.id;
     }
 
-    // normalize optional fields
     const observed_at = asIsoDateOrNow(body?.observed_at);
     const notes = typeof body?.notes === "string" ? body.notes : null;
-    const visibility =
-      body?.visibility === "private" ||
-      body?.visibility === "friends" ||
-      body?.visibility === "public_aggregate"
-        ? body.visibility
-        : "private";
 
-    const country = typeof body?.country === "string" ? body.country : null;
+    const visibility = normalizeVisibility(body?.visibility);
+    const country = typeof body?.country === "string" ? body.country : "DK";
+    const geo_precision_km = normalizeGeoPrecision(body?.geo_precision_km);
 
-    const geo_precision_km =
-      body?.geo_precision_km === 1 ||
-      body?.geo_precision_km === 2 ||
-      body?.geo_precision_km === 5 ||
-      body?.geo_precision_km === 10
-        ? body.geo_precision_km
-        : 1;
+    // 🔥 ALDRIG NULL — DB kræver NOT NULL
+    const photo_urls = Array.isArray(body?.photo_urls) ? body.photo_urls : [];
 
-    const photo_urls = Array.isArray(body?.photo_urls) ? body.photo_urls : null;
-
-    // INSERT (ingen flere null species_id)
     const { data, error } = await supabase
       .from("finds")
       .insert({
@@ -104,13 +98,12 @@ export async function POST(req: Request) {
         species_id,
         observed_at,
         notes,
-        photo_urls,
+        visibility,
         country,
         geo_precision_km,
-        visibility: "private",
-  photo_urls: [],
+        photo_urls,
       })
-      .select("id, user_id, species_id, observed_at, created_at")
+      .select("id, user_id, species_id, observed_at, created_at, photo_urls")
       .single();
 
     if (error) {
