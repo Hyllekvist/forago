@@ -117,11 +117,20 @@ export default function MapClient({ spots }: Props) {
     [mapApi, userPos]
   );
 
-  const onSelectSpot = useCallback((id: string) => {
+const onSelectSpot = useCallback(
+  (id: string) => {
     setSelectedId(id);
     setSheetExpanded(false);
-  }, []);
 
+    const s = spotsById.get(id);
+    if (s && mapApi) {
+      // offset så pin ender over peek-card + bottom nav
+      const offsetY = 170; // tweak 140–220 afhængigt af card height
+      mapApi.panToWithOffset(s.lat, s.lng, offsetY, Math.max(mapApi.getZoom(), 14));
+    }
+  },
+  [mapApi, spotsById]
+);
   const onQuickLog = useCallback((id: string) => {
     setSelectedId(id);
     setSheetExpanded(false);
