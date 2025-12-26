@@ -1,54 +1,48 @@
 /* ===============================
-   LOG PAGE — THEME SAFE (CSS MODULE)
+   LOG PAGE — CSS MODULE (PURE OK)
    =============================== */
 
-/* ---------- Theme variables (GLOBAL inside module) ---------- */
-
-:global(:root) {
+.page {
+  /* theme tokens (scoped to this page) */
   --page-bg:
     radial-gradient(1200px 700px at 20% 0%, rgba(16,185,129,0.18), transparent 55%),
     linear-gradient(180deg, #020c12, #020617);
 
-  --ink-strong: rgba(255,255,255,0.92);
-  --ink-muted: rgba(255,255,255,0.62);
+  --ink-strong: rgba(255, 255, 255, 0.92);
+  --ink-muted: rgba(255, 255, 255, 0.62);
 
-  --card-bg: rgba(255,255,255,0.06);
-  --card-border: rgba(255,255,255,0.12);
+  --card-bg: rgba(255, 255, 255, 0.06);
+  --card-border: rgba(255, 255, 255, 0.12);
 
-  --accent-bg: rgba(16,185,129,0.14);
-  --accent-border: rgba(16,185,129,0.25);
-  --accent-ink: rgba(209,250,229,0.95);
-}
+  --accent-bg: rgba(16, 185, 129, 0.14);
+  --accent-border: rgba(16, 185, 129, 0.25);
+  --accent-ink: rgba(209, 250, 229, 0.95);
 
-:global(:root[data-theme="light"]) {
-  --page-bg:
-    radial-gradient(1200px 700px at 20% 0%, rgba(16,185,129,0.12), transparent 55%),
-    linear-gradient(180deg, #f6fbfb, #eef5f6);
-
-  --ink-strong: rgba(10,18,26,0.92);
-  --ink-muted: rgba(10,18,26,0.60);
-
-  --card-bg: rgba(255,255,255,0.82);
-  --card-border: rgba(10,18,26,0.10);
-
-  --accent-bg: rgba(16,185,129,0.18);
-  --accent-border: rgba(16,185,129,0.30);
-  --accent-ink: #065f46;
-}
-
-/* ---------- Page ---------- */
-
-.page {
   min-height: 100dvh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-
-  /* Scroll-sikring (nogle layouts låser scroll hvis parent gør noget mærkeligt) */
   position: relative;
 
   padding: 22px 16px calc(110px + env(safe-area-inset-bottom));
   background: var(--page-bg);
   color: var(--ink-strong);
+}
+
+/* Light mode override – MUST include local class to satisfy “pure selector” */
+:global([data-theme="light"]) .page {
+  --page-bg:
+    radial-gradient(1200px 700px at 20% 0%, rgba(16,185,129,0.12), transparent 55%),
+    linear-gradient(180deg, #f6fbfb, #eef5f6);
+
+  --ink-strong: rgba(10, 18, 26, 0.92);
+  --ink-muted: rgba(10, 18, 26, 0.60);
+
+  --card-bg: rgba(255, 255, 255, 0.82);
+  --card-border: rgba(10, 18, 26, 0.10);
+
+  --accent-bg: rgba(16, 185, 129, 0.18);
+  --accent-border: rgba(16, 185, 129, 0.30);
+  --accent-ink: #065f46;
 }
 
 /* ---------- Header ---------- */
@@ -85,7 +79,7 @@
   border-radius: 14px;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  box-shadow: 0 18px 46px rgba(0,0,0,0.25);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.25);
   text-align: right;
 }
 
@@ -114,7 +108,7 @@
   border-radius: 18px;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  box-shadow: 0 18px 46px rgba(0,0,0,0.25);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.25);
   padding: 14px 14px 12px;
 }
 
