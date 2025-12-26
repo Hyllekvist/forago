@@ -1,7 +1,7 @@
 // src/app/[locale]/map/MapClient.tsx
 "use client";
 
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import styles from "./MapClient.module.css";
 
 import LeafletMap, { type Spot, type LeafletLikeMap } from "./LeafletMap";
@@ -43,7 +43,7 @@ export default function MapClient({ spots }: Props) {
   const [logError, setLogError] = useState<string | null>(null);
   const [logOk, setLogOk] = useState(false);
 
-  // counters for selected spot (total + this quarter)
+  // spot counters (total + qtr)
   const [spotCounts, setSpotCounts] = useState<{ total: number; qtr: number } | null>(null);
 
   // --- geolocation
@@ -56,7 +56,6 @@ export default function MapClient({ spots }: Props) {
     );
   }, []);
 
-  // --- insights (MVP)
   const insights = useMemo(() => {
     const total = spots.length;
 
@@ -99,7 +98,6 @@ export default function MapClient({ spots }: Props) {
         .sort((a, b) => a.d - b.d)
         .map((x) => x.s);
     }
-
     return spots;
   }, [spots, activeInsight, userPos]);
 
@@ -126,7 +124,6 @@ export default function MapClient({ spots }: Props) {
     [mapApi, userPos]
   );
 
-  // select + center
   const onSelectSpot = useCallback(
     (id: string) => {
       setSelectedId(id);
@@ -142,7 +139,7 @@ export default function MapClient({ spots }: Props) {
     [mapApi, spotsById]
   );
 
-  // fetch counters whenever selected spot changes (optional API)
+  // fetch counts when selected changes
   useEffect(() => {
     if (!selectedSpot?.id) {
       setSpotCounts(null);
@@ -150,19 +147,15 @@ export default function MapClient({ spots }: Props) {
     }
 
     const ac = new AbortController();
-
     (async () => {
       try {
-        const res = await fetch(`/api/spots/counts?spot_id=${encodeURIComponent(selectedSpot.id)}`, {
-          signal: ac.signal,
-        });
+        const res = await fetch(
+          `/api/spots/counts?spot_id=${encodeURIComponent(selectedSpot.id)}`,
+          { signal: ac.signal }
+        );
         const json = await res.json();
         if (!res.ok || !json?.ok) return;
-
-        setSpotCounts({
-          total: Number(json.total ?? 0),
-          qtr: Number(json.qtr ?? 0),
-        });
+        setSpotCounts({ total: Number(json.total ?? 0), qtr: Number(json.qtr ?? 0) });
       } catch {
         // ignore
       }
@@ -171,7 +164,6 @@ export default function MapClient({ spots }: Props) {
     return () => ac.abort();
   }, [selectedSpot?.id]);
 
-  // log
   const onQuickLog = useCallback(
     async (spot: Spot) => {
       if (isLogging) return;
@@ -188,7 +180,7 @@ export default function MapClient({ spots }: Props) {
             spot_id: spot.id,
             species_slug: spot.species_slug ?? null,
             observed_at: new Date().toISOString(),
-            visibility: "public_aggregate",
+            visibility: "public_aggregate", // 👈 tælles i counteren
             notes: null,
             country: "DK",
             geo_precision_km: 1,
@@ -197,16 +189,10 @@ export default function MapClient({ spots }: Props) {
         });
 
         const json = await res.json();
-        if (!res.ok || !json?.ok) {
-          throw new Error(json?.error ?? "Kunne ikke logge fund");
-        }
+        if (!res.ok || !json?.ok) throw new Error(json?.error ?? "Kunne ikke logge fund");
 
         setLogOk(true);
-
-        // optimistic bump
-        setSpotCounts((prev) =>
-          prev ? { total: prev.total + 1, qtr: prev.qtr + 1 } : { total: 1, qtr: 1 }
-        );
+        setSpotCounts((prev) => (prev ? { total: prev.total + 1, qtr: prev.qtr + 1 } : { total: 1, qtr: 1 }));
 
         window.setTimeout(() => {
           setSelectedId(null);
@@ -228,25 +214,6 @@ export default function MapClient({ spots }: Props) {
       ? `${visibleIds.length} relevante spots i view`
       : "Flyt kortet for at finde spots";
 
-  // --- build SpotPeekCard props safely (won't add unknown props)
-  type PeekProps = React.ComponentProps<typeof SpotPeekCard>;
-  const peekBaseProps: PeekProps = {
-    spot: selectedSpot as any, // selectedSpot is checked before render
-    mode,
-    userPos,
-    onClose: () => setSelectedId(null),
-    onLog: () => void onQuickLog(selectedSpot as Spot),
-    onLearn: () => setSelectedId(null),
-  };
-
-  // Add optional props only if SpotPeekCard supports them.
-  const peekProps = {
-    ...peekBaseProps,
-    ...(("isLogging" in ({} as PeekProps)) ? ({ isLogging } as any) : null),
-    ...(("logOk" in ({} as PeekProps)) ? ({ logOk } as any) : null),
-    ...(("counts" in ({} as PeekProps)) ? ({ counts: spotCounts } as any) : null),
-  } as PeekProps;
-
   return (
     <div className={styles.page}>
       <MapTopbar mode={mode} onToggleMode={onToggleMode} />
@@ -266,7 +233,17 @@ export default function MapClient({ spots }: Props) {
 
         <div className={styles.bottomDock}>
           {selectedSpot ? (
-            <SpotPeekCard {...peekProps} />
+            <SpotPeekCard
+              spot={selectedSpot}
+              mode={mode}
+              userPos={userPos}
+              counts={spotCounts}
+              isLogging={isLogging}
+              logOk={logOk}
+              onClose={() => setSelectedId(null)}
+              onLog={() => void onQuickLog(selectedSpot)}
+              onLearn={() => setSelectedId(null)}
+            />
           ) : (
             <MapSheet
               mode={mode}
