@@ -107,7 +107,8 @@ export async function POST(req: Request) {
         photo_urls,
         country,
         geo_precision_km,
-        visibility,
+        visibility: "private",
+  photo_urls: [],
       })
       .select("id, user_id, species_id, observed_at, created_at")
       .single();
