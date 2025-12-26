@@ -1,3 +1,4 @@
+// src/app/[locale]/map/MapClient.tsx
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
@@ -10,10 +11,7 @@ import { MapSheet } from "./ui/MapSheet";
 import { SpotPeekCard } from "./ui/SpotPeekCard";
 
 type Mode = "daily" | "forage";
-
-type Props = {
-  spots: Spot[];
-};
+type Props = { spots: Spot[] };
 
 function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const R = 6371;
@@ -23,10 +21,7 @@ function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
   const s2 = Math.sin(dLng / 2);
   const q =
     s1 * s1 +
-    Math.cos((a.lat * Math.PI) / 180) *
-      Math.cos((b.lat * Math.PI) / 180) *
-      s2 *
-      s2;
+    Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * s2 * s2;
   return 2 * R * Math.asin(Math.sqrt(q));
 }
 
@@ -43,9 +38,10 @@ export default function MapClient({ spots }: Props) {
 
   const [isPanning, setIsPanning] = useState(false);
 
-  // logging UI state
+  // --- logging feedback (Step 1)
   const [isLogging, setIsLogging] = useState(false);
   const [logError, setLogError] = useState<string | null>(null);
+  const [logOk, setLogOk] = useState(false);
 
   // --- geolocation
   useEffect(() => {
@@ -57,7 +53,6 @@ export default function MapClient({ spots }: Props) {
     );
   }, []);
 
-  // --- insights (MVP)
   const insights = useMemo(() => {
     const total = spots.length;
 
@@ -100,8 +95,6 @@ export default function MapClient({ spots }: Props) {
         .sort((a, b) => a.d - b.d)
         .map((x) => x.s);
     }
-
-    // MVP: season_now/peak filtrerer ikke hårdt endnu
     return spots;
   }, [spots, activeInsight, userPos]);
 
@@ -109,7 +102,6 @@ export default function MapClient({ spots }: Props) {
     setMode((m) => (m === "daily" ? "forage" : "daily"));
     setSheetExpanded(false);
     setSelectedId(null);
-    setLogError(null);
   }, []);
 
   const onPickInsight = useCallback(
@@ -117,7 +109,6 @@ export default function MapClient({ spots }: Props) {
       setActiveInsight((prev) => (prev === k ? null : k));
       setSheetExpanded(true);
       setSelectedId(null);
-      setLogError(null);
 
       if (k === "nearby" && userPos && mapApi) {
         mapApi.flyTo(userPos.lat, userPos.lng, 13);
@@ -126,39 +117,36 @@ export default function MapClient({ spots }: Props) {
     [mapApi, userPos]
   );
 
-  // selection + center (kun her — LeafletMap må ikke selv flyTo ved click)
+  // selection + center (pan up so marker sits above peek + bottom nav)
   const onSelectSpot = useCallback(
     (id: string) => {
       setSelectedId(id);
       setSheetExpanded(false);
-      setLogError(null);
 
       const s = spotsById.get(id);
       if (!s || !mapApi) return;
 
       const targetZoom = Math.max(mapApi.getZoom(), 14);
       mapApi.flyTo(s.lat, s.lng, targetZoom);
-
-      // løft markøren lidt op over peek + bottom nav
-      mapApi.panBy(0, -140);
+      mapApi.panBy?.(0, -140);
     },
     [mapApi, spotsById]
   );
 
-  // ✅ log via species_id (single source of truth)
+  // ✅ single source of truth for logging + UX feedback
   const onQuickLog = useCallback(async (spot: Spot) => {
+    if (isLogging) return;
+
     try {
       setIsLogging(true);
       setLogError(null);
-
-      const species_id = (spot as any)?.species_id ?? null;
-      if (!species_id) throw new Error("Spot mangler species_id");
+      setLogOk(false);
 
       const res = await fetch("/api/finds/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          species_id,
+          species_slug: spot.species_slug ?? null,
           observed_at: new Date().toISOString(),
           visibility: "private",
           notes: null,
@@ -168,16 +156,28 @@ export default function MapClient({ spots }: Props) {
       });
 
       const json = await res.json();
-      if (!res.ok || !json?.ok) throw new Error(json?.error ?? "Kunne ikke logge fund");
+      if (!res.ok || !json?.ok) {
+        throw new Error(json?.error ?? "Kunne ikke logge fund");
+      }
 
-      // UX: luk peek på success
-      setSelectedId(null);
+      console.log("[finds/create] ok", json.find);
+
+      // ✅ success feedback
+      setLogOk(true);
+
+      // luk peek efter en kort “✅ logget”
+      window.setTimeout(() => {
+        setSelectedId(null);
+        setLogOk(false);
+      }, 1200);
     } catch (e: any) {
       setLogError(e?.message ?? "Ukendt fejl");
+      // auto-hide error efter lidt tid (valgfrit)
+      window.setTimeout(() => setLogError(null), 3500);
     } finally {
       setIsLogging(false);
     }
-  }, []);
+  }, [isLogging]);
 
   const sheetTitle = isPanning
     ? "Finder spots…"
@@ -213,12 +213,11 @@ export default function MapClient({ spots }: Props) {
               spot={selectedSpot}
               mode={mode}
               userPos={userPos}
+              isLogging={isLogging}
+              logOk={logOk}
               onClose={() => setSelectedId(null)}
               onLog={() => void onQuickLog(selectedSpot)}
-              onLearn={() => {
-                // TODO: route til species/spot side senere
-                setSelectedId(null);
-              }}
+              onLearn={() => setSelectedId(null)}
             />
           ) : (
             <MapSheet
