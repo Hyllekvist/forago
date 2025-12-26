@@ -5,17 +5,12 @@ import styles from "./ThemeToggle.module.css";
 
 type Theme = "dark" | "light";
 
-function getStored(): Theme {
-  if (typeof window === "undefined") return "dark";
-  const v = window.localStorage.getItem("forago_theme");
-  return v === "light" ? "light" : "dark";
-}
-
 export function ThemeToggle() {
   const [theme, setTheme] = useState<Theme>("dark");
 
   useEffect(() => {
-    const t = getStored();
+    const stored = localStorage.getItem("forago_theme") as Theme | null;
+    const t = stored ?? "dark";
     setTheme(t);
     document.documentElement.dataset.theme = t;
   }, []);
@@ -24,18 +19,17 @@ export function ThemeToggle() {
     const next: Theme = theme === "dark" ? "light" : "dark";
     setTheme(next);
     document.documentElement.dataset.theme = next;
-    window.localStorage.setItem("forago_theme", next);
+    localStorage.setItem("forago_theme", next);
   }
 
   return (
     <button
       className={styles.toggle}
+      data-theme={theme}
       onClick={toggle}
-      type="button"
       aria-label="Toggle theme"
-      title={theme === "dark" ? "Light mode" : "Dark mode"}
     >
-      <span className={styles.icon} aria-hidden>
+      <span className={styles.knob}>
         {theme === "dark" ? "☾" : "☀︎"}
       </span>
     </button>
