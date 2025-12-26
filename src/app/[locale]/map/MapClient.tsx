@@ -1,7 +1,7 @@
 // src/app/[locale]/map/MapClient.tsx
 "use client";
 
-import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import styles from "./MapClient.module.css";
 
 import LeafletMap, { type Spot, type LeafletLikeMap } from "./LeafletMap";
@@ -35,6 +35,7 @@ export default function MapClient({ spots }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [visibleIds, setVisibleIds] = useState<string[]>([]);
   const [sheetExpanded, setSheetExpanded] = useState(false);
+
   const [isPanning, setIsPanning] = useState(false);
 
   // logging feedback
@@ -42,19 +43,6 @@ export default function MapClient({ spots }: Props) {
   const [logError, setLogError] = useState<string | null>(null);
   const [logOk, setLogOk] = useState(false);
 
-  // prevents double-submit + lets us avoid stale deps
-  const inFlightRef = useRef(false);
-  const okTimerRef = useRef<number | null>(null);
-  const errTimerRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (okTimerRef.current) window.clearTimeout(okTimerRef.current);
-      if (errTimerRef.current) window.clearTimeout(errTimerRef.current);
-    };
-  }, []);
-
-  // --- geolocation
   useEffect(() => {
     if (!("geolocation" in navigator)) return;
     navigator.geolocation.getCurrentPosition(
@@ -128,7 +116,6 @@ export default function MapClient({ spots }: Props) {
     [mapApi, userPos]
   );
 
-  // selection + center (pan up so marker sits above peek + bottom nav)
   const onSelectSpot = useCallback(
     (id: string) => {
       setSelectedId(id);
@@ -144,59 +131,51 @@ export default function MapClient({ spots }: Props) {
     [mapApi, spotsById]
   );
 
-  // ✅ single source of truth for logging + Step 1 logs
-  const onQuickLog = useCallback(async (spot: Spot) => {
-    if (inFlightRef.current) return;
+  // ✅ logging: sender spot_id + species_slug
+  const onQuickLog = useCallback(
+    async (spot: Spot) => {
+      if (isLogging) return;
 
-    // clear old timers
-    if (okTimerRef.current) window.clearTimeout(okTimerRef.current);
-    if (errTimerRef.current) window.clearTimeout(errTimerRef.current);
-
-    const payload = {
-      species_slug: spot.species_slug ?? null,
-      observed_at: new Date().toISOString(),
-      visibility: "private",
-      notes: null,
-      country: "DK",
-      geo_precision_km: 1,
-    };
-
-    try {
-      inFlightRef.current = true;
-      setIsLogging(true);
-      setLogError(null);
-      setLogOk(false);
-
-      console.log("[log] submit payload", payload);
-
-      const res = await fetch("/api/finds/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const json = await res.json().catch(() => null);
-
-      console.log("[log] status", res.status, json);
-
-      if (!res.ok || !json?.ok) {
-        throw new Error(json?.error ?? "Kunne ikke logge fund");
-      }
-
-      setLogOk(true);
-
-      okTimerRef.current = window.setTimeout(() => {
-        setSelectedId(null);
+      try {
+        setIsLogging(true);
+        setLogError(null);
         setLogOk(false);
-      }, 1200);
-    } catch (e: any) {
-      setLogError(e?.message ?? "Ukendt fejl");
-      errTimerRef.current = window.setTimeout(() => setLogError(null), 3500);
-    } finally {
-      inFlightRef.current = false;
-      setIsLogging(false);
-    }
-  }, []);
+
+        const res = await fetch("/api/finds/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            spot_id: spot.id, // 🔥 den manglede
+            species_slug: spot.species_slug ?? null,
+            observed_at: new Date().toISOString(),
+            visibility: "private",
+            notes: "",
+            country: "DK",
+            geo_precision_km: 1,
+            photo_urls: [], // 🔥 NOT NULL i DB
+          }),
+        });
+
+        const json = await res.json();
+        if (!res.ok || !json?.ok) {
+          throw new Error(json?.error ?? "Kunne ikke logge fund");
+        }
+
+        setLogOk(true);
+
+        window.setTimeout(() => {
+          setSelectedId(null);
+          setLogOk(false);
+        }, 1200);
+      } catch (e: any) {
+        setLogError(e?.message ?? "Ukendt fejl");
+        window.setTimeout(() => setLogError(null), 3500);
+      } finally {
+        setIsLogging(false);
+      }
+    },
+    [isLogging]
+  );
 
   const sheetTitle = isPanning
     ? "Finder spots…"
@@ -227,8 +206,6 @@ export default function MapClient({ spots }: Props) {
               spot={selectedSpot}
               mode={mode}
               userPos={userPos}
-              isLogging={isLogging}
-              logOk={logOk}
               onClose={() => setSelectedId(null)}
               onLog={() => void onQuickLog(selectedSpot)}
               onLearn={() => setSelectedId(null)}
@@ -252,6 +229,7 @@ export default function MapClient({ spots }: Props) {
 
         {logError ? <div className={styles.toastError}>{logError}</div> : null}
         {isLogging ? <div className={styles.toastInfo}>Logger fund…</div> : null}
+        {logOk ? <div className={styles.toastInfo}>✅ Logget</div> : null}
       </div>
     </div>
   );
