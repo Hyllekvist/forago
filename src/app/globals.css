@@ -158,3 +158,8 @@ button:active{
   background: var(--tapBg, color-mix(in srgb, var(--ink) 8%, transparent));
   border: 1px solid var(--tapLine, color-mix(in srgb, var(--ink) 14%, transparent));
 }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
