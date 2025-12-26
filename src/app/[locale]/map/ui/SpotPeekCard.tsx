@@ -1,6 +1,7 @@
+// src/app/[locale]/map/ui/SpotPeekCard.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import styles from "./SpotPeekCard.module.css";
 import type { Spot } from "../LeafletMap";
 
@@ -11,14 +12,12 @@ type Props = {
   mode: "daily" | "forage";
   userPos: { lat: number; lng: number } | null;
 
-  // ✅ new (optional): hvis MapClient allerede har counts, brug dem
   counts?: Counts | null;
 
   onClose: () => void;
   onLog: () => void;
   onLearn: () => void;
 
-  // optional fra MapClient
   isLogging?: boolean;
   logOk?: boolean;
 };
@@ -26,10 +25,8 @@ type Props = {
 function emojiForSlug(slug?: string | null) {
   const s = (slug ?? "").toLowerCase();
   if (!s) return "📍";
-  if (s.includes("svamp") || s.includes("mush") || s.includes("chanter") || s.includes("kantarel"))
-    return "🍄";
-  if (s.includes("bær") || s.includes("berry") || s.includes("blåb") || s.includes("hindb"))
-    return "🫐";
+  if (s.includes("svamp") || s.includes("mush") || s.includes("chanter") || s.includes("kantarel")) return "🍄";
+  if (s.includes("bær") || s.includes("berry") || s.includes("blåb") || s.includes("hindb")) return "🫐";
   if (s.includes("urt") || s.includes("herb")) return "🌿";
   if (s.includes("nød") || s.includes("nut")) return "🌰";
   return "📍";
@@ -43,10 +40,7 @@ function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
   const s2 = Math.sin(dLng / 2);
   const q =
     s1 * s1 +
-    Math.cos((a.lat * Math.PI) / 180) *
-      Math.cos((b.lat * Math.PI) / 180) *
-      s2 *
-      s2;
+    Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * s2 * s2;
   return 2 * R * Math.asin(Math.sqrt(q));
 }
 
@@ -82,20 +76,6 @@ function isIOS() {
   return /iPad|iPhone|iPod/.test(navigator.userAgent);
 }
 
-function quarterStartISO(d = new Date()) {
-  const q = Math.floor(d.getMonth() / 3); // 0..3
-  const startMonth = q * 3; // 0,3,6,9
-  const start = new Date(d.getFullYear(), startMonth, 1);
-  return start.toISOString();
-}
-
-type SpotStatsApi = {
-  spot_id: string;
-  total_count: number;
-  last_30d_count: number;
-  last_14d_count: number;
-};
-
 export function SpotPeekCard({
   spot,
   mode,
@@ -111,7 +91,6 @@ export function SpotPeekCard({
   const label = mode === "forage" ? "Muligt fund" : spot.species_slug ? "Spot" : "Lokation";
 
   const distance = useMemo(() => formatDistance(userPos, spot), [userPos, spot.lat, spot.lng]);
-
   const freshness = useMemo(() => formatFreshness(spot.last_seen_at ?? null), [spot.last_seen_at]);
 
   const mapsHref = useMemo(() => {
@@ -120,44 +99,7 @@ export function SpotPeekCard({
     return `https://www.google.com/maps/search/?api=1&query=${q}`;
   }, [spot.lat, spot.lng]);
 
-  // ✅ fallback: hvis counts ikke kommer fra MapClient, hent stats her
-  const [localCounts, setLocalCounts] = useState<Counts | null>(null);
-  const [countsLoading, setCountsLoading] = useState(false);
-
-  useEffect(() => {
-    if (counts) return; // MapClient styrer det
-    let alive = true;
-    setCountsLoading(true);
-    setLocalCounts(null);
-
-    // Vi bruger din eksisterende /api/spots/[id]/stats hvis du har den
-    fetch(`/api/spots/${encodeURIComponent(spot.id)}/stats`)
-      .then((r) => r.json())
-      .then((j) => {
-        if (!alive) return;
-        if (!j?.ok || !j?.stats) return;
-
-        const s = j.stats as SpotStatsApi;
-        // "qtr" findes ikke i API'et – så vi bruger last_30d_count som “recent”
-        setLocalCounts({ total: Number(s.total_count ?? 0), qtr: Number(s.last_30d_count ?? 0) });
-      })
-      .finally(() => {
-        if (!alive) return;
-        setCountsLoading(false);
-      });
-
-    return () => {
-      alive = false;
-    };
-  }, [spot.id, counts]);
-
-  const effectiveCounts = counts ?? localCounts;
-
-const socialLine = countsLoading
-  ? "Henter aktivitet…"
-  : effectiveCounts
-    ? `${effectiveCounts.total} community logs · ${effectiveCounts.qtr} denne sæson`
-    : "Ingen community logs endnu";
+  const socialLine = counts ? `${counts.total} logs · ${counts.qtr} i kvartalet` : "Henter aktivitet…";
 
   return (
     <section className={styles.card} role="dialog" aria-label="Selected spot">
@@ -188,12 +130,8 @@ const socialLine = countsLoading
           <h3 className={styles.title}>{spot.title ?? "Ukendt spot"}</h3>
 
           <div className={styles.pills}>
-            <span className={styles.pill}>
-              {spot.species_slug ? `#${spot.species_slug}` : "#unclassified"}
-            </span>
-            <span className={styles.pillAccent}>
-              {mode === "forage" ? "Peak potential" : "I nærheden"}
-            </span>
+            <span className={styles.pill}>{spot.species_slug ? `#${spot.species_slug}` : "#unclassified"}</span>
+            <span className={styles.pillAccent}>{mode === "forage" ? "Peak potential" : "I nærheden"}</span>
           </div>
 
           <div className={styles.social}>{socialLine}</div>
@@ -208,12 +146,7 @@ const socialLine = countsLoading
           Navigér
         </a>
 
-        <button
-          className={styles.secondary}
-          onClick={() => void onLog()}
-          type="button"
-          disabled={!!isLogging}
-        >
+        <button className={styles.secondary} onClick={onLog} type="button" disabled={!!isLogging}>
           {logOk ? "✅ Logget" : isLogging ? "Logger…" : "Log fund"}
         </button>
 
