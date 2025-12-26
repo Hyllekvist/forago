@@ -16,7 +16,10 @@ type Props = {
   spots: Spot[];
 };
 
-function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+function haversineKm(
+  a: { lat: number; lng: number },
+  b: { lat: number; lng: number }
+) {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
   const dLng = ((b.lng - a.lng) * Math.PI) / 180;
@@ -35,17 +38,18 @@ export default function MapClient({ spots }: Props) {
   const [mode, setMode] = useState<Mode>("daily");
   const [activeInsight, setActiveInsight] = useState<InsightKey | null>(null);
 
-  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
+  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(
+    null
+  );
   const [mapApi, setMapApi] = useState<LeafletLikeMap | null>(null);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [visibleIds, setVisibleIds] = useState<string[]>([]);
   const [sheetExpanded, setSheetExpanded] = useState(false);
 
-  // ✅ show “Finder spots…” while user is actively panning/zooming
   const [isPanning, setIsPanning] = useState(false);
 
-  // ✅ logging state
+  // logging UI state
   const [isLogging, setIsLogging] = useState(false);
   const [logError, setLogError] = useState<string | null>(null);
 
@@ -64,7 +68,8 @@ export default function MapClient({ spots }: Props) {
     const total = spots.length;
 
     const nearbyCount = userPos
-      ? spots.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2).length
+      ? spots.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2)
+          .length
       : 0;
 
     const seasonNowCount = Math.min(total, Math.max(0, Math.round(total * 0.35)));
@@ -125,7 +130,7 @@ export default function MapClient({ spots }: Props) {
     [mapApi, userPos]
   );
 
-  // ✅ selection + center (pan up so marker sits above peek + bottom nav)
+  // selection + center (pan up so marker sits above peek + bottom nav)
   const onSelectSpot = useCallback(
     (id: string) => {
       setSelectedId(id);
@@ -136,24 +141,13 @@ export default function MapClient({ spots }: Props) {
 
       const targetZoom = Math.max(mapApi.getZoom(), 14);
       mapApi.flyTo(s.lat, s.lng, targetZoom);
-
-      // lift marker a bit visually (Leaflet y+ is down)
       mapApi.panBy?.(0, -140);
     },
     [mapApi, spotsById]
   );
 
-  // ✅ LOG selected (guards against null, and handles TS)
-  const onLogSelected = useCallback(async () => {
-    if (!selectedSpot) return;
-
-    // This assumes your Spot includes species_id. If not, adjust to your API shape.
-    const speciesId = (selectedSpot as any)?.species_id;
-    if (!speciesId) {
-      setLogError("Mangler species_id på dette spot");
-      return;
-    }
-
+  // ✅ single source of truth for logging
+  const onQuickLog = useCallback(async (spot: Spot) => {
     try {
       setIsLogging(true);
       setLogError(null);
@@ -162,9 +156,12 @@ export default function MapClient({ spots }: Props) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          species_id: speciesId,
+          species_slug: spot.species_slug ?? null,
           observed_at: new Date().toISOString(),
           visibility: "private",
+          notes: null,
+          country: "DK",
+          geo_precision_km: 1,
         }),
       });
 
@@ -173,43 +170,14 @@ export default function MapClient({ spots }: Props) {
         throw new Error(json?.error ?? "Kunne ikke logge fund");
       }
 
-      // UX: close peek on success
+      // UX: luk peek på success
       setSelectedId(null);
     } catch (e: any) {
       setLogError(e?.message ?? "Ukendt fejl");
     } finally {
       setIsLogging(false);
     }
-  }, [selectedSpot]);
-
-const onQuickLog = useCallback(async (spot: Spot) => {
-  try {
-    const res = await fetch("/api/finds/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        // vi har slug på spot — API resolver til species_id
-        species_slug: spot.species_slug ?? null,
-        observed_at: new Date().toISOString(),
-        visibility: "private",
-        notes: null,
-        country: "DK",
-        geo_precision_km: 1,
-      }),
-    });
-
-    const json = await res.json();
-    if (!res.ok || !json?.ok) {
-      console.error("[finds/create] failed", json);
-      return;
-    }
-
-    // lille feedback uden at bygge toast-system endnu:
-    console.log("[finds/create] ok", json.find);
-  } catch (e) {
-    console.error("[finds/create] error", e);
-  }
-}, []);
+  }, []);
 
   const sheetTitle = isPanning
     ? "Finder spots…"
@@ -221,7 +189,12 @@ const onQuickLog = useCallback(async (spot: Spot) => {
     <div className={styles.page}>
       <MapTopbar mode={mode} onToggleMode={onToggleMode} />
 
-      <InsightStrip mode={mode} active={activeInsight} insights={insights} onPick={onPickInsight} />
+      <InsightStrip
+        mode={mode}
+        active={activeInsight}
+        insights={insights}
+        onPick={onPickInsight}
+      />
 
       <div className={styles.mapShell}>
         <LeafletMap
@@ -236,14 +209,17 @@ const onQuickLog = useCallback(async (spot: Spot) => {
 
         <div className={styles.bottomDock}>
           {selectedSpot ? (
-<SpotPeekCard
-  spot={selectedSpot}
-  mode={mode}
-  userPos={userPos}
-  onClose={() => setSelectedId(null)}
-  onLog={onQuickLog}
-onLog={() => void onQuickLog(selectedSpot)}
-/>
+            <SpotPeekCard
+              spot={selectedSpot}
+              mode={mode}
+              userPos={userPos}
+              onClose={() => setSelectedId(null)}
+              onLog={() => void onQuickLog(selectedSpot)}
+              onLearn={() => {
+                // TODO: route to species/spot page later
+                setSelectedId(null);
+              }}
+            />
           ) : (
             <MapSheet
               mode={mode}
@@ -253,12 +229,11 @@ onLog={() => void onQuickLog(selectedSpot)}
               items={visibleSpots}
               selectedId={selectedId}
               onSelect={(id) => onSelectSpot(id)}
-              onLog={onQuickLog}
+              onLog={(spot) => void onQuickLog(spot)}
             />
           )}
         </div>
 
-        {/* optional: tiny debug for logging */}
         {logError ? <div className={styles.toastError}>{logError}</div> : null}
         {isLogging ? <div className={styles.toastInfo}>Logger fund…</div> : null}
       </div>
