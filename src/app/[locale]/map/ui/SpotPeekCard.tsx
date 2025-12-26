@@ -1,12 +1,17 @@
 // src/app/[locale]/map/ui/SpotPeekCard.tsx
 "use client";
 
+import { useMemo } from "react";
 import styles from "./SpotPeekCard.module.css";
 import type { Spot } from "../LeafletMap";
+
+type LatLng = { lat: number; lng: number };
 
 type Props = {
   spot: Spot;
   mode: "daily" | "forage";
+  userPos?: LatLng | null;          // ✅ NEW
+  lastSeenAt?: string | null;       // ✅ optional (ISO string) - hvis I har det
   onClose: () => void;
   onLog: () => void;
   onLearn: () => void;
@@ -24,27 +29,66 @@ function emojiForSlug(slug?: string | null) {
   return "📍";
 }
 
-// Dummy helpers (indtil vi har rigtig data)
-function fakeDistanceKm() {
-  // 0.3–2.9km
-  const v = 0.3 + Math.random() * 2.6;
-  return v < 1 ? `${Math.round(v * 1000)} m` : `${v.toFixed(1)} km`;
+function haversineKm(a: LatLng, b: LatLng) {
+  const R = 6371;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const s1 = Math.sin(dLat / 2);
+  const s2 = Math.sin(dLng / 2);
+  const q =
+    s1 * s1 +
+    Math.cos((a.lat * Math.PI) / 180) *
+      Math.cos((b.lat * Math.PI) / 180) *
+      s2 *
+      s2;
+  return 2 * R * Math.asin(Math.sqrt(q));
 }
 
-function fakeFreshness() {
-  const labels = ["i dag", "i går", "for 2 dage siden", "for 1 uge siden"];
-  return labels[Math.floor(Math.random() * labels.length)];
+function formatDistance(userPos: LatLng | null | undefined, spot: Spot) {
+  if (!userPos) return null;
+  const km = haversineKm(userPos, { lat: spot.lat, lng: spot.lng });
+  if (km < 1) return `${Math.round(km * 1000)} m`;
+  return `${km.toFixed(1)} km`;
 }
 
-export function SpotPeekCard({ spot, mode, onClose, onLog, onLearn }: Props) {
+function formatRelativeDa(iso?: string | null) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  if (!Number.isFinite(diffMs)) return null;
+
+  const mins = Math.round(diffMs / 60000);
+  if (mins < 60) return mins <= 1 ? "lige nu" : `${mins} min siden`;
+
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return hours === 1 ? "1 time siden" : `${hours} timer siden`;
+
+  const days = Math.round(hours / 24);
+  if (days === 1) return "i går";
+  if (days < 7) return `${days} dage siden`;
+  if (days < 30) {
+    const w = Math.round(days / 7);
+    return w === 1 ? "1 uge siden" : `${w} uger siden`;
+  }
+  return d.toLocaleDateString("da-DK");
+}
+
+export function SpotPeekCard({
+  spot,
+  mode,
+  userPos = null,
+  lastSeenAt = null,
+  onClose,
+  onLog,
+  onLearn,
+}: Props) {
   const emoji = emojiForSlug(spot.species_slug);
-  const label =
-    mode === "forage" ? "Muligt fund" : spot.species_slug ? "Spot" : "Lokation";
+  const label = mode === "forage" ? "Muligt fund" : spot.species_slug ? "Spot" : "Lokation";
 
-  const distance = fakeDistanceKm();
-  const freshness = fakeFreshness();
+  const distance = useMemo(() => formatDistance(userPos, spot), [userPos, spot.lat, spot.lng]);
+  const freshness = useMemo(() => formatRelativeDa(lastSeenAt), [lastSeenAt]);
 
-  // Deep link (enkelt og stabilt)
   const mapsHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
     `${spot.lat},${spot.lng}`
   )}`;
@@ -65,10 +109,20 @@ export function SpotPeekCard({ spot, mode, onClose, onLog, onLearn }: Props) {
         <div className={styles.headMain}>
           <div className={styles.kickerRow}>
             <span className={styles.kicker}>{label}</span>
-            <span className={styles.dot} aria-hidden />
-            <span className={styles.meta}>{distance}</span>
-            <span className={styles.dot} aria-hidden />
-            <span className={styles.meta}>{freshness}</span>
+
+            {distance ? (
+              <>
+                <span className={styles.dot} aria-hidden />
+                <span className={styles.meta}>{distance}</span>
+              </>
+            ) : null}
+
+            {freshness ? (
+              <>
+                <span className={styles.dot} aria-hidden />
+                <span className={styles.meta}>{freshness}</span>
+              </>
+            ) : null}
           </div>
 
           <h3 className={styles.title}>{spot.title ?? "Ukendt spot"}</h3>
@@ -78,7 +132,7 @@ export function SpotPeekCard({ spot, mode, onClose, onLog, onLearn }: Props) {
               {spot.species_slug ? `#${spot.species_slug}` : "#unclassified"}
             </span>
             <span className={styles.pillAccent}>
-              {mode === "forage" ? "Peak potential" : "I nærheden"}
+              {mode === "forage" ? "Peak potential" : distance && distance.includes("m") ? "Meget tæt på" : "I nærheden"}
             </span>
           </div>
         </div>
