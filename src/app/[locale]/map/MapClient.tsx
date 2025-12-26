@@ -43,8 +43,11 @@ export default function MapClient({ spots }: Props) {
   const [logError, setLogError] = useState<string | null>(null);
   const [logOk, setLogOk] = useState(false);
 
-  // spot counters (total + qtr)
+  // spot counters (total + this quarter) for selected spot
   const [spotCounts, setSpotCounts] = useState<{ total: number; qtr: number } | null>(null);
+
+  // ✅ batch counts for visible list (used for sorting in MapSheet)
+  const [countsMap, setCountsMap] = useState<Record<string, { total: number; qtr: number }>>({});
 
   // --- geolocation
   useEffect(() => {
@@ -124,6 +127,7 @@ export default function MapClient({ spots }: Props) {
     [mapApi, userPos]
   );
 
+  // selection + center (pan up so marker sits above peek + bottom nav)
   const onSelectSpot = useCallback(
     (id: string) => {
       setSelectedId(id);
@@ -139,7 +143,7 @@ export default function MapClient({ spots }: Props) {
     [mapApi, spotsById]
   );
 
-  // fetch counts when selected changes
+  // fetch counts whenever selected spot changes (single spot)
   useEffect(() => {
     if (!selectedSpot?.id) {
       setSpotCounts(null);
@@ -147,6 +151,7 @@ export default function MapClient({ spots }: Props) {
     }
 
     const ac = new AbortController();
+
     (async () => {
       try {
         const res = await fetch(
@@ -164,6 +169,54 @@ export default function MapClient({ spots }: Props) {
     return () => ac.abort();
   }, [selectedSpot?.id]);
 
+  // ✅ batch counts for visible list (used for sorting the sheet)
+  useEffect(() => {
+    if (!visibleIds?.length) return;
+
+    const ids = visibleIds.slice(0, 200);
+    const ac = new AbortController();
+
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/spots/counts-batch?spot_ids=${encodeURIComponent(ids.join(","))}`,
+          { signal: ac.signal }
+        );
+        const json = await res.json();
+        if (!res.ok || !json?.ok || !json?.map) return;
+
+        setCountsMap((prev) => ({
+          ...prev,
+          ...(json.map as Record<string, { total: number; qtr: number }>),
+        }));
+      } catch {
+        // ignore
+      }
+    })();
+
+    return () => ac.abort();
+  }, [visibleIds]);
+
+  const sortedVisibleSpots = useMemo(() => {
+    const arr = visibleSpots.slice();
+
+    arr.sort((a, b) => {
+      const aq = countsMap[a.id]?.qtr ?? 0;
+      const bq = countsMap[b.id]?.qtr ?? 0;
+      if (bq !== aq) return bq - aq;
+
+      if (userPos) {
+        const ad = haversineKm(userPos, { lat: a.lat, lng: a.lng });
+        const bd = haversineKm(userPos, { lat: b.lat, lng: b.lng });
+        return ad - bd;
+      }
+      return 0;
+    });
+
+    return arr;
+  }, [visibleSpots, countsMap, userPos]);
+
+  // single source of truth for logging + UX feedback
   const onQuickLog = useCallback(
     async (spot: Spot) => {
       if (isLogging) return;
@@ -177,10 +230,10 @@ export default function MapClient({ spots }: Props) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            spot_id: spot.id,
+            spot_id: spot.id, // ✅ count is per location
             species_slug: spot.species_slug ?? null,
             observed_at: new Date().toISOString(),
-            visibility: "public_aggregate", // 👈 tælles i counteren
+            visibility: "public_aggregate",
             notes: null,
             country: "DK",
             geo_precision_km: 1,
@@ -189,10 +242,26 @@ export default function MapClient({ spots }: Props) {
         });
 
         const json = await res.json();
-        if (!res.ok || !json?.ok) throw new Error(json?.error ?? "Kunne ikke logge fund");
+        if (!res.ok || !json?.ok) {
+          throw new Error(json?.error ?? "Kunne ikke logge fund");
+        }
 
+        // ✅ success feedback
         setLogOk(true);
-        setSpotCounts((prev) => (prev ? { total: prev.total + 1, qtr: prev.qtr + 1 } : { total: 1, qtr: 1 }));
+
+        // ✅ refresh single spot counts (optimistic)
+        setSpotCounts((prev) =>
+          prev ? { total: prev.total + 1, qtr: prev.qtr + 1 } : { total: 1, qtr: 1 }
+        );
+
+        // ✅ refresh batch map (optimistic)
+        setCountsMap((prev) => ({
+          ...prev,
+          [spot.id]: {
+            total: (prev[spot.id]?.total ?? 0) + 1,
+            qtr: (prev[spot.id]?.qtr ?? 0) + 1,
+          },
+        }));
 
         window.setTimeout(() => {
           setSelectedId(null);
@@ -218,7 +287,12 @@ export default function MapClient({ spots }: Props) {
     <div className={styles.page}>
       <MapTopbar mode={mode} onToggleMode={onToggleMode} />
 
-      <InsightStrip mode={mode} active={activeInsight} insights={insights} onPick={onPickInsight} />
+      <InsightStrip
+        mode={mode}
+        active={activeInsight}
+        insights={insights}
+        onPick={onPickInsight}
+      />
 
       <div className={styles.mapShell}>
         <LeafletMap
@@ -250,7 +324,7 @@ export default function MapClient({ spots }: Props) {
               expanded={sheetExpanded}
               onToggle={() => setSheetExpanded((v) => !v)}
               title={sheetTitle}
-              items={visibleSpots}
+              items={sortedVisibleSpots}
               selectedId={selectedId}
               onSelect={(id) => onSelectSpot(id)}
               onLog={(id: string) => {
