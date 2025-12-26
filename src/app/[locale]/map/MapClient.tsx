@@ -15,10 +15,7 @@ type Props = {
   spots: Spot[];
 };
 
-function haversineKm(
-  a: { lat: number; lng: number },
-  b: { lat: number; lng: number }
-) {
+function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
   const dLng = ((b.lng - a.lng) * Math.PI) / 180;
@@ -37,16 +34,14 @@ export default function MapClient({ spots }: Props) {
   const [mode, setMode] = useState<Mode>("daily");
   const [activeInsight, setActiveInsight] = useState<InsightKey | null>(null);
 
-  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(
-    null
-  );
+  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [mapApi, setMapApi] = useState<LeafletLikeMap | null>(null);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [visibleIds, setVisibleIds] = useState<string[]>([]);
   const [sheetExpanded, setSheetExpanded] = useState(false);
 
-  // ✅ show “Finder spots…” while user is actively panning/zooming
+  // show “Finder spots…” while user pans/zooms (requires prop in LeafletMap)
   const [isPanning, setIsPanning] = useState(false);
 
   // --- geolocation
@@ -64,9 +59,7 @@ export default function MapClient({ spots }: Props) {
     const total = spots.length;
 
     const nearbyCount = userPos
-      ? spots.filter(
-          (s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2
-        ).length
+      ? spots.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2).length
       : 0;
 
     const seasonNowCount = Math.min(total, Math.max(0, Math.round(total * 0.35)));
@@ -127,30 +120,32 @@ export default function MapClient({ spots }: Props) {
     [mapApi, userPos]
   );
 
-  // ✅ center selection in a way that respects bottomDock (pan up after flyTo)
-const onSelectSpot = useCallback(
-  (id: string) => {
-    setSelectedId(id);
-    setSheetExpanded(false);
+  // ✅ single source of truth: select + center + lift
+  const onSelectSpot = useCallback(
+    (id: string) => {
+      setSelectedId(id);
+      setSheetExpanded(false);
 
-    const s = spotsById.get(id);
-    if (!s || !mapApi) return;
+      const s = spotsById.get(id);
+      if (!s || !mapApi) return;
 
-    const targetZoom = Math.max(mapApi.getZoom(), 14);
-    mapApi.flyTo(s.lat, s.lng, targetZoom);
+      const targetZoom = Math.max(mapApi.getZoom(), 14);
+      mapApi.flyTo(s.lat, s.lng, targetZoom);
 
-    // løft pin visuelt over peek-card
-    mapApi.panBy?.(0, -140);
-  },
-  [mapApi, spotsById]
-);
+      // lift pin visually above peek-card (requires panBy in LeafletLikeMap + onMapReady)
+      mapApi.panBy?.(0, -140);
+    },
+    [mapApi, spotsById]
+  );
 
-
-  const onQuickLog = useCallback((id: string) => {
-    setSelectedId(id);
-    setSheetExpanded(false);
-    centerSelected(id);
-  }, [centerSelected]);
+  // keep this as a stub until you wire real log flow
+  const onQuickLog = useCallback(
+    (id: string) => {
+      // for now: ensure the same selected behavior (and centering)
+      onSelectSpot(id);
+    },
+    [onSelectSpot]
+  );
 
   const sheetTitle = isPanning
     ? "Finder spots…"
@@ -177,7 +172,7 @@ const onSelectSpot = useCallback(
           onSelect={onSelectSpot}
           onMapReady={setMapApi}
           onVisibleChange={setVisibleIds}
-          onPanningChange={setIsPanning} // ✅ requires prop in LeafletMap
+          onPanningChange={setIsPanning}
         />
 
         <div className={styles.bottomDock}>
@@ -197,9 +192,7 @@ const onSelectSpot = useCallback(
               title={sheetTitle}
               items={visibleSpots}
               selectedId={selectedId}
-              onSelect={(id) => {
-                onSelectSpot(id);
-              }}
+              onSelect={onSelectSpot}
               onLog={onQuickLog}
             />
           )}
