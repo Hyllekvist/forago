@@ -1,55 +1,83 @@
-/* ===============================
-   LOG PAGE — CSS MODULE (PURE OK)
-   =============================== */
+/* src/app/[locale]/log/LogClient.module.css */
 
 .page {
-  /* theme tokens (scoped to this page) */
-  --page-bg:
-    radial-gradient(1200px 700px at 20% 0%, rgba(16,185,129,0.18), transparent 55%),
-    linear-gradient(180deg, #020c12, #020617);
-
-  --ink-strong: rgba(255, 255, 255, 0.92);
-  --ink-muted: rgba(255, 255, 255, 0.62);
-
-  --card-bg: rgba(255, 255, 255, 0.06);
-  --card-border: rgba(255, 255, 255, 0.12);
-
-  --accent-bg: rgba(16, 185, 129, 0.14);
-  --accent-border: rgba(16, 185, 129, 0.25);
-  --accent-ink: rgba(209, 250, 229, 0.95);
-
-  min-height: 100dvh;
+  /* Force this page to be its own scroll container (even if body is locked) */
+  height: 100dvh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  position: relative;
 
   padding: 22px 16px calc(110px + env(safe-area-inset-bottom));
-  background: var(--page-bg);
-  color: var(--ink-strong);
-}
 
-/* Light mode override – MUST include local class to satisfy “pure selector” */
-:global([data-theme="light"]) .page {
-  --page-bg:
-    radial-gradient(1200px 700px at 20% 0%, rgba(16,185,129,0.12), transparent 55%),
+  /* Theme tokens (default = light) */
+  --ink: rgba(10, 18, 26, 0.92);
+  --muted: rgba(10, 18, 26, 0.60);
+  --hair: rgba(10, 18, 26, 0.10);
+
+  --card: rgba(255, 255, 255, 0.70);
+  --card2: rgba(255, 255, 255, 0.55);
+  --cardBorder: rgba(10, 18, 26, 0.10);
+
+  --shadow: 0 16px 46px rgba(2, 6, 23, 0.10);
+  --shadow2: 0 10px 26px rgba(2, 6, 23, 0.10);
+
+  --accent: rgba(16, 185, 129, 1);
+  --accentSoft: rgba(16, 185, 129, 0.14);
+  --accentBorder: rgba(16, 185, 129, 0.22);
+
+  background:
+    radial-gradient(1200px 700px at 20% 0%, rgba(16, 185, 129, 0.14), transparent 55%),
     linear-gradient(180deg, #f6fbfb, #eef5f6);
-
-  --ink-strong: rgba(10, 18, 26, 0.92);
-  --ink-muted: rgba(10, 18, 26, 0.60);
-
-  --card-bg: rgba(255, 255, 255, 0.82);
-  --card-border: rgba(10, 18, 26, 0.10);
-
-  --accent-bg: rgba(16, 185, 129, 0.18);
-  --accent-border: rgba(16, 185, 129, 0.30);
-  --accent-ink: #065f46;
+  color: var(--ink);
 }
 
-/* ---------- Header ---------- */
+/* Respect your app theme attribute if you have it */
+:global(html[data-theme="dark"]) .page,
+:global(body[data-theme="dark"]) .page {
+  --ink: rgba(255, 255, 255, 0.92);
+  --muted: rgba(255, 255, 255, 0.66);
+  --hair: rgba(255, 255, 255, 0.10);
+
+  --card: rgba(255, 255, 255, 0.06);
+  --card2: rgba(255, 255, 255, 0.05);
+  --cardBorder: rgba(255, 255, 255, 0.12);
+
+  --shadow: 0 18px 46px rgba(0, 0, 0, 0.30);
+  --shadow2: 0 10px 26px rgba(0, 0, 0, 0.26);
+
+  --accentSoft: rgba(16, 185, 129, 0.14);
+  --accentBorder: rgba(16, 185, 129, 0.25);
+
+  background:
+    radial-gradient(1200px 700px at 20% 0%, rgba(16, 185, 129, 0.18), transparent 55%),
+    linear-gradient(180deg, rgba(2, 12, 18, 1), rgba(2, 6, 23, 1));
+}
+
+/* If you don't set a theme attr, still look good with system dark mode */
+@media (prefers-color-scheme: dark) {
+  .page {
+    --ink: rgba(255, 255, 255, 0.92);
+    --muted: rgba(255, 255, 255, 0.66);
+    --hair: rgba(255, 255, 255, 0.10);
+
+    --card: rgba(255, 255, 255, 0.06);
+    --card2: rgba(255, 255, 255, 0.05);
+    --cardBorder: rgba(255, 255, 255, 0.12);
+
+    --shadow: 0 18px 46px rgba(0, 0, 0, 0.30);
+    --shadow2: 0 10px 26px rgba(0, 0, 0, 0.26);
+
+    --accentSoft: rgba(16, 185, 129, 0.14);
+    --accentBorder: rgba(16, 185, 129, 0.25);
+
+    background:
+      radial-gradient(1200px 700px at 20% 0%, rgba(16, 185, 129, 0.18), transparent 55%),
+      linear-gradient(180deg, rgba(2, 12, 18, 1), rgba(2, 6, 23, 1));
+  }
+}
 
 .header {
   max-width: 920px;
-  margin: 0 auto 18px;
+  margin: 0 auto 14px;
 }
 
 .titleRow {
@@ -68,51 +96,50 @@
 
 .sub {
   margin: 8px 0 0;
-  color: var(--ink-muted);
+  color: var(--muted);
 }
 
-/* ---------- Total card ---------- */
-
 .totalCard {
-  min-width: 86px;
+  flex: 0 0 auto;
+  min-width: 92px;
   padding: 10px 12px;
   border-radius: 14px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.25);
+  background: var(--card2);
+  border: 1px solid var(--cardBorder);
+  box-shadow: var(--shadow2);
   text-align: right;
+
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .totalLabel {
   font-size: 12px;
-  color: var(--ink-muted);
+  color: var(--muted);
 }
 
 .totalValue {
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 850;
 }
-
-/* ---------- List ---------- */
 
 .list {
   max-width: 920px;
   margin: 0 auto;
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
-
-/* ---------- Card ---------- */
 
 .card {
   border-radius: 18px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.25);
+  background: var(--card);
+  border: 1px solid var(--cardBorder);
+  box-shadow: var(--shadow);
   padding: 14px 14px 12px;
-}
 
-/* ---------- Card top ---------- */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
 
 .cardTop {
   display: flex;
@@ -128,32 +155,29 @@
 
 .name {
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 850;
   text-transform: lowercase;
 }
 
 .sciname {
   margin-top: 3px;
   font-size: 13px;
-  color: var(--ink-muted);
+  color: var(--muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  max-width: 100%;
 }
-
-/* ---------- Badge ---------- */
 
 .badge {
   flex: 0 0 auto;
   font-size: 12px;
   padding: 6px 10px;
   border-radius: 999px;
-  background: var(--accent-bg);
-  border: 1px solid var(--accent-border);
-  color: var(--accent-ink);
+  background: var(--accentSoft);
+  border: 1px solid var(--accentBorder);
+  color: color-mix(in srgb, var(--accent) 35%, var(--ink));
 }
-
-/* ---------- Meta ---------- */
 
 .metaGrid {
   display: grid;
@@ -166,15 +190,31 @@
   justify-content: space-between;
   gap: 10px;
   padding-top: 8px;
-  border-top: 1px solid var(--card-border);
+  border-top: 1px solid var(--hair);
 }
 
 .metaKey {
-  color: var(--ink-muted);
+  color: var(--muted);
   font-size: 13px;
 }
 
 .metaVal {
   font-size: 13px;
-  color: var(--ink-strong);
+  color: var(--ink);
+}
+
+/* Small polish */
+.card:hover {
+  transform: translateY(-1px);
+  transition: transform 120ms ease;
+}
+
+@media (max-width: 420px) {
+  .h1 {
+    font-size: 30px;
+  }
+
+  .totalCard {
+    min-width: 84px;
+  }
 }
