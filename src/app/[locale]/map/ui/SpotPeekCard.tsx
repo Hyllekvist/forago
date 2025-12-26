@@ -9,6 +9,7 @@ type Props = {
   spot: Spot;
   mode: "daily" | "forage";
   userPos: { lat: number; lng: number } | null;
+  counts?: { total: number; qtr: number } | null;
   isLogging?: boolean;
   logOk?: boolean;
   onClose: () => void;
@@ -36,10 +37,7 @@ function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
   const s2 = Math.sin(dLng / 2);
   const q =
     s1 * s1 +
-    Math.cos((a.lat * Math.PI) / 180) *
-      Math.cos((b.lat * Math.PI) / 180) *
-      s2 *
-      s2;
+    Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * s2 * s2;
   return 2 * R * Math.asin(Math.sqrt(q));
 }
 
@@ -79,6 +77,7 @@ export function SpotPeekCard({
   spot,
   mode,
   userPos,
+  counts,
   isLogging,
   logOk,
   onClose,
@@ -89,7 +88,7 @@ export function SpotPeekCard({
   const label = mode === "forage" ? "Muligt fund" : spot.species_slug ? "Spot" : "Lokation";
 
   const distance = useMemo(() => formatDistance(userPos, spot), [userPos, spot.lat, spot.lng]);
-  const freshness = useMemo(() => formatFreshness((spot as any).last_seen_at ?? null), [spot]);
+  const freshness = useMemo(() => formatFreshness(spot.last_seen_at ?? null), [spot.last_seen_at]);
 
   const mapsHref = useMemo(() => {
     const q = encodeURIComponent(`${spot.lat},${spot.lng}`);
@@ -97,19 +96,13 @@ export function SpotPeekCard({
     return `https://www.google.com/maps/search/?api=1&query=${q}`;
   }, [spot.lat, spot.lng]);
 
-  const logLabel = logOk ? "✅ Logget" : isLogging ? "Logger…" : "Log fund";
+  const logLabel = logOk ? "Logget ✅" : isLogging ? "Logger…" : "Log fund";
 
   return (
     <section className={styles.card} role="dialog" aria-label="Selected spot">
       <div className={styles.bg} aria-hidden />
 
-      <button
-        className={styles.close}
-        onClick={onClose}
-        aria-label="Close"
-        type="button"
-        disabled={!!isLogging}
-      >
+      <button className={styles.close} onClick={onClose} aria-label="Close" type="button">
         <span aria-hidden>✕</span>
       </button>
 
@@ -123,10 +116,20 @@ export function SpotPeekCard({
             <span className={styles.kicker}>{label}</span>
             <span className={styles.dot} aria-hidden />
             <span className={styles.meta}>{distance}</span>
+
             {freshness ? (
               <>
                 <span className={styles.dot} aria-hidden />
                 <span className={styles.meta}>{freshness}</span>
+              </>
+            ) : null}
+
+            {counts ? (
+              <>
+                <span className={styles.dot} aria-hidden />
+                <span className={styles.meta}>
+                  {counts.total} logs · {counts.qtr} qtr
+                </span>
               </>
             ) : null}
           </div>
@@ -137,22 +140,15 @@ export function SpotPeekCard({
             <span className={styles.pill}>
               {spot.species_slug ? `#${spot.species_slug}` : "#unclassified"}
             </span>
-            <span className={styles.pillAccent}>{mode === "forage" ? "Peak potential" : "I nærheden"}</span>
+            <span className={styles.pillAccent}>
+              {mode === "forage" ? "Peak potential" : "I nærheden"}
+            </span>
           </div>
         </div>
       </header>
 
       <div className={styles.actions}>
-        <a
-          className={styles.primary}
-          href={mapsHref}
-          target="_blank"
-          rel="noreferrer"
-          aria-disabled={isLogging ? "true" : "false"}
-          onClick={(e) => {
-            if (isLogging) e.preventDefault();
-          }}
-        >
+        <a className={styles.primary} href={mapsHref} target="_blank" rel="noreferrer">
           <span className={styles.primaryIcon} aria-hidden>
             ➜
           </span>
@@ -164,11 +160,12 @@ export function SpotPeekCard({
           onClick={() => void onLog()}
           type="button"
           disabled={!!isLogging || !!logOk}
+          aria-busy={!!isLogging}
         >
           {logLabel}
         </button>
 
-        <button className={styles.ghost} onClick={onLearn} type="button" disabled={!!isLogging}>
+        <button className={styles.ghost} onClick={onLearn} type="button">
           Lær mere
         </button>
       </div>
