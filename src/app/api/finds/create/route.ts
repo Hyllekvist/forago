@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 
 type Body = {
+  spot_id?: string | null;
   species_id?: string | null;
   species_slug?: string | null;
   observed_at?: string | null;
@@ -18,8 +19,7 @@ function asText(v: unknown) {
 }
 
 function asIsoDateOrNow(v: unknown) {
-  // Hvis din DB kolonne er DATE, er YYYY-MM-DD bedst.
-  // Hvis den er TIMESTAMP, accepterer den også YYYY-MM-DD fint.
+  // hvis finds.observed_at er DATE → YYYY-MM-DD
   const s = asText(v);
   if (!s) return new Date().toISOString().slice(0, 10);
   const t = Date.parse(s);
@@ -27,19 +27,14 @@ function asIsoDateOrNow(v: unknown) {
   return new Date(t).toISOString().slice(0, 10);
 }
 
-function normalizeVisibility(
-  v: unknown
-): "private" | "friends" | "public_aggregate" {
-  return v === "friends" || v === "public_aggregate" ? v : "private";
-}
-
-function normalizeGeoPrecision(v: unknown): 1 | 2 | 5 | 10 {
-  return v === 2 || v === 5 || v === 10 ? v : 1;
-}
-
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Body;
+
+    const spot_id = asText(body?.spot_id);
+    if (!spot_id) {
+      return NextResponse.json({ ok: false, error: "Missing spot_id" }, { status: 400 });
+    }
 
     const species_id_in = asText(body?.species_id);
     const species_slug_in = asText(body?.species_slug).toLowerCase();
@@ -53,48 +48,68 @@ export async function POST(req: Request) {
 
     const supabase = await supabaseServer();
 
-    // auth user
-    const { data: auth } = await supabase.auth.getUser();
+    // auth user (du har FK til profiles.user_id, så denne bør normalt være sat)
+    const { data: auth, error: authErr } = await supabase.auth.getUser();
+    if (authErr) {
+      return NextResponse.json({ ok: false, error: authErr.message }, { status: 401 });
+    }
     const user_id = auth?.user?.id ?? null;
+    if (!user_id) {
+      return NextResponse.json({ ok: false, error: "Not authenticated" }, { status: 401 });
+    }
 
     // resolve species_id
-    let species_id: string | null = species_id_in || null;
+    let species_id = species_id_in || null;
 
     if (!species_id) {
       const { data: sp, error: spErr } = await supabase
         .from("species")
-        .select("id")
+        .select("id, slug")
         .eq("slug", species_slug_in)
         .maybeSingle();
 
       if (spErr) {
         return NextResponse.json({ ok: false, error: spErr.message }, { status: 500 });
       }
-
       if (!sp?.id) {
         return NextResponse.json(
           { ok: false, error: `Unknown species_slug: ${species_slug_in}` },
           { status: 400 }
         );
       }
-
       species_id = sp.id;
     }
 
+    // normalize optional fields
     const observed_at = asIsoDateOrNow(body?.observed_at);
     const notes = typeof body?.notes === "string" ? body.notes : null;
 
-    const visibility = normalizeVisibility(body?.visibility);
-    const country = typeof body?.country === "string" ? body.country : "DK";
-    const geo_precision_km = normalizeGeoPrecision(body?.geo_precision_km);
+    const visibility =
+      body?.visibility === "private" ||
+      body?.visibility === "friends" ||
+      body?.visibility === "public_aggregate"
+        ? body.visibility
+        : "private";
 
-    // 🔥 ALDRIG NULL — DB kræver NOT NULL
+    const country = typeof body?.country === "string" ? body.country : "DK";
+
+    const geo_precision_km =
+      body?.geo_precision_km === 1 ||
+      body?.geo_precision_km === 2 ||
+      body?.geo_precision_km === 5 ||
+      body?.geo_precision_km === 10
+        ? body.geo_precision_km
+        : 1;
+
+    // IMPORTANT: photo_urls er NOT NULL hos dig → default til []
     const photo_urls = Array.isArray(body?.photo_urls) ? body.photo_urls : [];
 
+    // insert
     const { data, error } = await supabase
       .from("finds")
       .insert({
         user_id,
+        spot_id,
         species_id,
         observed_at,
         notes,
@@ -103,7 +118,7 @@ export async function POST(req: Request) {
         geo_precision_km,
         photo_urls,
       })
-      .select("id, user_id, species_id, observed_at, created_at, photo_urls")
+      .select("id, user_id, spot_id, species_id, observed_at, created_at")
       .single();
 
     if (error) {
