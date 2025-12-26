@@ -145,14 +145,6 @@ const onSelectSpot = useCallback(
   [mapApi, spotsById]
 );
 
-  const onSelectSpot = useCallback(
-    (id: string) => {
-      setSelectedId(id);
-      setSheetExpanded(false);
-      centerSelected(id);
-    },
-    [centerSelected]
-  );
 
   const onQuickLog = useCallback((id: string) => {
     setSelectedId(id);
