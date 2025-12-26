@@ -5,11 +5,12 @@
    --------------------------------------------------------- */
 
 .page {
-  min-height: 100svh;
+height: 100svh;
   background: var(--bg);
   color: var(--ink);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 /* Map-området fylder resten under top UI (topbar + insights ligger over map via DOM)
