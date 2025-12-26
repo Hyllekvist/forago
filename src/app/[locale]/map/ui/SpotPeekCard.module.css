@@ -462,3 +462,13 @@
     height: 38px;
   }
 }
+
+/* SpotPeekCard.module.css */
+.success {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(16,185,129,0.15);
+  color: rgb(16,185,129);
+  font-weight: 600;
+  text-align: center;
+}
