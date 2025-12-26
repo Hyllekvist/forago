@@ -16,10 +16,7 @@ type Props = {
   spots: Spot[];
 };
 
-function haversineKm(
-  a: { lat: number; lng: number },
-  b: { lat: number; lng: number }
-) {
+function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
   const dLng = ((b.lng - a.lng) * Math.PI) / 180;
@@ -38,31 +35,25 @@ export default function MapClient({ spots }: Props) {
   const [mode, setMode] = useState<Mode>("daily");
   const [activeInsight, setActiveInsight] = useState<InsightKey | null>(null);
 
-  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(
-    null
-  );
+  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [mapApi, setMapApi] = useState<LeafletLikeMap | null>(null);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [visibleIds, setVisibleIds] = useState<string[]>([]);
   const [sheetExpanded, setSheetExpanded] = useState(false);
 
-  // UX: vis "Finder spots…" mens man pan/zoomer (kræver at LeafletMap kalder onPanningChange)
+  // ✅ show “Finder spots…” while user is actively panning/zooming
   const [isPanning, setIsPanning] = useState(false);
 
-  // Log feedback
-  const [logState, setLogState] = useState<{
-    spotId: string | null;
-    status: "idle" | "saving" | "saved" | "error";
-    msg?: string;
-  }>({ spotId: null, status: "idle" });
+  // ✅ logging state
+  const [isLogging, setIsLogging] = useState(false);
+  const [logError, setLogError] = useState<string | null>(null);
 
   // --- geolocation
   useEffect(() => {
     if (!("geolocation" in navigator)) return;
     navigator.geolocation.getCurrentPosition(
-      (pos) =>
-        setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (pos) => setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
       () => {},
       { enableHighAccuracy: true, timeout: 7000, maximumAge: 60_000 }
     );
@@ -73,16 +64,10 @@ export default function MapClient({ spots }: Props) {
     const total = spots.length;
 
     const nearbyCount = userPos
-      ? spots.filter(
-          (s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2
-        ).length
+      ? spots.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2).length
       : 0;
 
-    // placeholders indtil vi har seasonality model
-    const seasonNowCount = Math.min(
-      total,
-      Math.max(0, Math.round(total * 0.35))
-    );
+    const seasonNowCount = Math.min(total, Math.max(0, Math.round(total * 0.35)));
     const peakCount = Math.min(total, Math.max(0, Math.round(total * 0.12)));
 
     return {
@@ -118,7 +103,6 @@ export default function MapClient({ spots }: Props) {
         .map((x) => x.s);
     }
 
-    // MVP: season_now/peak filtrerer ikke hårdt endnu
     return spots;
   }, [spots, activeInsight, userPos]);
 
@@ -126,7 +110,6 @@ export default function MapClient({ spots }: Props) {
     setMode((m) => (m === "daily" ? "forage" : "daily"));
     setSheetExpanded(false);
     setSelectedId(null);
-    setActiveInsight(null);
   }, []);
 
   const onPickInsight = useCallback(
@@ -142,7 +125,7 @@ export default function MapClient({ spots }: Props) {
     [mapApi, userPos]
   );
 
-  // ✅ Når man vælger et spot: zoom ind + løft pin visuelt over bottomDock
+  // ✅ selection + center (pan up so marker sits above peek + bottom nav)
   const onSelectSpot = useCallback(
     (id: string) => {
       setSelectedId(id);
@@ -154,56 +137,59 @@ export default function MapClient({ spots }: Props) {
       const targetZoom = Math.max(mapApi.getZoom(), 14);
       mapApi.flyTo(s.lat, s.lng, targetZoom);
 
-      // Hvis du har panBy i LeafletLikeMap, så løft markeren lidt op
+      // lift marker a bit visually (Leaflet y+ is down)
       mapApi.panBy?.(0, -140);
     },
     [mapApi, spotsById]
   );
 
-  // ✅ Log fund med synlig feedback + fejl
-  const onQuickLog = useCallback(async (spotId: string) => {
+  // ✅ LOG selected (guards against null, and handles TS)
+  const onLogSelected = useCallback(async () => {
+    if (!selectedSpot) return;
+
+    // This assumes your Spot includes species_id. If not, adjust to your API shape.
+    const speciesId = (selectedSpot as any)?.species_id;
+    if (!speciesId) {
+      setLogError("Mangler species_id på dette spot");
+      return;
+    }
+
     try {
-      setLogState({ spotId, status: "saving" });
+      setIsLogging(true);
+      setLogError(null);
 
-      // Du kan skifte endpoint senere – her er det “ren” API flow.
-      await fetch("/api/finds/create", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    species_id: selectedSpot.species_id,
-    observed_at: new Date().toISOString(),
-    visibility: "private",
-  }),
-});
+      const res = await fetch("/api/finds/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          species_id: speciesId,
+          observed_at: new Date().toISOString(),
+          visibility: "private",
+        }),
+      });
 
-      const json = await res.json().catch(() => ({}));
-
+      const json = await res.json();
       if (!res.ok || !json?.ok) {
-        console.error("[log] failed", res.status, json);
-        setLogState({
-          spotId,
-          status: "error",
-          msg: json?.error ?? `HTTP ${res.status}`,
-        });
-        return;
+        throw new Error(json?.error ?? "Kunne ikke logge fund");
       }
 
-      setLogState({ spotId, status: "saved" });
-
-      // UX: luk peek card efter success (kan fjernes)
-      setTimeout(() => {
-        setSelectedId(null);
-        setLogState({ spotId: null, status: "idle" });
-      }, 650);
+      // UX: close peek on success
+      setSelectedId(null);
     } catch (e: any) {
-      console.error("[log] exception", e);
-      setLogState({
-        spotId,
-        status: "error",
-        msg: e?.message ?? "Unknown error",
-      });
+      setLogError(e?.message ?? "Ukendt fejl");
+    } finally {
+      setIsLogging(false);
     }
-  }, []);
+  }, [selectedSpot]);
+
+  const onQuickLog = useCallback(
+    (id: string) => {
+      // keep behavior consistent: select then log from selected context
+      onSelectSpot(id);
+      // logging is via button (onLogSelected). If you want auto-log, call onLogSelected after a tick.
+    },
+    [onSelectSpot]
+  );
 
   const sheetTitle = isPanning
     ? "Finder spots…"
@@ -215,12 +201,7 @@ export default function MapClient({ spots }: Props) {
     <div className={styles.page}>
       <MapTopbar mode={mode} onToggleMode={onToggleMode} />
 
-      <InsightStrip
-        mode={mode}
-        active={activeInsight}
-        insights={insights}
-        onPick={onPickInsight}
-      />
+      <InsightStrip mode={mode} active={activeInsight} insights={insights} onPick={onPickInsight} />
 
       <div className={styles.mapShell}>
         <LeafletMap
@@ -230,46 +211,19 @@ export default function MapClient({ spots }: Props) {
           onSelect={onSelectSpot}
           onMapReady={setMapApi}
           onVisibleChange={setVisibleIds}
-          // kræver at LeafletMap implementerer det – ellers fjern linjen
           onPanningChange={setIsPanning}
         />
 
         <div className={styles.bottomDock}>
           {selectedSpot ? (
-            <>
-              <SpotPeekCard
-                spot={selectedSpot}
-                mode={mode}
-                userPos={userPos}
-                onClose={() => setSelectedId(null)}
-                onLog={() => void onQuickLog(selectedSpot.id)}
-                onLearn={() => setSelectedId(null)}
-              />
-
-              {/* minimal feedback overlay (kun når peek er åbent) */}
-              {logState.spotId === selectedSpot.id &&
-              logState.status !== "idle" ? (
-                <div
-                  style={{
-                    marginTop: 8,
-                    padding: "10px 12px",
-                    borderRadius: 14,
-                    border: "1px solid var(--line)",
-                    background: "color-mix(in srgb, var(--panel) 82%, transparent)",
-                    color: "var(--muted)",
-                    fontSize: 12,
-                    pointerEvents: "auto",
-                  }}
-                  role="status"
-                  aria-live="polite"
-                >
-                  {logState.status === "saving" && "Gemmer…"}
-                  {logState.status === "saved" && "Gemt ✅"}
-                  {logState.status === "error" &&
-                    `Kunne ikke gemme: ${logState.msg ?? "ukendt fejl"}`}
-                </div>
-              ) : null}
-            </>
+            <SpotPeekCard
+              spot={selectedSpot}
+              mode={mode}
+              userPos={userPos}
+              onClose={() => setSelectedId(null)}
+              onLog={onLogSelected}
+              onLearn={() => setSelectedId(null)}
+            />
           ) : (
             <MapSheet
               mode={mode}
@@ -279,10 +233,14 @@ export default function MapClient({ spots }: Props) {
               items={visibleSpots}
               selectedId={selectedId}
               onSelect={(id) => onSelectSpot(id)}
-              onLog={(id) => void onQuickLog(id)}
+              onLog={onQuickLog}
             />
           )}
         </div>
+
+        {/* optional: tiny debug for logging */}
+        {logError ? <div className={styles.toastError}>{logError}</div> : null}
+        {isLogging ? <div className={styles.toastInfo}>Logger fund…</div> : null}
       </div>
     </div>
   );
