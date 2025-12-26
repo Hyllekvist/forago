@@ -1,7 +1,6 @@
-// src/app/[locale]/map/ui/SpotPeekCard.tsx
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import styles from "./SpotPeekCard.module.css";
 import type { Spot } from "../LeafletMap";
 
@@ -9,12 +8,20 @@ type Props = {
   spot: Spot;
   mode: "daily" | "forage";
   userPos: { lat: number; lng: number } | null;
-  counts?: { total: number; qtr: number } | null;
-  isLogging?: boolean;
-  logOk?: boolean;
   onClose: () => void;
   onLog: () => void;
   onLearn: () => void;
+
+  // optional fra MapClient (hvis du allerede har dem)
+  isLogging?: boolean;
+  logOk?: boolean;
+};
+
+type SpotStats = {
+  spot_id: string;
+  total_count: number;
+  last_14d_count: number;
+  last_30d_count: number;
 };
 
 function emojiForSlug(slug?: string | null) {
@@ -37,7 +44,10 @@ function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
   const s2 = Math.sin(dLng / 2);
   const q =
     s1 * s1 +
-    Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * s2 * s2;
+    Math.cos((a.lat * Math.PI) / 180) *
+      Math.cos((b.lat * Math.PI) / 180) *
+      s2 *
+      s2;
   return 2 * R * Math.asin(Math.sqrt(q));
 }
 
@@ -77,18 +87,21 @@ export function SpotPeekCard({
   spot,
   mode,
   userPos,
-  counts,
-  isLogging,
-  logOk,
   onClose,
   onLog,
   onLearn,
+  isLogging,
+  logOk,
 }: Props) {
   const emoji = emojiForSlug(spot.species_slug);
   const label = mode === "forage" ? "Muligt fund" : spot.species_slug ? "Spot" : "Lokation";
 
   const distance = useMemo(() => formatDistance(userPos, spot), [userPos, spot.lat, spot.lng]);
-  const freshness = useMemo(() => formatFreshness(spot.last_seen_at ?? null), [spot.last_seen_at]);
+
+  const freshness = useMemo(
+    () => formatFreshness(spot.last_seen_at ?? null),
+    [spot.last_seen_at]
+  );
 
   const mapsHref = useMemo(() => {
     const q = encodeURIComponent(`${spot.lat},${spot.lng}`);
@@ -96,7 +109,36 @@ export function SpotPeekCard({
     return `https://www.google.com/maps/search/?api=1&query=${q}`;
   }, [spot.lat, spot.lng]);
 
-  const logLabel = logOk ? "Logget ✅" : isLogging ? "Logger…" : "Log fund";
+  // ✅ fetch stats
+  const [stats, setStats] = useState<SpotStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    setStats(null);
+    setStatsLoading(true);
+
+    fetch(`/api/spots/${encodeURIComponent(spot.id)}/stats`)
+      .then((r) => r.json())
+      .then((j) => {
+        if (!alive) return;
+        if (j?.ok) setStats(j.stats);
+      })
+      .finally(() => {
+        if (!alive) return;
+        setStatsLoading(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [spot.id]);
+
+  const socialLine = statsLoading
+    ? "Henter aktivitet…"
+    : stats
+      ? `${stats.total_count} logs · ${stats.last_14d_count} sidste 14 dage`
+      : "Ingen aktivitet endnu";
 
   return (
     <section className={styles.card} role="dialog" aria-label="Selected spot">
@@ -116,20 +158,10 @@ export function SpotPeekCard({
             <span className={styles.kicker}>{label}</span>
             <span className={styles.dot} aria-hidden />
             <span className={styles.meta}>{distance}</span>
-
             {freshness ? (
               <>
                 <span className={styles.dot} aria-hidden />
                 <span className={styles.meta}>{freshness}</span>
-              </>
-            ) : null}
-
-            {counts ? (
-              <>
-                <span className={styles.dot} aria-hidden />
-                <span className={styles.meta}>
-                  {counts.total} logs · {counts.qtr} qtr
-                </span>
               </>
             ) : null}
           </div>
@@ -144,14 +176,15 @@ export function SpotPeekCard({
               {mode === "forage" ? "Peak potential" : "I nærheden"}
             </span>
           </div>
+
+          {/* ✅ social proof */}
+          <div className={styles.social}>{socialLine}</div>
         </div>
       </header>
 
       <div className={styles.actions}>
         <a className={styles.primary} href={mapsHref} target="_blank" rel="noreferrer">
-          <span className={styles.primaryIcon} aria-hidden>
-            ➜
-          </span>
+          <span className={styles.primaryIcon} aria-hidden>➜</span>
           Navigér
         </a>
 
@@ -159,10 +192,9 @@ export function SpotPeekCard({
           className={styles.secondary}
           onClick={() => void onLog()}
           type="button"
-          disabled={!!isLogging || !!logOk}
-          aria-busy={!!isLogging}
+          disabled={!!isLogging}
         >
-          {logLabel}
+          {logOk ? "✅ Logget" : isLogging ? "Logger…" : "Log fund"}
         </button>
 
         <button className={styles.ghost} onClick={onLearn} type="button">
@@ -170,7 +202,9 @@ export function SpotPeekCard({
         </button>
       </div>
 
-      <div className={styles.hint}>Tip: Tryk på flere pins for at browse. Zoom ind for flere detaljer.</div>
+      <div className={styles.hint}>
+        Tip: Tryk på flere pins for at browse. Zoom ind for flere detaljer.
+      </div>
     </section>
   );
 }
