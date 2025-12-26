@@ -1,25 +1,48 @@
-.btn{
-  width: 38px;
-  height: 34px;
-  border-radius: var(--r-md);
+.toggle {
+  width: 44px;
+  height: 28px;
+  padding: 2px;
+  border-radius: 999px;
 
-  border: var(--stroke) solid var(--line);
-  background: var(--panel);
-  color: var(--ink);
+  background: color-mix(in srgb, var(--panel) 85%, transparent);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(10px);
 
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
 
-  cursor:pointer;
+  cursor: pointer;
+  transition: background 180ms ease, border-color 180ms ease;
 }
 
-.btn:hover{
-  background: var(--tapBg);
+.toggle[data-theme="light"] {
+  justify-content: flex-end;
+}
+
+.knob {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+
+  background: var(--panel2);
+  color: var(--ink);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 13px;
+  line-height: 1;
+
+  box-shadow: 0 4px 12px rgba(0,0,0,.25);
+  transition: transform 180ms ease, background 180ms ease;
+}
+
+.toggle:hover {
   border-color: var(--tapLine);
 }
 
-.btn:focus-visible{
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
+.toggle:active .knob {
+  transform: scale(0.92);
 }
