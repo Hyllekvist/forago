@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import styles from "./LogClient.module.css";
 
 export type FindRow = {
@@ -15,18 +16,13 @@ export type FindRow = {
     slug: string;
     primary_group: string;
     scientific_name: string | null;
-  } | null;
+  } | null; // 👈 vigtigt: kan være null
 };
 
-function prettyVisibility(v?: string | null) {
-  if (!v) return "—";
-  if (v === "public_aggregate") return "Offentlig (aggregat)";
-  if (v === "public") return "Offentlig";
-  if (v === "private") return "Privat";
-  return v;
-}
-
 export default function LogClient({ initial }: { initial: FindRow[] }) {
+  const params = useParams<{ locale: string }>();
+  const locale = (params?.locale as string) || "dk";
+
   return (
     <main className={styles.page}>
       <header className={styles.header}>
@@ -36,18 +32,25 @@ export default function LogClient({ initial }: { initial: FindRow[] }) {
             <p className={styles.sub}>Dine seneste logs.</p>
           </div>
 
-          <div className={styles.totalCard} aria-label="Total logs">
+          <div className={styles.totalCard}>
             <div className={styles.totalLabel}>Total</div>
             <div className={styles.totalValue}>{initial.length}</div>
           </div>
         </div>
       </header>
 
-      <section className={styles.list} aria-label="Finds list">
+      <section className={styles.list}>
         {initial.map((f) => {
-          const slug = f.species?.slug ?? "unclassified";
+          const slug = f.species?.slug ?? "ukendt";
           const group = f.species?.primary_group ?? "—";
           const sci = f.species?.scientific_name ?? null;
+
+          const visLabel =
+            f.visibility === "public_aggregate"
+              ? "Offentlig (aggregat)"
+              : f.visibility === "public"
+                ? "Offentlig"
+                : "Privat";
 
           return (
             <article key={f.id} className={styles.card}>
@@ -57,7 +60,7 @@ export default function LogClient({ initial }: { initial: FindRow[] }) {
                   {sci ? <div className={styles.sciname}>{sci}</div> : null}
                 </div>
 
-                <span className={styles.badge}>{prettyVisibility(f.visibility)}</span>
+                <span className={styles.badge}>{visLabel}</span>
               </div>
 
               <div className={styles.metaGrid}>
@@ -84,17 +87,13 @@ export default function LogClient({ initial }: { initial: FindRow[] }) {
 
               <div className={styles.cardActions}>
                 <Link
-                  className={styles.cta}
-                  href={`/map?spot=${encodeURIComponent(f.spot_id)}`}
+                  className={styles.primaryBtn}
+                  href={`/${locale}/map?spot=${encodeURIComponent(f.spot_id)}`}
                 >
                   Vis på kort
                 </Link>
 
-                <button
-                  className={styles.secondary}
-                  type="button"
-                  onClick={() => alert("Tilføj foto (kommer)")}
-                >
+                <button className={styles.secondaryBtn} type="button" disabled>
                   Tilføj foto
                 </button>
               </div>
