@@ -128,20 +128,22 @@ export default function MapClient({ spots }: Props) {
   );
 
   // ✅ center selection in a way that respects bottomDock (pan up after flyTo)
-  const centerSelected = useCallback(
-    (id: string) => {
-      const s = spotsById.get(id);
-      if (!s || !mapApi) return;
+const onSelectSpot = useCallback(
+  (id: string) => {
+    setSelectedId(id);
+    setSheetExpanded(false);
 
-      const targetZoom = Math.max(mapApi.getZoom(), 14);
-      mapApi.flyTo(s.lat, s.lng, targetZoom);
+    const s = spotsById.get(id);
+    if (!s || !mapApi) return;
 
-      // lift the pin up so it sits “above” the bottomDock/peek
-      // tweak -100..-180 depending on your card height
-      mapApi.panBy?(0, -140);
-    },
-    [mapApi, spotsById]
-  );
+    const targetZoom = Math.max(mapApi.getZoom(), 14);
+    mapApi.flyTo(s.lat, s.lng, targetZoom);
+
+    // løft pin visuelt over peek-card
+    mapApi.panBy?.(0, -140);
+  },
+  [mapApi, spotsById]
+);
 
   const onSelectSpot = useCallback(
     (id: string) => {
