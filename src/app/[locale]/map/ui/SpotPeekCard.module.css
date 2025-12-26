@@ -384,3 +384,81 @@
     grid-column: auto;
   }
 }
+/* --- Compact tuning (append nederst i SpotPeekCard.module.css) --- */
+
+/* mindre padding + lidt mindre radius */
+.card{
+  padding: 10px;
+  border-radius: 18px; /* hvis var(--r-lg) er høj */
+}
+
+/* badge + close lidt mindre */
+.badge{
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+}
+.badgeEmoji{ font-size: 18px; }
+
+.close{
+  width: 34px;
+  height: 34px;
+  border-radius: 13px;
+}
+
+/* titel/kicker mindre */
+.title{
+  font-size: 16px;
+}
+.kickerRow{
+  font-size: 10px;
+}
+
+/* pills mindre */
+.pill,
+.pillAccent{
+  height: 28px;
+  padding: 0 10px;
+  font-size: 11px;
+}
+
+/* knapper: lavere + mindre tekst */
+.primary,
+.secondary,
+.ghost{
+  height: 40px;
+  border-radius: 14px;
+  font-size: 13px;
+}
+
+/* primary icon mindre */
+.primaryIcon{
+  width: 22px;
+  height: 22px;
+  border-radius: 9px;
+}
+
+/* hint mere tight */
+.hint{
+  margin-top: 8px;
+  padding-top: 8px;
+  font-size: 11px;
+}
+
+/* lidt mindre vertikal luft overall */
+.actions{
+  margin-top: 10px;
+  gap: 8px;
+}
+
+/* hvis du vil beholde 2-col knapper på mobile, så fjern din max-width:420 rule.
+   Alternativ: keep 2-col ved at override her: */
+@media (max-width: 420px){
+  .actions{
+    grid-template-columns: 1fr 1fr;
+  }
+  .ghost{
+    grid-column: 1 / -1;
+    height: 38px;
+  }
+}
