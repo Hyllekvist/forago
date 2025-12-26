@@ -177,13 +177,14 @@ export default function MapClient({ spots }: Props) {
 
         <div className={styles.bottomDock}>
           {selectedSpot ? (
-            <SpotPeekCard
-              spot={selectedSpot}
-              mode={mode}
-              onClose={() => setSelectedId(null)}
-              onLog={() => onQuickLog(selectedSpot.id)}
-              onLearn={() => setSelectedId(null)}
-            />
+          <SpotPeekCard
+  spot={selectedSpot}
+  mode={mode}
+  userPos={userPos}              // ✅ add
+  onClose={() => setSelectedId(null)}
+  onLog={() => onQuickLog(selectedSpot.id)}
+  onLearn={() => setSelectedId(null)}
+/>
           ) : (
             <MapSheet
               mode={mode}
