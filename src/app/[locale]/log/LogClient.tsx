@@ -2,7 +2,7 @@
 
 import styles from "./LogClient.module.css";
 
-type FindRow = {
+export type FindRow = {
   id: string;
   created_at: string;
   observed_at: string;
@@ -52,9 +52,7 @@ export default function LogClient({ initial }: { initial: FindRow[] }) {
                 </div>
               </div>
 
-              <span className={styles.badge}>
-                {f.species.primary_group}
-              </span>
+              <span className={styles.badge}>{f.species.primary_group}</span>
             </div>
 
             <div className={styles.metaGrid}>
