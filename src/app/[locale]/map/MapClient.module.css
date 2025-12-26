@@ -1,3 +1,9 @@
+/* MapClient.module.css */
+
+/* ---------------------------------------------------------
+   PAGE + MAP SHELL
+   --------------------------------------------------------- */
+
 .page {
   min-height: 100svh;
   background: var(--bg);
@@ -6,58 +12,68 @@
   flex-direction: column;
 }
 
-/* map-området fylder resten under top UI */
+/* Map-området fylder resten under top UI (topbar + insights ligger over map via DOM)
+   Flex:1 + min-height:0 er den robuste combo til iOS/Safari */
 .mapShell {
   position: relative;
   flex: 1;
-  min-height: 0; /* vigtigt i flex layouts */
+  min-height: 0;
   overflow: hidden;
 }
 
-/* Leaflet map (din LeafletMap bør fylde parent) */
+/* Leaflet container skal altid fylde parent (ellers får du “kortet stopper tidligt”) */
 .mapShell :global(.leaflet-container) {
-  height: 100%;
-  width: 100%;
+  height: 100% !important;
+  width: 100% !important;
 }
 
-/* --- Bottom dock (én surface ad gangen) --- */
+/* ---------------------------------------------------------
+   LAYERS / DOCKING
+   --------------------------------------------------------- */
+
+/* Peek card (når du vælger et spot) – ligger over sheet */
+.peekWrap {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+
+  /* Ligger over bottomDock (sheet) */
+  bottom: calc(
+    var(--bottom-nav-h, 92px)
+    + 24px
+    + env(safe-area-inset-bottom)
+    + 82px /* ca. sheet header højde */
+  );
+
+  z-index: 920;
+  pointer-events: none;
+}
+
+.peekWrap > * {
+  pointer-events: auto;
+}
+
+/* Sheet wrapper kan ligge i bottomDock (samme “dock zone” som peek card) */
+.sheetWrap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 910;
+}
+
+/* ---------------------------------------------------------
+   BOTTOM DOCK (DEN VIGTIGE)
+   Én dock-zone som alt “bottom UI” respekterer.
+   --------------------------------------------------------- */
+
 .bottomDock {
   position: absolute;
   left: 12px;
   right: 12px;
 
-  /* LIG OVER bottom nav + safe area */
-  bottom: calc(var(--bottom-nav-h, 92px) + 12px + env(safe-area-inset-bottom));
-
-  z-index: 900;
-  pointer-events: none; /* wrapper blokerer ikke kortet */
-}
-
-.bottomDock > * {
-  pointer-events: auto; /* selve kortet/sheet er klikbart */
-}
-
-/* Hvis du vil have lidt “lift” og spacing */
-.bottomDock {
-  display: grid;
-  gap: 10px;
-}
-
-/* Bonus: på små skærme lidt tighter */
-@media (max-width: 420px) {
-  .bottomDock {
-    left: 10px;
-    right: 10px;
-    bottom: calc(var(--bottom-nav-h, 92px) + 10px + env(safe-area-inset-bottom));
-  }
-}
-
-.bottomDock {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-
-  /* 🔥 LØSNING: mere luft over bottom nav */
+  /* ✅ Den rigtige: mere luft over bottom nav + safe area
+     24px er “comfort spacing” på iOS så det ikke ser klemt ud */
   bottom: calc(
     var(--bottom-nav-h, 92px)
     + 24px
@@ -65,5 +81,38 @@
   );
 
   z-index: 900;
+
+  /* wrapper må ikke blokere kortet */
   pointer-events: none;
+
+  /* flere elementer (peek + sheet) kan stables pænt */
+  display: grid;
+  gap: 10px;
+
+  /* optisk “lift” (subtilt) */
+  transform: translateY(-6px);
+}
+
+.bottomDock > * {
+  pointer-events: auto;
+}
+
+/* Bonus: små skærme – lidt tighter, men stadig korrekt spacing */
+@media (max-width: 420px) {
+  .bottomDock {
+    left: 10px;
+    right: 10px;
+    bottom: calc(
+      var(--bottom-nav-h, 92px)
+      + 22px
+      + env(safe-area-inset-bottom)
+    );
+    gap: 8px;
+    transform: translateY(-5px);
+  }
+
+  .peekWrap {
+    left: 10px;
+    right: 10px;
+  }
 }
