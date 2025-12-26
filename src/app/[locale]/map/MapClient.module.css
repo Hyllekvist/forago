@@ -1,20 +1,34 @@
 .page {
-  min-height: 100vh;
-  background: var(--bg, #0b0f14);
-  color: var(--ink, rgba(255, 255, 255, 0.92));
+  min-height: 100svh;
+  background: var(--bg);
+  color: var(--ink);
 }
 
+/* Én sandhed for safe-områder */
+.page {
+  --topPad: 12px;
+  --sidePad: 12px;
+
+  /* Brug jeres token for navhøjde + iOS safe area */
+  --navPad: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom));
+  --uiBottom: calc(var(--navPad) + 12px); /* luft over nav */
+}
+
+/* Map fylder hele viewport — UI ligger ovenpå */
 .mapShell {
   position: relative;
-  height: calc(100vh - 116px); /* topbar + insights */
+  height: 100svh;
+  width: 100%;
+  z-index: 0;
 }
 
+/* Peek card (Spot preview) */
 .peekWrap {
   position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: 112px; /* above sheet */
-  z-index: 30;
+  left: var(--sidePad);
+  right: var(--sidePad);
+  bottom: var(--uiBottom);      /* 🔥 aldrig bag bottom nav */
+  z-index: 80;
   pointer-events: none;
 }
 
@@ -22,22 +36,16 @@
   pointer-events: auto;
 }
 
+/* Bottom sheet wrapper (liste) */
 .sheetWrap {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 40;
-}
- 
-.mapShell {
-  position: relative;
-  height: calc(100vh - 116px);
-  z-index: 0;
+  left: var(--sidePad);
+  right: var(--sidePad);
+  bottom: var(--uiBottom);      /* 🔥 samme baseline som peek */
+  z-index: 70;
+  pointer-events: none;
 }
 
-.peekWrap,
-.sheetWrap {
-  z-index: 40;
+.sheetWrap > * {
+  pointer-events: auto;
 }
-
