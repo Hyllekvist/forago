@@ -1,4 +1,4 @@
-// src/app/[locale]/log/page.tsx
+// src/app/[locale]/log/page.tsx 
 import { supabaseServer } from "@/lib/supabase/server";
 import LogClient, { type FindRow } from "./LogClient";
 
