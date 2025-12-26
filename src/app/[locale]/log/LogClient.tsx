@@ -18,11 +18,12 @@ export type FindRow = {
   photo_urls: string[];
   spot_id: string;
   species_id: string | null;
+
+  // ✅ IMPORTANT: must be nullable (species_id can be null / deleted)
   species: SpeciesRow | null;
 };
 
 function prettyDate(s: string) {
-  // observed_at er typisk "YYYY-MM-DD"
   if (!s) return "—";
   return s;
 }
