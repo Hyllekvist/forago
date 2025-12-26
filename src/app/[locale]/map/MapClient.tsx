@@ -13,7 +13,10 @@ import { SpotPeekCard } from "./ui/SpotPeekCard";
 type Mode = "daily" | "forage";
 type Props = { spots: Spot[] };
 
-function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+function haversineKm(
+  a: { lat: number; lng: number },
+  b: { lat: number; lng: number }
+) {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
   const dLng = ((b.lng - a.lng) * Math.PI) / 180;
@@ -21,7 +24,10 @@ function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
   const s2 = Math.sin(dLng / 2);
   const q =
     s1 * s1 +
-    Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * s2 * s2;
+    Math.cos((a.lat * Math.PI) / 180) *
+      Math.cos((b.lat * Math.PI) / 180) *
+      s2 *
+      s2;
   return 2 * R * Math.asin(Math.sqrt(q));
 }
 
@@ -29,7 +35,9 @@ export default function MapClient({ spots }: Props) {
   const [mode, setMode] = useState<Mode>("daily");
   const [activeInsight, setActiveInsight] = useState<InsightKey | null>(null);
 
-  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
+  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(
+    null
+  );
   const [mapApi, setMapApi] = useState<LeafletLikeMap | null>(null);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -44,10 +52,15 @@ export default function MapClient({ spots }: Props) {
   const [logOk, setLogOk] = useState(false);
 
   // spot counters (total + this quarter) for selected spot
-  const [spotCounts, setSpotCounts] = useState<{ total: number; qtr: number } | null>(null);
+  const [spotCounts, setSpotCounts] = useState<{
+    total: number;
+    qtr: number;
+  } | null>(null);
 
-  // ✅ batch counts for visible list (used for sorting in MapSheet)
-  const [countsMap, setCountsMap] = useState<Record<string, { total: number; qtr: number }>>({});
+  // batch counts for visible list (used for sorting)
+  const [countsMap, setCountsMap] = useState<
+    Record<string, { total: number; qtr: number }>
+  >({});
 
   // --- geolocation
   useEffect(() => {
@@ -63,9 +76,11 @@ export default function MapClient({ spots }: Props) {
     const total = spots.length;
 
     const nearbyCount = userPos
-      ? spots.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2).length
+      ? spots.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2)
+          .length
       : 0;
 
+    // placeholder season math (same as you had)
     const seasonNowCount = Math.min(total, Math.max(0, Math.round(total * 0.35)));
     const peakCount = Math.min(total, Math.max(0, Math.round(total * 0.12)));
 
@@ -127,7 +142,7 @@ export default function MapClient({ spots }: Props) {
     [mapApi, userPos]
   );
 
-  // selection + center (pan up so marker sits above peek + bottom nav)
+  // selection + center
   const onSelectSpot = useCallback(
     (id: string) => {
       setSelectedId(id);
@@ -138,7 +153,10 @@ export default function MapClient({ spots }: Props) {
 
       const targetZoom = Math.max(mapApi.getZoom(), 14);
       mapApi.flyTo(s.lat, s.lng, targetZoom);
-      mapApi.panBy?.(0, -140);
+
+      // ✅ mobile needs extra lift; desktop uses sidebar so less is fine
+      // We'll handle this in LeafletMap via panBy anyway; keep it modest:
+      mapApi.panBy?.(0, -120);
     },
     [mapApi, spotsById]
   );
@@ -169,7 +187,7 @@ export default function MapClient({ spots }: Props) {
     return () => ac.abort();
   }, [selectedSpot?.id]);
 
-  // ✅ batch counts for visible list (used for sorting the sheet)
+  // batch counts for visible list (used for sorting)
   useEffect(() => {
     if (!visibleIds?.length) return;
 
@@ -230,7 +248,7 @@ export default function MapClient({ spots }: Props) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            spot_id: spot.id, // ✅ count is per location
+            spot_id: spot.id,
             species_slug: spot.species_slug ?? null,
             observed_at: new Date().toISOString(),
             visibility: "public_aggregate",
@@ -246,15 +264,12 @@ export default function MapClient({ spots }: Props) {
           throw new Error(json?.error ?? "Kunne ikke logge fund");
         }
 
-        // ✅ success feedback
         setLogOk(true);
 
-        // ✅ refresh single spot counts (optimistic)
         setSpotCounts((prev) =>
           prev ? { total: prev.total + 1, qtr: prev.qtr + 1 } : { total: 1, qtr: 1 }
         );
 
-        // ✅ refresh batch map (optimistic)
         setCountsMap((prev) => ({
           ...prev,
           [spot.id]: {
@@ -294,49 +309,111 @@ export default function MapClient({ spots }: Props) {
         onPick={onPickInsight}
       />
 
-      <div className={styles.mapShell}>
-        <LeafletMap
-          spots={filteredSpots}
-          userPos={userPos}
-          selectedId={selectedId}
-          onSelect={onSelectSpot}
-          onMapReady={setMapApi}
-          onVisibleChange={setVisibleIds}
-          onPanningChange={setIsPanning}
-        />
+      {/* ✅ Desktop split view wrapper */}
+      <div className={styles.desktopBody}>
+        {/* ✅ Desktop left panel (only visible >= 1024px) */}
+        <aside className={styles.desktopPanel}>
+          <div className={styles.panelInner}>
+            <div className={styles.panelHeader}>
+              <div className={styles.panelTitle}>{sheetTitle}</div>
+              <button
+                className={styles.clearBtn}
+                onClick={() => {
+                  setSelectedId(null);
+                  setSpotCounts(null);
+                  setSheetExpanded(true);
+                }}
+                type="button"
+              >
+                Nulstil
+              </button>
+            </div>
 
-        <div className={styles.bottomDock}>
-          {selectedSpot ? (
-            <SpotPeekCard
-              spot={selectedSpot}
-              mode={mode}
-              userPos={userPos}
-              counts={spotCounts}
-              isLogging={isLogging}
-              logOk={logOk}
-              onClose={() => setSelectedId(null)}
-              onLog={() => void onQuickLog(selectedSpot)}
-              onLearn={() => setSelectedId(null)}
-            />
-          ) : (
-            <MapSheet
-              mode={mode}
-              expanded={sheetExpanded}
-              onToggle={() => setSheetExpanded((v) => !v)}
-              title={sheetTitle}
-              items={sortedVisibleSpots}
-              selectedId={selectedId}
-              onSelect={(id) => onSelectSpot(id)}
-              onLog={(id: string) => {
-                const s = spotsById.get(id);
-                if (s) void onQuickLog(s);
-              }}
-            />
-          )}
+            {/* Desktop content: show selected peek OR list */}
+            {selectedSpot ? (
+              <SpotPeekCard
+                spot={selectedSpot}
+                mode={mode}
+                userPos={userPos}
+                counts={spotCounts}
+                isLogging={isLogging}
+                logOk={logOk}
+                onClose={() => setSelectedId(null)}
+                onLog={() => void onQuickLog(selectedSpot)}
+                onLearn={() => setSelectedId(null)}
+              />
+            ) : (
+              // Render MapSheet in "always expanded" mode for desktop.
+              // It will look like a list panel, NOT a floating dock.
+              <div className={styles.desktopListWrap}>
+                <MapSheet
+                  mode={mode}
+                  expanded={true}
+                  onToggle={() => {}}
+                  title={sheetTitle}
+                  items={sortedVisibleSpots}
+                  selectedId={selectedId}
+                  onSelect={(id) => onSelectSpot(id)}
+                  onLog={(id: string) => {
+                    const s = spotsById.get(id);
+                    if (s) void onQuickLog(s);
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        </aside>
+
+        {/* ✅ Map area (always visible) */}
+        <div className={styles.mapShell}>
+          <LeafletMap
+            spots={filteredSpots}
+            userPos={userPos}
+            selectedId={selectedId}
+            onSelect={onSelectSpot}
+            onMapReady={setMapApi}
+            onVisibleChange={setVisibleIds}
+            onPanningChange={setIsPanning}
+          />
+
+          {/* ✅ Mobile-only dock: sheet OR peek over map */}
+          <div className={styles.mobileDock}>
+            {selectedSpot ? (
+              <div className={styles.peekWrap}>
+                <SpotPeekCard
+                  spot={selectedSpot}
+                  mode={mode}
+                  userPos={userPos}
+                  counts={spotCounts}
+                  isLogging={isLogging}
+                  logOk={logOk}
+                  onClose={() => setSelectedId(null)}
+                  onLog={() => void onQuickLog(selectedSpot)}
+                  onLearn={() => setSelectedId(null)}
+                />
+              </div>
+            ) : (
+              <div className={styles.sheetWrap}>
+                <MapSheet
+                  mode={mode}
+                  expanded={sheetExpanded}
+                  onToggle={() => setSheetExpanded((v) => !v)}
+                  title={sheetTitle}
+                  items={sortedVisibleSpots}
+                  selectedId={selectedId}
+                  onSelect={(id) => onSelectSpot(id)}
+                  onLog={(id: string) => {
+                    const s = spotsById.get(id);
+                    if (s) void onQuickLog(s);
+                  }}
+                />
+              </div>
+            )}
+          </div>
+
+          {logError ? <div className={styles.toastError}>{logError}</div> : null}
+          {isLogging ? <div className={styles.toastInfo}>Logger fund…</div> : null}
         </div>
-
-        {logError ? <div className={styles.toastError}>{logError}</div> : null}
-        {isLogging ? <div className={styles.toastInfo}>Logger fund…</div> : null}
       </div>
     </div>
   );
