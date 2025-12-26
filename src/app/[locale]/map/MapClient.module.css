@@ -1,71 +1,86 @@
 .page{
   height: 100svh;
-  overflow: hidden;
   background: var(--bg);
   color: var(--ink);
+  overflow: hidden; /* <-- stop scroll på siden */
 }
 
-/* Hele oplevelsen er et “scene” lag */
+/* Map er altid full-viewport “bagved” HUD */
 .mapShell{
-  position: relative;
-  height: 100%;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
+/* Leaflet fylder hele shell */
+.mapShell :global(.leaflet-container){
   width: 100%;
-
-  /* bund-nav + safe-area + lidt luft */
-  --safeBottom: calc(var(--bottom-nav-h, 92px) + 12px + env(safe-area-inset-bottom));
+  height: 100%;
 }
 
-/* HUD ligger ovenpå kortet */
-.hud{
-  position: absolute;
-  top: calc(10px + env(safe-area-inset-top));
+/* Giv Leaflet controls/attribution luft over bottom nav */
+.mapShell :global(.leaflet-control-container){
+  padding-bottom: calc(var(--bottom-nav-h, 92px) + env(safe-area-inset-bottom) + 10px);
+}
+
+/* --- Top HUD (Topbar + InsightStrip) --- */
+.hudTop{
+  position: fixed;
   left: 12px;
   right: 12px;
+  top: calc(env(safe-area-inset-top) + 10px);
   z-index: 60;
-
-  pointer-events: none;
+  pointer-events: none; /* wrapper blokerer ikke kortet */
 }
 
-.hud > *{
-  pointer-events: auto;
+.hudTopInner{
+  pointer-events: auto; /* selve UI’et kan klikkes */
+  display: grid;
+  gap: 10px;
 }
 
-/* Giv insights lidt separation fra topbar */
-.insights{
-  margin-top: 10px;
+/* Lidt mere “premium” glass feel i top */
+.hudTopInner :global(*) {
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Peek card skal ALTID ligge over bund-sheet + over bund-nav */
+/* --- Peek card (spot detail mini) --- */
 .peekWrap{
-  position: absolute;
+  position: fixed;
   left: 12px;
   right: 12px;
-  bottom: calc(var(--safeBottom) + 86px); /* ca over sheet header */
   z-index: 70;
   pointer-events: none;
+  bottom: calc(var(--bottom-nav-h, 92px) + env(safe-area-inset-bottom) + 92px);
+  /* ^ ligger tydeligt over nav + over sheet */
 }
 
 .peekWrap > *{
   pointer-events: auto;
 }
 
-/* Bottom sheet ligger over bund-nav – aldrig bagved */
+/* --- Bottom sheet (liste) --- */
 .sheetWrap{
-  position: absolute;
+  position: fixed;
   left: 12px;
   right: 12px;
-  bottom: var(--safeBottom);
-  z-index: 65;
-
+  z-index: 80;
   pointer-events: none;
+  bottom: calc(var(--bottom-nav-h, 92px) + env(safe-area-inset-bottom) + 12px);
 }
 
 .sheetWrap > *{
   pointer-events: auto;
 }
 
-/* (Hvis Leaflet/MapContainer nogle gange får klik issues) */
-.mapShell :global(.leaflet-container){
-  height: 100%;
-  width: 100%;
+/* Når Peek er synlig, skub sheet lidt ned så de ikke kæmper visuelt */
+.sheetLowered{
+  bottom: calc(var(--bottom-nav-h, 92px) + env(safe-area-inset-bottom) + 12px);
+}
+
+/* Optional: hvis du vil have sheet tættere på nav i lightmode uden at se “gemt” ud */
+@media (max-width: 420px){
+  .peekWrap{
+    bottom: calc(var(--bottom-nav-h, 92px) + env(safe-area-inset-bottom) + 84px);
+  }
 }
