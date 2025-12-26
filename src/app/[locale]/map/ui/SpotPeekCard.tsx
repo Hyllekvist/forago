@@ -4,24 +4,23 @@ import { useEffect, useMemo, useState } from "react";
 import styles from "./SpotPeekCard.module.css";
 import type { Spot } from "../LeafletMap";
 
+type Counts = { total: number; qtr: number };
+
 type Props = {
   spot: Spot;
   mode: "daily" | "forage";
   userPos: { lat: number; lng: number } | null;
+
+  // ✅ new (optional): hvis MapClient allerede har counts, brug dem
+  counts?: Counts | null;
+
   onClose: () => void;
   onLog: () => void;
   onLearn: () => void;
 
-  // optional fra MapClient (hvis du allerede har dem)
+  // optional fra MapClient
   isLogging?: boolean;
   logOk?: boolean;
-};
-
-type SpotStats = {
-  spot_id: string;
-  total_count: number;
-  last_14d_count: number;
-  last_30d_count: number;
 };
 
 function emojiForSlug(slug?: string | null) {
@@ -83,10 +82,25 @@ function isIOS() {
   return /iPad|iPhone|iPod/.test(navigator.userAgent);
 }
 
+function quarterStartISO(d = new Date()) {
+  const q = Math.floor(d.getMonth() / 3); // 0..3
+  const startMonth = q * 3; // 0,3,6,9
+  const start = new Date(d.getFullYear(), startMonth, 1);
+  return start.toISOString();
+}
+
+type SpotStatsApi = {
+  spot_id: string;
+  total_count: number;
+  last_30d_count: number;
+  last_14d_count: number;
+};
+
 export function SpotPeekCard({
   spot,
   mode,
   userPos,
+  counts,
   onClose,
   onLog,
   onLearn,
@@ -98,10 +112,7 @@ export function SpotPeekCard({
 
   const distance = useMemo(() => formatDistance(userPos, spot), [userPos, spot.lat, spot.lng]);
 
-  const freshness = useMemo(
-    () => formatFreshness(spot.last_seen_at ?? null),
-    [spot.last_seen_at]
-  );
+  const freshness = useMemo(() => formatFreshness(spot.last_seen_at ?? null), [spot.last_seen_at]);
 
   const mapsHref = useMemo(() => {
     const q = encodeURIComponent(`${spot.lat},${spot.lng}`);
@@ -109,36 +120,44 @@ export function SpotPeekCard({
     return `https://www.google.com/maps/search/?api=1&query=${q}`;
   }, [spot.lat, spot.lng]);
 
-  // ✅ fetch stats
-  const [stats, setStats] = useState<SpotStats | null>(null);
-  const [statsLoading, setStatsLoading] = useState(false);
+  // ✅ fallback: hvis counts ikke kommer fra MapClient, hent stats her
+  const [localCounts, setLocalCounts] = useState<Counts | null>(null);
+  const [countsLoading, setCountsLoading] = useState(false);
 
   useEffect(() => {
+    if (counts) return; // MapClient styrer det
     let alive = true;
-    setStats(null);
-    setStatsLoading(true);
+    setCountsLoading(true);
+    setLocalCounts(null);
 
+    // Vi bruger din eksisterende /api/spots/[id]/stats hvis du har den
     fetch(`/api/spots/${encodeURIComponent(spot.id)}/stats`)
       .then((r) => r.json())
       .then((j) => {
         if (!alive) return;
-        if (j?.ok) setStats(j.stats);
+        if (!j?.ok || !j?.stats) return;
+
+        const s = j.stats as SpotStatsApi;
+        // "qtr" findes ikke i API'et – så vi bruger last_30d_count som “recent”
+        setLocalCounts({ total: Number(s.total_count ?? 0), qtr: Number(s.last_30d_count ?? 0) });
       })
       .finally(() => {
         if (!alive) return;
-        setStatsLoading(false);
+        setCountsLoading(false);
       });
 
     return () => {
       alive = false;
     };
-  }, [spot.id]);
+  }, [spot.id, counts]);
 
-  const socialLine = statsLoading
+  const effectiveCounts = counts ?? localCounts;
+
+  const socialLine = countsLoading
     ? "Henter aktivitet…"
-    : stats
-      ? `${stats.total_count} logs · ${stats.last_14d_count} sidste 14 dage`
-      : "Ingen aktivitet endnu";
+    : effectiveCounts
+      ? `${effectiveCounts.total} logs · ${effectiveCounts.qtr} nyligt`
+      : "Ingen logs endnu";
 
   return (
     <section className={styles.card} role="dialog" aria-label="Selected spot">
@@ -177,14 +196,15 @@ export function SpotPeekCard({
             </span>
           </div>
 
-          {/* ✅ social proof */}
           <div className={styles.social}>{socialLine}</div>
         </div>
       </header>
 
       <div className={styles.actions}>
         <a className={styles.primary} href={mapsHref} target="_blank" rel="noreferrer">
-          <span className={styles.primaryIcon} aria-hidden>➜</span>
+          <span className={styles.primaryIcon} aria-hidden>
+            ➜
+          </span>
           Navigér
         </a>
 
@@ -202,9 +222,7 @@ export function SpotPeekCard({
         </button>
       </div>
 
-      <div className={styles.hint}>
-        Tip: Tryk på flere pins for at browse. Zoom ind for flere detaljer.
-      </div>
+      <div className={styles.hint}>Tip: Tryk på flere pins for at browse. Zoom ind for flere detaljer.</div>
     </section>
   );
 }
