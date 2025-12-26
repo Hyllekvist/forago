@@ -2,130 +2,173 @@
 @import "../styles/themes.css";
 @import "../styles/typography.css";
 
-/* ⛔️ Flyt Leaflet CSS VÆK herfra (load kun på /map) */
+/* =========================
+   BASE RESET
+   ========================= */
 
-* { box-sizing: border-box; }
-html, body { height: 100%; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
-body{
+html {
+  height: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100%;
   margin: 0;
-  font-family: var(--font-sans, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji");
+
+  font-family: var(
+    --font-sans,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Helvetica,
+    Arial,
+    "Apple Color Emoji",
+    "Segoe UI Emoji"
+  );
+
   background: var(--bg);
   color: var(--ink);
   line-height: 1.5;
+
+  /* ✅ SCROLL SKAL VÆRE HER */
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 
   -webkit-text-size-adjust: 100%;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  overflow-x: hidden;
 }
 
-/* ---------- FORAGO AMBIENT IDENTITY (global) ---------- */
+/* =========================
+   FORAGO AMBIENT BACKGROUND
+   ========================= */
 
-body::before{
-  content:"";
+body::before {
+  content: "";
   position: fixed;
   inset: -24px;
-  pointer-events:none;
+  pointer-events: none;
   z-index: -1;
   background: var(--g-core), var(--g-warm);
-  opacity: .95;
-  filter: saturate(1.15);
+  opacity: 0.95;
+  filter: saturate(1.1);
 }
 
-body::after{
-  content:"";
+body::after {
+  content: "";
   position: fixed;
   inset: 0;
-  pointer-events:none;
+  pointer-events: none;
   z-index: -1;
-  /* subtle grain + vignette */
   background:
-    radial-gradient(1200px 800px at 50% 0%,
-      rgba(0,0,0,0.00),
-      rgba(0,0,0,0.22) 55%,
-      rgba(0,0,0,0.48) 100%),
-    repeating-linear-gradient(0deg,
-      rgba(255,255,255,0.028),
-      rgba(255,255,255,0.028) 1px,
+    radial-gradient(
+      1200px 800px at 50% 0%,
+      rgba(0, 0, 0, 0),
+      rgba(0, 0, 0, 0.22) 55%,
+      rgba(0, 0, 0, 0.45) 100%
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.03),
+      rgba(255, 255, 255, 0.03) 1px,
       transparent 1px,
-      transparent 3px);
+      transparent 3px
+    );
   mix-blend-mode: overlay;
-  opacity: .22;
+  opacity: 0.22;
 }
 
-/* Links / inputs */
-a { color: inherit; text-decoration: none; }
-button { font-family: inherit; }
-input, select, textarea { font-family: inherit; color: inherit; }
-img { max-width: 100%; height: auto; display: block; }
+/* =========================
+   ELEMENT DEFAULTS
+   ========================= */
 
-/* Selection følger ny accent (vibrant) */
-::selection { background: var(--selection); }
-
-/* Nice focus ring */
-:focus-visible{
-  outline: none;
-  box-shadow: var(--focus);
-  border-radius: 12px;
+img {
+  max-width: 100%;
+  display: block;
 }
 
-/* Optional: smooth scroll */
-html { scroll-behavior: smooth; }
-
-/* ---------- Global interactive feel ---------- */
-
-a, button {
-  -webkit-tap-highlight-color: transparent;
+a {
+  color: inherit;
+  text-decoration: none;
 }
 
-:is(a, button, [role="button"], input, select, textarea):focus-visible{
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  color: inherit;
+}
+
+button {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+::selection {
+  background: var(--selection);
+}
+
+/* =========================
+   FOCUS & INTERACTION
+   ========================= */
+
+:focus-visible {
   outline: none;
   box-shadow: var(--focusRing);
   border-radius: 12px;
 }
 
-@media (hover:hover){
-  .hoverable{
-    transition: transform var(--t) var(--ease), box-shadow var(--t) var(--ease), background var(--t) var(--ease), border-color var(--t) var(--ease);
-  }
-  .hoverable:hover{ transform: translateY(-1px); }
+a,
+button {
+  -webkit-tap-highlight-color: transparent;
 }
 
-.pressable{
-  transition: transform var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
-}
-.pressable:active{ transform: translateY(1px); }
-
-@media (prefers-reduced-motion: reduce){
-  *{ transition: none !important; scroll-behavior: auto !important; }
+.pressable {
+  transition: transform var(--t-fast) var(--ease);
 }
 
-.hoverable:hover{
-  background: color-mix(in srgb, var(--ink) 6%, transparent);
-}
-
-.pressable:active{
+.pressable:active {
   transform: translateY(1px);
 }
 
-/* fælles fokus-ring */
-.focusRing:focus-visible{
-  outline: none;
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 40%, transparent);
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+.hoverable {
+  transition:
+    transform var(--t) var(--ease),
+    box-shadow var(--t) var(--ease),
+    background var(--t) var(--ease),
+    border-color var(--t) var(--ease);
 }
 
-.surface{
+@media (hover: hover) {
+  .hoverable:hover {
+    transform: translateY(-1px);
+  }
+}
+
+/* =========================
+   SHARED SURFACES
+   ========================= */
+
+.surface {
   border-radius: var(--r-lg);
   border: var(--stroke) solid var(--line);
   background: var(--panel);
   box-shadow: var(--shadow-1);
 }
 
-.surfaceGlass{
+.surfaceGlass {
   border-radius: var(--r-xl);
   border: var(--stroke) solid var(--glassLine);
   background: var(--glassBg);
@@ -133,33 +176,15 @@ a, button {
   -webkit-backdrop-filter: blur(16px);
   box-shadow: var(--shadow-2);
 }
-a{
-  color: inherit;
-  text-decoration: none;
-}
 
-a:focus-visible,
-button:focus-visible{
-  outline: 2px solid var(--focus, color-mix(in srgb, var(--accent) 60%, transparent));
-  outline-offset: 2px;
-  border-radius: 12px;
-}
+/* =========================
+   REDUCED MOTION
+   ========================= */
 
-button{
-  font-family: inherit;
-}
-
-button:active{
-  transform: translateY(1px);
-}
-
-/* “tap surface” helper */
-.tap{
-  background: var(--tapBg, color-mix(in srgb, var(--ink) 8%, transparent));
-  border: 1px solid var(--tapLine, color-mix(in srgb, var(--ink) 14%, transparent));
-}
-
-html, body {
-  height: 100%;
-  overflow: hidden;
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
 }
