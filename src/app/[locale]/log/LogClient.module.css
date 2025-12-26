@@ -1,78 +1,10 @@
-/* src/app/[locale]/log/LogClient.module.css */
-
 .page {
-  /* Force this page to be its own scroll container (even if body is locked) */
-  height: 100dvh;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-
+  min-height: 100dvh;
   padding: 22px 16px calc(110px + env(safe-area-inset-bottom));
-
-  /* Theme tokens (default = light) */
-  --ink: rgba(10, 18, 26, 0.92);
-  --muted: rgba(10, 18, 26, 0.60);
-  --hair: rgba(10, 18, 26, 0.10);
-
-  --card: rgba(255, 255, 255, 0.70);
-  --card2: rgba(255, 255, 255, 0.55);
-  --cardBorder: rgba(10, 18, 26, 0.10);
-
-  --shadow: 0 16px 46px rgba(2, 6, 23, 0.10);
-  --shadow2: 0 10px 26px rgba(2, 6, 23, 0.10);
-
-  --accent: rgba(16, 185, 129, 1);
-  --accentSoft: rgba(16, 185, 129, 0.14);
-  --accentBorder: rgba(16, 185, 129, 0.22);
-
   background:
-    radial-gradient(1200px 700px at 20% 0%, rgba(16, 185, 129, 0.14), transparent 55%),
-    linear-gradient(180deg, #f6fbfb, #eef5f6);
-  color: var(--ink);
-}
-
-/* Respect your app theme attribute if you have it */
-:global(html[data-theme="dark"]) .page,
-:global(body[data-theme="dark"]) .page {
-  --ink: rgba(255, 255, 255, 0.92);
-  --muted: rgba(255, 255, 255, 0.66);
-  --hair: rgba(255, 255, 255, 0.10);
-
-  --card: rgba(255, 255, 255, 0.06);
-  --card2: rgba(255, 255, 255, 0.05);
-  --cardBorder: rgba(255, 255, 255, 0.12);
-
-  --shadow: 0 18px 46px rgba(0, 0, 0, 0.30);
-  --shadow2: 0 10px 26px rgba(0, 0, 0, 0.26);
-
-  --accentSoft: rgba(16, 185, 129, 0.14);
-  --accentBorder: rgba(16, 185, 129, 0.25);
-
-  background:
-    radial-gradient(1200px 700px at 20% 0%, rgba(16, 185, 129, 0.18), transparent 55%),
+    radial-gradient(1200px 700px at 20% 0%, rgba(16, 185, 129, 0.18), rgba(0, 0, 0, 0) 55%),
     linear-gradient(180deg, rgba(2, 12, 18, 1), rgba(2, 6, 23, 1));
-}
-
-/* If you don't set a theme attr, still look good with system dark mode */
-@media (prefers-color-scheme: dark) {
-  .page {
-    --ink: rgba(255, 255, 255, 0.92);
-    --muted: rgba(255, 255, 255, 0.66);
-    --hair: rgba(255, 255, 255, 0.10);
-
-    --card: rgba(255, 255, 255, 0.06);
-    --card2: rgba(255, 255, 255, 0.05);
-    --cardBorder: rgba(255, 255, 255, 0.12);
-
-    --shadow: 0 18px 46px rgba(0, 0, 0, 0.30);
-    --shadow2: 0 10px 26px rgba(0, 0, 0, 0.26);
-
-    --accentSoft: rgba(16, 185, 129, 0.14);
-    --accentBorder: rgba(16, 185, 129, 0.25);
-
-    background:
-      radial-gradient(1200px 700px at 20% 0%, rgba(16, 185, 129, 0.18), transparent 55%),
-      linear-gradient(180deg, rgba(2, 12, 18, 1), rgba(2, 6, 23, 1));
-  }
+  color: rgba(255, 255, 255, 0.92);
 }
 
 .header {
@@ -96,26 +28,22 @@
 
 .sub {
   margin: 8px 0 0;
-  color: var(--muted);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .totalCard {
-  flex: 0 0 auto;
-  min-width: 92px;
+  min-width: 86px;
   padding: 10px 12px;
   border-radius: 14px;
-  background: var(--card2);
-  border: 1px solid var(--cardBorder);
-  box-shadow: var(--shadow2);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.3);
   text-align: right;
-
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 
 .totalLabel {
   font-size: 12px;
-  color: var(--muted);
+  color: rgba(255, 255, 255, 0.68);
 }
 
 .totalValue {
@@ -132,13 +60,10 @@
 
 .card {
   border-radius: 18px;
-  background: var(--card);
-  border: 1px solid var(--cardBorder);
-  box-shadow: var(--shadow);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.3);
   padding: 14px 14px 12px;
-
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 
 .cardTop {
@@ -162,7 +87,7 @@
 .sciname {
   margin-top: 3px;
   font-size: 13px;
-  color: var(--muted);
+  color: rgba(255, 255, 255, 0.62);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -174,9 +99,9 @@
   font-size: 12px;
   padding: 6px 10px;
   border-radius: 999px;
-  background: var(--accentSoft);
-  border: 1px solid var(--accentBorder);
-  color: color-mix(in srgb, var(--accent) 35%, var(--ink));
+  background: rgba(16, 185, 129, 0.14);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: rgba(209, 250, 229, 0.95);
 }
 
 .metaGrid {
@@ -190,31 +115,57 @@
   justify-content: space-between;
   gap: 10px;
   padding-top: 8px;
-  border-top: 1px solid var(--hair);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .metaKey {
-  color: var(--muted);
+  color: rgba(255, 255, 255, 0.62);
   font-size: 13px;
 }
 
 .metaVal {
   font-size: 13px;
-  color: var(--ink);
+  color: rgba(255, 255, 255, 0.92);
 }
 
-/* Small polish */
-.card:hover {
-  transform: translateY(-1px);
-  transition: transform 120ms ease;
+.note {
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: grid;
+  gap: 6px;
 }
 
-@media (max-width: 420px) {
-  .h1 {
-    font-size: 30px;
-  }
+.noteKey {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.62);
+}
 
-  .totalCard {
-    min-width: 84px;
-  }
+.noteVal {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.35;
+}
+
+.empty {
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.emptyCard {
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.3);
+  padding: 18px;
+}
+
+.emptyTitle {
+  font-size: 18px;
+  font-weight: 850;
+}
+
+.emptySub {
+  margin-top: 6px;
+  color: rgba(255, 255, 255, 0.7);
 }
