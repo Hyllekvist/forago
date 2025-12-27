@@ -1,21 +1,30 @@
 import styles from "./CommentList.module.css";
 
-const DEMO = [
-  { id: "c1", author: "Sanker42", text: "Check leaf shape + smell. LOTV has no garlic smell." },
-  { id: "c2", author: "FieldGuide", text: "Add habitat info and underside photo if possible." },
-];
+type CommentItem = {
+  id: string;
+  author: string;
+  body: string;
+  created_at?: string | null;
+};
 
-export function CommentList() {
+export function CommentList({ comments = [] }: { comments?: CommentItem[] }) {
   return (
     <section className={styles.section}>
       <h2 className={styles.h2}>Replies</h2>
+
       <div className={styles.list}>
-        {DEMO.map((c) => (
-          <div key={c.id} className={styles.card}>
-            <div className={styles.author}>{c.author}</div>
-            <div className={styles.text}>{c.text}</div>
+        {comments.length === 0 ? (
+          <div className={styles.empty}>
+            Ingen replies endnu. Vær den første.
           </div>
-        ))}
+        ) : (
+          comments.map((c) => (
+            <div key={c.id} className={styles.card}>
+              <div className={styles.author}>{c.author}</div>
+              <div className={styles.text}>{c.body}</div>
+            </div>
+          ))
+        )}
       </div>
     </section>
   );
