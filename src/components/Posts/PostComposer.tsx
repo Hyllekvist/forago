@@ -20,7 +20,12 @@ export function PostComposer() {
 
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [type, setType] = useState("Identification");
+
+  // ✅ Default væk fra “Identification” (forago er ikke svampe-only længere)
+  const [type, setType] = useState("How-to");
+
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
   const [okId, setOkId] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -28,7 +33,6 @@ export function PostComposer() {
   const locale = (pathname?.split("/")[1] || "dk") as string;
 
   // ✅ Prefill fra URL: /ask?q=... (&type=How-to)
-  // Nøglepunkt: afhæng af values, ikke searchParams-objektet.
   const qParam = (searchParams?.get("q") || "").trim();
   const typeParam = (searchParams?.get("type") || "").trim();
 
@@ -36,7 +40,6 @@ export function PostComposer() {
     const q = clamp(qParam, 180);
     const t = clamp(typeParam, 30);
 
-    // Overskriv ikke hvis brugeren allerede er i gang med at skrive
     if (q) setTitle((prev) => (prev ? prev : q));
     if (t) setType(t);
   }, [qParam, typeParam]);
@@ -56,30 +59,24 @@ export function PostComposer() {
 
       const json = (await res.json()) as ApiResp;
 
-      // Ikke logged in
       if (res.status === 401) {
         const returnTo = encodeURIComponent(pathname || `/${locale}/ask`);
         router.push(`/${locale}/login?returnTo=${returnTo}`);
         return;
       }
 
-      // Fejl (TS-sikkert)
       if (!res.ok || json.ok === false) {
         setErr(json.ok === false ? json.error : "Failed");
         return;
       }
 
-      // Success (TS-sikkert)
       setOkId(json.id);
       setTitle("");
       setBody("");
-      setType("Identification");
+      setType("How-to");
+      setShowAdvanced(false);
 
-      // ✅ Ryd URL query så eksemplet ikke bliver ved med at prefill'e
       router.replace(pathname || `/${locale}/ask`);
-
-      // Optional: refresh hvis du viser posts nedenunder på samme side
-      // router.refresh();
     } catch (e: any) {
       setErr(e?.message ?? "Noget gik galt");
     } finally {
@@ -89,19 +86,37 @@ export function PostComposer() {
 
   return (
     <form className={styles.form} onSubmit={submit}>
-      <label className={styles.label}>
-        Type
-        <select
-          className={styles.input}
-          value={type}
-          onChange={(e) => setType(e.target.value)}
+      {/* ✅ Avanceret toggle i stedet for at vise Type upfront */}
+      <div className={styles.topRow}>
+        <button
+          type="button"
+          className={styles.advancedBtn}
+          onClick={() => setShowAdvanced((v) => !v)}
+          aria-expanded={showAdvanced}
         >
-          <option>Identification</option>
-          <option>How-to</option>
-          <option>Recipe</option>
-          <option>Guide</option>
-        </select>
-      </label>
+          {showAdvanced ? "Skjul avanceret" : "Avanceret"}
+        </button>
+
+        <div className={styles.hint}>
+          Tip: 1 sætning i titel + 1–3 linjer i detaljer.
+        </div>
+      </div>
+
+      {showAdvanced ? (
+        <label className={styles.label}>
+          Type
+          <select
+            className={styles.input}
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+          >
+            <option>How-to</option>
+            <option>Guide</option>
+            <option>Recipe</option>
+            <option>Identification</option>
+          </select>
+        </label>
+      ) : null}
 
       <label className={styles.label}>
         Title
@@ -111,6 +126,7 @@ export function PostComposer() {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
+          placeholder="Fx: Bedste kaffebar til at arbejde i København?"
         />
       </label>
 
@@ -122,6 +138,7 @@ export function PostComposer() {
           onChange={(e) => setBody(e.target.value)}
           rows={6}
           required
+          placeholder="Giv lidt kontekst: område, budget, hvad du allerede har prøvet…"
         />
       </label>
 
