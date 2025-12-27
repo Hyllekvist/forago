@@ -299,7 +299,9 @@ export default function MapClient({ spots }: Props) {
       : "Flyt kortet for at finde spots";
 
   return (
-    <div className={styles.page}>
+ <div
+    className={styles.page}
+    data-sheet-open={sheetExpanded ? "1" : "0"}>
       <MapTopbar mode={mode} onToggleMode={onToggleMode} />
 
       <InsightStrip
