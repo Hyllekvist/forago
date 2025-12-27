@@ -3,9 +3,6 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import styles from "./FindPage.module.css";
-
-// Hvis du ikke vil bruge Card-component, kan du bare bruge div.
-// Men jeg antager du har den (du brugte den i feed).
 import { Card } from "@/components/UI/Card";
 
 type FindDetailPayload = {
@@ -62,6 +59,17 @@ type FindDetailPayload = {
   }>;
 };
 
+export type TopSpeciesRow = {
+  species_id: string;
+  slug: string | null;
+  common_name: string | null;
+  scientific_name: string | null;
+  primary_group: string | null;
+  c_total: number;
+  c_last30: number;
+  c_qtr: number;
+};
+
 function t(locale: string, dk: string, en: string) {
   return locale === "dk" ? dk : en;
 }
@@ -95,19 +103,28 @@ function cleanBullets(s?: string | null) {
     .split("\n")
     .map((x) => x.replace(/\r/g, "").trim())
     .filter(Boolean)
-    .map((x) => x.replace(/^-+\s*/, "")); // drop "- "
+    .map((x) => x.replace(/^-+\s*/, ""));
 }
 
 type TabKey = "overview" | "identify" | "lookalikes" | "usage" | "safety";
+
+function labelSpecies(locale: string, r: TopSpeciesRow) {
+  const name = r.common_name || r.scientific_name || (r.slug ? `#${r.slug}` : null);
+  return name ?? t(locale, "Ukendt art", "Unknown species");
+}
 
 export default function FindClient({
   locale,
   payload,
   errorMsg,
+  topSpecies,
+  topSpeciesError,
 }: {
   locale: string;
   payload: FindDetailPayload | null;
   errorMsg: string | null;
+  topSpecies: TopSpeciesRow[];
+  topSpeciesError: string | null;
 }) {
   if (!payload) {
     return (
@@ -151,9 +168,12 @@ export default function FindClient({
   const areaCount = cell?.finds_count ?? null;
   const areaPrecision = cell?.precision_km ?? f?.geo_precision_km ?? null;
 
-  const mapHref = areaKey
-    ? `/${locale}/map?cell=${encodeURIComponent(areaKey)}`
-    : `/${locale}/map?find=${encodeURIComponent(f.id)}`;
+  // ✅ FIX: send correct param type
+  const mapHref = cell?.geo_cell
+    ? `/${locale}/map?cell=${encodeURIComponent(cell.geo_cell)}`
+    : f?.spot_id
+      ? `/${locale}/map?spot=${encodeURIComponent(f.spot_id)}`
+      : `/${locale}/map?find=${encodeURIComponent(f.id)}`;
 
   const [tab, setTab] = useState<TabKey>("overview");
 
@@ -166,7 +186,6 @@ export default function FindClient({
 
   return (
     <div className={styles.wrap}>
-      {/* Top row */}
       <div className={styles.topRow}>
         <Link className={styles.backTop} href={`/${locale}/feed`}>
           ← {t(locale, "Feed", "Feed")}
@@ -191,7 +210,6 @@ export default function FindClient({
       </div>
 
       <div className={styles.shell}>
-        {/* LEFT */}
         <section className={styles.left}>
           <header className={styles.header}>
             <div className={styles.badges}>
@@ -207,7 +225,6 @@ export default function FindClient({
             </div>
 
             <h1 className={styles.h1}>{title}</h1>
-
             {subtitle ? <p className={styles.sub}>{subtitle}</p> : null}
 
             <div className={styles.meta}>
@@ -227,9 +244,7 @@ export default function FindClient({
 
               {areaCount != null ? (
                 <div className={styles.metaItem}>
-                  <span className={styles.metaK}>
-                    {t(locale, "Fund i området", "Finds in area")}
-                  </span>
+                  <span className={styles.metaK}>{t(locale, "Fund i området", "Finds in area")}</span>
                   <span className={styles.metaV}>{areaCount}</span>
                 </div>
               ) : null}
@@ -255,7 +270,6 @@ export default function FindClient({
             )}
           </div>
 
-          {/* Tabs */}
           <div className={styles.tabs}>
             <button className={styles.tab} data-active={tab === "overview"} onClick={() => setTab("overview")}>
               {t(locale, "Overblik", "Overview")}
@@ -277,9 +291,7 @@ export default function FindClient({
           <div className={styles.tabPanel}>
             {tab === "overview" ? (
               <div className={styles.panelCard}>
-                <div className={styles.panelTitle}>
-                  {t(locale, "Kort beskrivelse", "Short description")}
-                </div>
+                <div className={styles.panelTitle}>{t(locale, "Kort beskrivelse", "Short description")}</div>
                 <div className={styles.panelBody}>
                   {overviewText ? overviewText : t(locale, "Ingen tekst endnu.", "No text yet.")}
                 </div>
@@ -288,13 +300,9 @@ export default function FindClient({
 
             {tab === "identify" ? (
               <div className={styles.panelCard}>
-                <div className={styles.panelTitle}>
-                  {t(locale, "Sådan genkender du den", "How to identify")}
-                </div>
+                <div className={styles.panelTitle}>{t(locale, "Sådan genkender du den", "How to identify")}</div>
                 {identify.length ? (
-                  <ul className={styles.bullets}>
-                    {identify.map((x, i) => <li key={i}>{x}</li>)}
-                  </ul>
+                  <ul className={styles.bullets}>{identify.map((x, i) => <li key={i}>{x}</li>)}</ul>
                 ) : (
                   <div className={styles.panelBody}>{t(locale, "Ingen data endnu.", "No data yet.")}</div>
                 )}
@@ -303,13 +311,9 @@ export default function FindClient({
 
             {tab === "lookalikes" ? (
               <div className={styles.panelCard}>
-                <div className={styles.panelTitle}>
-                  {t(locale, "Vigtige forvekslinger", "Important lookalikes")}
-                </div>
+                <div className={styles.panelTitle}>{t(locale, "Vigtige forvekslinger", "Important lookalikes")}</div>
                 {lookalikes.length ? (
-                  <ul className={styles.bullets}>
-                    {lookalikes.map((x, i) => <li key={i}>{x}</li>)}
-                  </ul>
+                  <ul className={styles.bullets}>{lookalikes.map((x, i) => <li key={i}>{x}</li>)}</ul>
                 ) : (
                   <div className={styles.panelBody}>{t(locale, "Ingen data endnu.", "No data yet.")}</div>
                 )}
@@ -320,9 +324,7 @@ export default function FindClient({
               <div className={styles.panelCard}>
                 <div className={styles.panelTitle}>{t(locale, "Brug i køkkenet", "How to use")}</div>
                 {usage.length ? (
-                  <ul className={styles.bullets}>
-                    {usage.map((x, i) => <li key={i}>{x}</li>)}
-                  </ul>
+                  <ul className={styles.bullets}>{usage.map((x, i) => <li key={i}>{x}</li>)}</ul>
                 ) : (
                   <div className={styles.panelBody}>{t(locale, "Ingen data endnu.", "No data yet.")}</div>
                 )}
@@ -333,9 +335,7 @@ export default function FindClient({
               <div className={styles.panelCard} data-danger="true">
                 <div className={styles.panelTitle}>{t(locale, "Sikkerhed", "Safety")}</div>
                 {safety.length ? (
-                  <ul className={styles.bullets}>
-                    {safety.map((x, i) => <li key={i}>{x}</li>)}
-                  </ul>
+                  <ul className={styles.bullets}>{safety.map((x, i) => <li key={i}>{x}</li>)}</ul>
                 ) : (
                   <div className={styles.panelBody}>{t(locale, "Ingen data endnu.", "No data yet.")}</div>
                 )}
@@ -343,7 +343,7 @@ export default function FindClient({
             ) : null}
           </div>
 
-          {/* Related */}
+          {/* Related (unchanged) */}
           <div className={styles.section}>
             <div className={styles.sectionTop}>
               <div className={styles.sectionTitle}>
@@ -380,15 +380,9 @@ export default function FindClient({
               </div>
             ) : (
               <Card className={styles.emptyRelated}>
-                <div className={styles.emptyTitle}>
-                  {t(locale, "Ingen andre fund endnu", "No other finds yet")}
-                </div>
+                <div className={styles.emptyTitle}>{t(locale, "Ingen andre fund endnu", "No other finds yet")}</div>
                 <div className={styles.emptyBody}>
-                  {t(
-                    locale,
-                    "Det her område er stadig nyt i systemet.",
-                    "This area is still new in the system."
-                  )}
+                  {t(locale, "Det her område er stadig nyt i systemet.", "This area is still new in the system.")}
                 </div>
               </Card>
             )}
@@ -402,7 +396,7 @@ export default function FindClient({
 
             <div className={styles.sideBox}>
               <div className={styles.sideRow}>
-                <span className={styles.sideK}>{t(locale, "Cell", "Cell")}</span>
+                <span className={styles.sideK}>{t(locale, "Cell/Spot", "Cell/Spot")}</span>
                 <span className={styles.sideV}>{areaKey ?? "—"}</span>
               </div>
               <div className={styles.sideRow}>
@@ -411,14 +405,43 @@ export default function FindClient({
               </div>
               <div className={styles.sideRow}>
                 <span className={styles.sideK}>{t(locale, "Præcision", "Precision")}</span>
-                <span className={styles.sideV}>
-                  {areaPrecision != null ? `${areaPrecision} km` : "—"}
-                </span>
+                <span className={styles.sideV}>{areaPrecision != null ? `${areaPrecision} km` : "—"}</span>
               </div>
               <div className={styles.sideRow}>
                 <span className={styles.sideK}>{t(locale, "Opdateret", "Updated")}</span>
                 <span className={styles.sideV}>{cell?.updated_at ? fmtTS(cell.updated_at) : "—"}</span>
               </div>
+            </div>
+
+            {/* ✅ NEW: Top species widget */}
+            <div className={styles.intelBox}>
+              <div className={styles.intelTitle}>{t(locale, "Top arter i området", "Top species in area")}</div>
+
+              {topSpeciesError ? (
+                <div className={styles.intelError}>
+                  {t(locale, "Fejl:", "Error:")} <strong>{topSpeciesError}</strong>
+                </div>
+              ) : topSpecies.length ? (
+                <div className={styles.intelList}>
+                  {topSpecies.map((r) => (
+                    <div key={r.species_id} className={styles.intelRow}>
+                      <div className={styles.intelMain}>
+                        <div className={styles.intelName}>{labelSpecies(locale, r)}</div>
+                        <div className={styles.intelMeta}>
+                          {(r.primary_group ?? "—")} · {t(locale, "30d", "30d")}: <strong>{r.c_last30}</strong>{" "}
+                          <span className={styles.intelSep}>·</span> {t(locale, "Q", "Q")}:{" "}
+                          <strong>{r.c_qtr}</strong>
+                        </div>
+                      </div>
+                      <div className={styles.intelCount}>{r.c_total}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className={styles.intelEmpty}>
+                  {t(locale, "Ingen area-data endnu.", "No area data yet.")}
+                </div>
+              )}
             </div>
 
             <Link className={styles.primary} href={mapHref}>
@@ -428,8 +451,8 @@ export default function FindClient({
             <div className={styles.sideHint}>
               {t(
                 locale,
-                "Næste: vi logger et rigtigt place_id (uuid) og kan vise præcis lokation + nærliggende steder.",
-                "Next: log a real place_id (uuid) so we can show precise location + nearby places."
+                "Næste: Forago Intelligence-score (risiko + confidence + momentum).",
+                "Next: Forago Intelligence score (risk + confidence + momentum)."
               )}
             </div>
           </div>
