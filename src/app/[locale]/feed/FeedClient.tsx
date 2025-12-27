@@ -5,18 +5,7 @@ import { useMemo } from "react";
 import styles from "./FeedPage.module.css";
 import { CardLink } from "@/components/UI/CardLink";
 import { Card } from "@/components/UI/Card";
-
-type FeedFind = {
-  id: string;
-  created_at?: string | null;
-  observed_at?: string | null; // date as string
-  species_id?: string | null;
-  notes?: string | null;
-  photo_url?: string | null;
-  visibility?: "private" | "friends" | "public_aggregate" | string | null;
-  user_id?: string | null;
-  spot_id?: string | null;
-};
+import type { FeedFind } from "./page";
 
 function fmt(ts?: string | null) {
   if (!ts) return "";
@@ -29,15 +18,24 @@ function fmt(ts?: string | null) {
   )} · ${hh}:${mm}`;
 }
 
-function isPublicAggregate(v?: string | null) {
-  return v === "public_aggregate";
-}
-
 function labelVisibility(locale: string, v?: string | null) {
   const dk = locale === "dk";
   if (v === "public_aggregate") return dk ? "Offentlig" : "Public";
   if (v === "friends") return dk ? "Venner" : "Friends";
   return dk ? "Privat" : "Private";
+}
+
+function computeTitle(locale: string, f: FeedFind) {
+  if (f.scientific_name) return f.scientific_name;
+  if (f.species_slug) return `#${f.species_slug}`;
+  return locale === "dk" ? "Ukendt art" : "Unknown species";
+}
+
+function computeSub(locale: string, f: FeedFind) {
+  const parts: string[] = [];
+  if (f.primary_group) parts.push(f.primary_group);
+  if (f.observed_at) parts.push(f.observed_at); // ISO date string (ok for now)
+  return parts.length ? parts.join(" · ") : (locale === "dk" ? "Fund" : "Find");
 }
 
 export default function FeedClient({
@@ -118,16 +116,11 @@ export default function FeedClient({
           {finds.map((f) => {
             const isMine = viewerUserId && f.user_id === viewerUserId;
 
-            // Title logic (you don't have species name yet)
-            const title = f.species_id
-              ? t("Fund registreret", "Find recorded")
-              : t("Ukendt art", "Unknown species");
-
-            // Photo: feed_finds returns first photo_urls element as photo_url
+            const title = computeTitle(locale, f);
+            const sub = computeSub(locale, f);
             const imgUrl = f.photo_url ? f.photo_url : null;
 
-            // Link target: keep your current behavior (map with log param)
-            // Better later: /[locale]/find/[id]
+            // keep map deep-link for now
             const href = `/${locale}/map?find=${encodeURIComponent(f.id)}`;
 
             return (
@@ -136,7 +129,7 @@ export default function FeedClient({
                   <div className={styles.metaRow}>
                     <span
                       className={`${styles.badge} ${
-                        isPublicAggregate(f.visibility)
+                        f.visibility === "public_aggregate"
                           ? styles.badgePublic
                           : styles.badgePrivate
                       }`}
@@ -151,20 +144,14 @@ export default function FeedClient({
                   </div>
 
                   <h2 className={styles.h2}>{title}</h2>
+                  <p className={styles.note}>{sub}</p>
 
                   {f.notes ? (
                     <p className={styles.note}>
                       <strong>{t("Note: ", "Note: ")}</strong>
                       {f.notes}
                     </p>
-                  ) : (
-                    <p className={styles.note}>
-                      {t(
-                        "Ingen note — du kan tilføje detaljer næste gang.",
-                        "No note — add details next time."
-                      )}
-                    </p>
-                  )}
+                  ) : null}
                 </div>
 
                 <div className={styles.media}>
