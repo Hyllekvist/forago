@@ -28,16 +28,18 @@ export function PostComposer() {
   const locale = (pathname?.split("/")[1] || "dk") as string;
 
   // ✅ Prefill fra URL: /ask?q=... (&type=How-to)
+  // Nøglepunkt: afhæng af values, ikke searchParams-objektet.
+  const qParam = (searchParams?.get("q") || "").trim();
+  const typeParam = (searchParams?.get("type") || "").trim();
+
   useEffect(() => {
-    const q = clamp(searchParams?.get("q") || "", 180);
-    const t = clamp(searchParams?.get("type") || "", 30);
+    const q = clamp(qParam, 180);
+    const t = clamp(typeParam, 30);
 
-    if (q) setTitle((prev) => (prev ? prev : q)); // overskriv ikke hvis user allerede skriver
+    // Overskriv ikke hvis brugeren allerede er i gang med at skrive
+    if (q) setTitle((prev) => (prev ? prev : q));
     if (t) setType(t);
-
-    // Hvis du vil auto-fokusere Title når q findes:
-    // requestAnimationFrame(() => document.getElementById("pc-title")?.focus());
-  }, [searchParams]);
+  }, [qParam, typeParam]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -54,17 +56,20 @@ export function PostComposer() {
 
       const json = (await res.json()) as ApiResp;
 
+      // Ikke logged in
       if (res.status === 401) {
         const returnTo = encodeURIComponent(pathname || `/${locale}/ask`);
         router.push(`/${locale}/login?returnTo=${returnTo}`);
         return;
       }
 
+      // Fejl (TS-sikkert)
       if (!res.ok || json.ok === false) {
         setErr(json.ok === false ? json.error : "Failed");
         return;
       }
 
+      // Success (TS-sikkert)
       setOkId(json.id);
       setTitle("");
       setBody("");
@@ -73,7 +78,7 @@ export function PostComposer() {
       // ✅ Ryd URL query så eksemplet ikke bliver ved med at prefill'e
       router.replace(pathname || `/${locale}/ask`);
 
-      // Optional:
+      // Optional: refresh hvis du viser posts nedenunder på samme side
       // router.refresh();
     } catch (e: any) {
       setErr(e?.message ?? "Noget gik galt");
