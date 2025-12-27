@@ -6,7 +6,7 @@ type Locale = "dk" | "en" | "se" | "de";
 function safeLocale(v: unknown): Locale {
   return v === "dk" || v === "en" || v === "se" || v === "de" ? v : "dk";
 }
- 
+
 type FindDetailPayload = {
   find: {
     id: string;
@@ -61,6 +61,17 @@ type FindDetailPayload = {
   }>;
 };
 
+export type TopSpeciesRow = {
+  species_id: string;
+  slug: string | null;
+  common_name: string | null;
+  scientific_name: string | null;
+  primary_group: string | null;
+  c_total: number;
+  c_last30: number;
+  c_qtr: number;
+};
+
 export default async function FindPage({
   params,
 }: {
@@ -76,12 +87,42 @@ export default async function FindPage({
     p_locale: locale,
   });
 
-  // supabase rpc returns jsonb; here it's already an object in JS
   const payload = (data ?? null) as FindDetailPayload | null;
+
+  // Top species widget (safe defaults)
+  let topSpecies: TopSpeciesRow[] = [];
+  let topSpeciesError: string | null = null;
+
+  try {
+    const country = payload?.find?.country ?? "DK";
+    const geo_cell = payload?.cell?.geo_cell ?? null;
+    const spot_id = geo_cell ? null : payload?.find?.spot_id ?? null;
+
+    if (geo_cell || spot_id) {
+      const { data: ts, error: tsErr } = await supabase.rpc("top_species_area", {
+        p_country: country,
+        p_geo_cell: geo_cell,
+        p_spot_id: spot_id,
+        p_locale: locale,
+        p_limit: 8,
+      });
+
+      if (tsErr) topSpeciesError = tsErr.message;
+      topSpecies = (ts ?? []) as any[];
+    }
+  } catch (e: any) {
+    topSpeciesError = e?.message ?? "Unknown";
+  }
 
   return (
     <main className={styles.page}>
-      <FindClient locale={locale} payload={payload} errorMsg={error?.message ?? null} />
+      <FindClient
+        locale={locale}
+        payload={payload}
+        errorMsg={error?.message ?? null}
+        topSpecies={topSpecies}
+        topSpeciesError={topSpeciesError}
+      />
     </main>
   );
 }
