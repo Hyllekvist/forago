@@ -4,7 +4,85 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import styles from "./FindPage.module.css";
 import { Card } from "@/components/UI/Card";
-import type { FindDetailPayload, TopSpeciesRow, SpotIntelligence } from "./page";
+
+type FindDetailPayload = {
+  find: {
+    id: string;
+    user_id: string | null;
+    species_id: string | null;
+    observed_at: string | null;
+    created_at: string | null;
+    notes: string | null;
+    photo_urls: string[] | null;
+    country: string | null;
+    spot_id: string | null;
+    geo_cell: string | null;
+    geo_precision_km: number | null;
+    visibility: string | null;
+  };
+  species: {
+    id: string;
+    slug: string | null;
+    primary_group: string | null;
+    scientific_name: string | null;
+  } | null;
+  translation: {
+    locale: string | null;
+    common_name: string | null;
+    short_description: string | null;
+    identification: string | null;
+    lookalikes: string | null;
+    usage_notes: string | null;
+    safety_notes: string | null;
+    updated_at: string | null;
+  } | null;
+  cell: {
+    country: string | null;
+    geo_cell: string | null;
+    precision_km: number | null;
+    finds_count: number | null;
+    updated_at: string | null;
+  } | null;
+  related: Array<{
+    id: string;
+    created_at: string | null;
+    observed_at: string | null;
+    species_id: string | null;
+    notes: string | null;
+    photo_url: string | null;
+    visibility: string | null;
+    user_id: string | null;
+    country: string | null;
+    spot_id: string | null;
+    geo_cell: string | null;
+    geo_precision_km: number | null;
+  }>;
+};
+
+export type TopSpeciesRow = {
+  species_id: string;
+  slug: string | null;
+  common_name: string | null;
+  scientific_name: string | null;
+  primary_group: string | null;
+  c_total: number;
+  c_last30: number;
+  c_qtr: number;
+};
+
+export type SpotIntelligence = {
+  country: string | null;
+  spot_id: string | null;
+  total: number;
+  qtr: number;
+  last30: number;
+  first_seen: string | null;
+  last_seen: string | null;
+  last_observed_at: string | null;
+  years_active: number;
+  stable_over_years: boolean;
+  year_counts: Array<{ year: number; count: number }>;
+};
 
 function t(locale: string, dk: string, en: string) {
   return locale === "dk" ? dk : en;
@@ -23,9 +101,7 @@ function fmtTS(ts?: string | null) {
 
 function fmtDate(date?: string | null) {
   if (!date) return "";
-  const parts = date.split("-");
-  if (parts.length !== 3) return date;
-  const [y, m, d] = parts;
+  const [y, m, d] = date.split("-");
   return `${d}.${m}.${y}`;
 }
 
@@ -51,196 +127,50 @@ function labelSpecies(locale: string, r: TopSpeciesRow) {
   return name ?? t(locale, "Ukendt art", "Unknown species");
 }
 
-function confidenceLabel(si: SpotIntelligence | null) {
-  if (!si) return { label: "—", level: "low" as const };
+function confidenceLabel(intel: SpotIntelligence | null, locale: string) {
+  if (!intel) return { label: t(locale, "—", "—"), tone: "low" as const };
 
-  const years = Number(si.years_active ?? 0);
-  const total = Number(si.total ?? 0);
+  const total = Number(intel.total ?? 0);
+  const years = Number(intel.years_active ?? 0);
 
-  if (years >= 3 && total >= 8) return { label: "Høj", level: "high" as const };
-  if (years >= 2 && total >= 3) return { label: "Medium", level: "mid" as const };
-  return { label: "Lav", level: "low" as const };
+  if (years >= 3 && total >= 8) return { label: t(locale, "Høj", "High"), tone: "high" as const };
+  if (years >= 2 && total >= 3) return { label: t(locale, "Medium", "Medium"), tone: "mid" as const };
+  return { label: t(locale, "Lav", "Low"), tone: "low" as const };
 }
 
-function stabilityText(locale: string, si: SpotIntelligence | null) {
-  if (!si) return t(locale, "—", "—");
-  const years = Number(si.years_active ?? 0);
-  const stable = !!si.stable_over_years;
+function qas(intel: SpotIntelligence | null, locale: string) {
+  if (!intel) {
+    return [
+      { q: t(locale, "Har arten været her før?", "Has it been here before?"), a: t(locale, "—", "—") },
+      { q: t(locale, "Hvornår var sidste observation?", "When was the last observation?"), a: t(locale, "—", "—") },
+      { q: t(locale, "Er dette spot stabilt over år?", "Is this spot stable over years?"), a: t(locale, "—", "—") },
+    ];
+  }
 
-  if (years >= 3 && stable) return t(locale, "Ja (stabil over år)", "Yes (stable over years)");
-  if (years >= 2) return t(locale, "Tegn på stabilitet", "Signs of stability");
-  return t(locale, "For ny til at vurdere", "Too new to judge");
+  const total = Number(intel.total ?? 0);
+  const years = Number(intel.years_active ?? 0);
+  const lastObs = intel.last_observed_at ? fmtDate(intel.last_observed_at) : fmtTS(intel.last_seen);
+
+  const beenHere =
+    total >= 2
+      ? t(locale, "Ja — set før", "Yes — seen before")
+      : t(locale, "Næsten nyt — 1 observation", "Mostly new — 1 observation");
+
+  let stable = t(locale, "For ny til at vurdere", "Too new to tell");
+  if (years >= 3 && intel.stable_over_years) stable = t(locale, "Ja — stabil over år", "Yes — stable over years");
+  else if (years >= 2) stable = t(locale, "Tegn på stabilitet", "Signs of stability");
+
+  return [
+    { q: t(locale, "Har arten været her før?", "Has it been here before?"), a: beenHere },
+    { q: t(locale, "Hvornår var sidste observation?", "When was the last observation?"), a: lastObs || t(locale, "—", "—") },
+    { q: t(locale, "Er dette spot stabilt over år?", "Is this spot stable over years?"), a: stable },
+  ];
 }
 
-function seenBeforeText(locale: string, si: SpotIntelligence | null) {
-  if (!si) return t(locale, "—", "—");
-  const total = Number(si.total ?? 0);
-  if (total >= 2) return t(locale, "Ja — set før", "Yes — seen before");
-  if (total === 1) return t(locale, "Næsten nyt — 1 observation", "Mostly new — 1 observation");
-  return t(locale, "Ingen data", "No data");
-}
-
-function lastObsText(locale: string, si: SpotIntelligence | null) {
-  if (!si) return t(locale, "—", "—");
-  // Prefer last_observed_at (date), fallback to last_seen (timestamp)
-  if (si.last_observed_at) return fmtDate(si.last_observed_at);
-  if (si.last_seen) return fmtTS(si.last_seen);
-  return t(locale, "—", "—");
-}
-
-function yearBars(si: SpotIntelligence | null) {
-  const rows = si?.year_counts ?? [];
-  const cleaned = rows
-    .map((r) => ({ year: Number(r.year), count: Number(r.count) }))
-    .filter((x) => Number.isFinite(x.year) && Number.isFinite(x.count))
-    .sort((a, b) => a.year - b.year)
-    .slice(-6); // keep it tiny
-
-  const max = Math.max(1, ...cleaned.map((x) => x.count));
-  return cleaned.map((x) => ({
-    ...x,
-    pct: Math.round((x.count / max) * 100),
-  }));
-}
-
-function IntelCard({
-  locale,
-  spotIntel,
-  spotIntelError,
-  topSpecies,
-  topSpeciesError,
-}: {
-  locale: string;
-  spotIntel: SpotIntelligence | null;
-  spotIntelError: string | null;
-  topSpecies: TopSpeciesRow[];
-  topSpeciesError: string | null;
-}) {
-  const conf = confidenceLabel(spotIntel);
-  const bars = useMemo(() => yearBars(spotIntel), [spotIntel?.year_counts]);
-
-  // If we have neither spot intel nor topSpecies, don’t show the card.
-  const hasSomething =
-    !!spotIntel ||
-    (!!topSpecies && topSpecies.length > 0) ||
-    !!spotIntelError ||
-    !!topSpeciesError;
-
-  if (!hasSomething) return null;
-
-  return (
-    <section className={styles.intelCard} aria-label="Forago Intelligence">
-      <div className={styles.intelHead}>
-        <div className={styles.intelTitleRow}>
-          <div className={styles.intelTitle}>Forago Intelligence</div>
-          <span className={styles.intelBadge} data-level={conf.level}>
-            {t(locale, "Confidence:", "Confidence:")} <strong>{conf.label}</strong>
-          </span>
-        </div>
-
-        <div className={styles.intelSub}>
-          {t(
-            locale,
-            "Svar på de vigtigste spørgsmål — uden at gøre det kompliceret.",
-            "Answers to the key questions — without making it complicated."
-          )}
-        </div>
-      </div>
-
-      {spotIntelError ? (
-        <div className={styles.intelError}>
-          {t(locale, "Fejl i intelligence:", "Intelligence error:")}{" "}
-          <strong>{spotIntelError}</strong>
-        </div>
-      ) : spotIntel ? (
-        <>
-          <div className={styles.qaGrid}>
-            <div className={styles.qaItem}>
-              <div className={styles.qaQ}>{t(locale, "Har arten været her før?", "Has it been here before?")}</div>
-              <div className={styles.qaA}>{seenBeforeText(locale, spotIntel)}</div>
-            </div>
-
-            <div className={styles.qaItem}>
-              <div className={styles.qaQ}>{t(locale, "Hvornår var sidste observation?", "When was the last observation?")}</div>
-              <div className={styles.qaA}>{lastObsText(locale, spotIntel)}</div>
-            </div>
-
-            <div className={styles.qaItem}>
-              <div className={styles.qaQ}>{t(locale, "Er spot stabilt over år?", "Is this spot stable over years?")}</div>
-              <div className={styles.qaA}>{stabilityText(locale, spotIntel)}</div>
-            </div>
-          </div>
-
-          <div className={styles.intelStatsRow}>
-            <div className={styles.statPill}>
-              <span className={styles.statK}>{t(locale, "Total", "Total")}</span>
-              <span className={styles.statV}>{spotIntel.total}</span>
-            </div>
-            <div className={styles.statPill}>
-              <span className={styles.statK}>{t(locale, "30 dage", "30 days")}</span>
-              <span className={styles.statV}>{spotIntel.last30}</span>
-            </div>
-            <div className={styles.statPill}>
-              <span className={styles.statK}>{t(locale, "Kvartal", "Quarter")}</span>
-              <span className={styles.statV}>{spotIntel.qtr}</span>
-            </div>
-            <div className={styles.statPill}>
-              <span className={styles.statK}>{t(locale, "År aktive", "Years active")}</span>
-              <span className={styles.statV}>{spotIntel.years_active}</span>
-            </div>
-          </div>
-
-          {bars.length ? (
-            <div className={styles.sparkWrap}>
-              <div className={styles.sparkTitle}>{t(locale, "Stabilitet over år", "Stability over years")}</div>
-              <div className={styles.spark}>
-                {bars.map((b) => (
-                  <div key={b.year} className={styles.sparkCol} title={`${b.year}: ${b.count}`}>
-                    <div className={styles.sparkBar} style={{ height: `${Math.max(8, b.pct)}%` }} />
-                    <div className={styles.sparkYear}>{String(b.year).slice(-2)}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </>
-      ) : (
-        <div className={styles.intelEmpty}>
-          {t(locale, "Ingen intelligence-data endnu.", "No intelligence data yet.")}
-        </div>
-      )}
-
-      <div className={styles.intelDivider} />
-
-      <div className={styles.topSpeciesHead}>
-        <div className={styles.topSpeciesTitle}>{t(locale, "Top arter i området", "Top species in area")}</div>
-        <div className={styles.topSpeciesHint}>{t(locale, "Social proof i dit område.", "Social proof in your area.")}</div>
-      </div>
-
-      {topSpeciesError ? (
-        <div className={styles.intelError}>
-          {t(locale, "Fejl i top arter:", "Top species error:")} <strong>{topSpeciesError}</strong>
-        </div>
-      ) : topSpecies.length ? (
-        <div className={styles.topList}>
-          {topSpecies.slice(0, 5).map((r) => (
-            <div key={r.species_id} className={styles.topRow}>
-              <div className={styles.topMain}>
-                <div className={styles.topName}>{labelSpecies(locale, r)}</div>
-                <div className={styles.topMeta}>
-                  {(r.primary_group ?? "—")} · {t(locale, "30d", "30d")}: <strong>{r.c_last30}</strong>{" "}
-                  <span className={styles.topSep}>·</span> {t(locale, "Q", "Q")}: <strong>{r.c_qtr}</strong>
-                </div>
-              </div>
-              <div className={styles.topCount}>{r.c_total}</div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className={styles.intelEmpty}>{t(locale, "Ingen area-data endnu.", "No area data yet.")}</div>
-      )}
-    </section>
-  );
+function normalizeYearCounts(intel: SpotIntelligence | null) {
+  const rows = intel?.year_counts ?? [];
+  const max = Math.max(1, ...rows.map((r) => Number(r.count ?? 0)));
+  return { rows, max };
 }
 
 export default function FindClient({
@@ -302,7 +232,7 @@ export default function FindClient({
   const areaCount = cell?.finds_count ?? null;
   const areaPrecision = cell?.precision_km ?? f?.geo_precision_km ?? null;
 
-  // correct deep-link types
+  // map deep-link: cell -> ?cell=, spot -> ?spot=, fallback find -> ?find=
   const mapHref = cell?.geo_cell
     ? `/${locale}/map?cell=${encodeURIComponent(cell.geo_cell)}`
     : f?.spot_id
@@ -318,10 +248,119 @@ export default function FindClient({
 
   const overviewText = tr?.short_description ?? f?.notes ?? null;
 
+  const conf = useMemo(() => confidenceLabel(spotIntel, locale), [spotIntel, locale]);
+  const qa = useMemo(() => qas(spotIntel, locale), [spotIntel, locale]);
+  const yc = useMemo(() => normalizeYearCounts(spotIntel), [spotIntel]);
+
+  const intelSummary = spotIntel
+    ? t(locale, "Aktivitet", "Activity") +
+      `: ${spotIntel.total} · ` +
+      t(locale, "30d", "30d") +
+      `: ${spotIntel.last30} · ` +
+      t(locale, "Q", "Q") +
+      `: ${spotIntel.qtr}`
+    : t(locale, "Ingen data endnu.", "No data yet.");
+
+  const IntelligenceCard = (
+    <div className={styles.intelCard}>
+      <div className={styles.intelHead}>
+        <div className={styles.intelHeadLeft}>
+          <div className={styles.intelKicker}>{t(locale, "Forago Intelligence", "Forago Intelligence")}</div>
+          <div className={styles.intelSub}>{intelSummary}</div>
+        </div>
+
+        <div className={styles.confBadge} data-tone={conf.tone}>
+          <span className={styles.confK}>{t(locale, "Confidence", "Confidence")}</span>
+          <span className={styles.confV}>{conf.label}</span>
+        </div>
+      </div>
+
+      {spotIntelError ? (
+        <div className={styles.intelError}>
+          {t(locale, "Fejl:", "Error:")} <strong>{spotIntelError}</strong>
+        </div>
+      ) : null}
+
+      <div className={styles.qaGrid}>
+        {qa.map((x, i) => (
+          <div key={i} className={styles.qaItem}>
+            <div className={styles.qaQ}>{x.q}</div>
+            <div className={styles.qaA}>{x.a}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className={styles.stability}>
+        <div className={styles.stabilityTop}>
+          <div className={styles.stabilityTitle}>{t(locale, "Stabilitet over år", "Stability over years")}</div>
+          <div className={styles.stabilityMeta}>
+            {spotIntel?.first_seen ? (
+              <>
+                {t(locale, "Først set", "First seen")}: <strong>{fmtTS(spotIntel.first_seen)}</strong>
+                <span className={styles.dot} aria-hidden />
+              </>
+            ) : null}
+            {spotIntel?.last_seen ? (
+              <>
+                {t(locale, "Sidst set", "Last seen")}: <strong>{fmtTS(spotIntel.last_seen)}</strong>
+              </>
+            ) : null}
+          </div>
+        </div>
+
+        {yc.rows.length ? (
+          <div className={styles.bars}>
+            {yc.rows.map((r) => {
+              const h = Math.max(0.12, Number(r.count ?? 0) / yc.max); // min-height følelse
+              return (
+                <div key={r.year} className={styles.barItem} title={`${r.year}: ${r.count}`}>
+                  <div className={styles.bar} style={{ height: `${Math.round(h * 100)}%` }} />
+                  <div className={styles.barLabel}>{String(r.year).slice(2)}</div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className={styles.stabilityEmpty}>
+            {t(locale, "For få data til stability-visning endnu.", "Not enough data for stability yet.")}
+          </div>
+        )}
+      </div>
+
+      {/* Fold Top species ind i samme card */}
+      <div className={styles.topSpecies}>
+        <div className={styles.topSpeciesTitle}>{t(locale, "Top arter i området", "Top species in area")}</div>
+
+        {topSpeciesError ? (
+          <div className={styles.topSpeciesEmpty}>
+            {t(locale, "Fejl:", "Error:")} <strong>{topSpeciesError}</strong>
+          </div>
+        ) : topSpecies.length ? (
+          <div className={styles.topSpeciesList}>
+            {topSpecies.slice(0, 5).map((r) => (
+              <div key={r.species_id} className={styles.topRow}>
+                <div className={styles.topMain}>
+                  <div className={styles.topName}>{labelSpecies(locale, r)}</div>
+                  <div className={styles.topMeta}>
+                    {(r.primary_group ?? "—")} · {t(locale, "30d", "30d")}: <strong>{r.c_last30}</strong>{" "}
+                    <span className={styles.sep}>·</span> {t(locale, "Q", "Q")}: <strong>{r.c_qtr}</strong>
+                  </div>
+                </div>
+                <div className={styles.topCount}>{r.c_total}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className={styles.topSpeciesEmpty}>{t(locale, "Ingen area-data endnu.", "No area data yet.")}</div>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className={styles.wrap}>
       {/* Top row */}
-      <div className={styles.topRow}>
+      <div className={styles.topRowNav}>
         <Link className={styles.backTop} href={`/${locale}/feed`}>
           ← {t(locale, "Feed", "Feed")}
         </Link>
@@ -404,14 +443,8 @@ export default function FindClient({
             )}
           </div>
 
-          {/* ✅ MOBILE-FIRST: Intelligence card is here (visible on mobile) */}
-          <IntelCard
-            locale={locale}
-            spotIntel={spotIntel}
-            spotIntelError={spotIntelError}
-            topSpecies={topSpecies}
-            topSpeciesError={topSpeciesError}
-          />
+          {/* ✅ Mobile-first: intelligence card IN FLOW */}
+          <div className={styles.mobileIntel}>{IntelligenceCard}</div>
 
           {/* Tabs */}
           <div className={styles.tabs}>
@@ -524,9 +557,7 @@ export default function FindClient({
               </div>
             ) : (
               <Card className={styles.emptyRelated}>
-                <div className={styles.emptyTitle}>
-                  {t(locale, "Ingen andre fund endnu", "No other finds yet")}
-                </div>
+                <div className={styles.emptyTitle}>{t(locale, "Ingen andre fund endnu", "No other finds yet")}</div>
                 <div className={styles.emptyBody}>
                   {t(locale, "Det her område er stadig nyt i systemet.", "This area is still new in the system.")}
                 </div>
@@ -535,7 +566,7 @@ export default function FindClient({
           </div>
         </section>
 
-        {/* RIGHT (desktop only) */}
+        {/* RIGHT (desktop sticky) */}
         <aside className={styles.right}>
           <div className={styles.sticky}>
             <div className={styles.sideTitle}>{t(locale, "Område", "Area")}</div>
@@ -559,28 +590,12 @@ export default function FindClient({
               </div>
             </div>
 
-            {/* Desktop: show the same intelligence card in sidebar too */}
-            <div className={styles.desktopIntelWrap}>
-              <IntelCard
-                locale={locale}
-                spotIntel={spotIntel}
-                spotIntelError={spotIntelError}
-                topSpecies={topSpecies}
-                topSpeciesError={topSpeciesError}
-              />
-            </div>
+            {/* ✅ Desktop: samme intelligence card */}
+            <div className={styles.desktopIntel}>{IntelligenceCard}</div>
 
             <Link className={styles.primary} href={mapHref}>
               {t(locale, "Åbn område på kort", "Open area on map")} →
             </Link>
-
-            <div className={styles.sideHint}>
-              {t(
-                locale,
-                "Tip: Når vi får flere logs, bliver stabilitet og confidence automatisk mere præcis.",
-                "Tip: As more logs come in, stability and confidence become more accurate."
-              )}
-            </div>
           </div>
         </aside>
       </div>
