@@ -9,10 +9,16 @@ import { Card } from "@/components/UI/Card";
 type LogItem = {
   id: string;
   created_at?: string | null;
-  title?: string | null;
+  locale?: string | null;
+
   species_query?: string | null;
+  note?: string | null;
+
   photo_path?: string | null;
-  visibility?: "public" | "private" | null;
+  photo_width?: number | null;
+  photo_height?: number | null;
+
+  visibility?: "public" | "private" | string | null;
   user_id?: string | null;
 };
 
@@ -21,17 +27,47 @@ export default function FeedClient({
   month,
   logs,
   viewerUserId,
+  errorMsg,
 }: {
   locale: string;
   month: number;
   logs: LogItem[];
   viewerUserId: string | null;
+  errorMsg?: string | null;
 }) {
   const t = (dk: string, en: string) => (locale === "dk" ? dk : en);
 
   const monthName = useMemo(() => {
-    const dk = ["", "januar","februar","marts","april","maj","juni","juli","august","september","oktober","november","december"];
-    const en = ["", "January","February","March","April","May","June","July","August","September","October","November","December"];
+    const dk = [
+      "",
+      "januar",
+      "februar",
+      "marts",
+      "april",
+      "maj",
+      "juni",
+      "juli",
+      "august",
+      "september",
+      "oktober",
+      "november",
+      "december",
+    ];
+    const en = [
+      "",
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
     return (locale === "dk" ? dk : en)[month] ?? String(month);
   }, [locale, month]);
 
@@ -40,7 +76,14 @@ export default function FeedClient({
     const d = new Date(ts);
     const hh = String(d.getHours()).padStart(2, "0");
     const mm = String(d.getMinutes()).padStart(2, "0");
-    return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")} · ${hh}:${mm}`;
+    return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(
+      2,
+      "0"
+    )} · ${hh}:${mm}`;
+  }
+
+  function isPublic(v?: string | null) {
+    return v === "public";
   }
 
   return (
@@ -59,12 +102,20 @@ export default function FeedClient({
         </Link>
       </div>
 
-      {logs.length ? (
+      {errorMsg ? (
+        <Card className={styles.empty}>
+          <div className={styles.emptyIcon}>⚠️</div>
+          <div className={styles.emptyTitle}>{t("Feed fejlede", "Feed failed")}</div>
+          <div className={styles.emptyBody}>
+            {t("DB sagde:", "DB said:")} <strong>{errorMsg}</strong>
+          </div>
+        </Card>
+      ) : logs.length ? (
         <div className={styles.grid}>
           {logs.map((l) => {
             const isMine = viewerUserId && l.user_id === viewerUserId;
+
             const title =
-              l.title ||
               l.species_query ||
               (locale === "dk" ? "Nyt fund" : "New find");
 
@@ -80,16 +131,28 @@ export default function FeedClient({
               >
                 <div className={styles.cardTop}>
                   <div className={styles.metaRow}>
-                    <span className={`${styles.badge} ${l.visibility === "public" ? styles.badgePublic : styles.badgePrivate}`}>
-                      {l.visibility === "public" ? t("Offentlig", "Public") : t("Privat", "Private")}
+                    <span
+                      className={`${styles.badge} ${
+                        isPublic(l.visibility) ? styles.badgePublic : styles.badgePrivate
+                      }`}
+                    >
+                      {isPublic(l.visibility) ? t("Offentlig", "Public") : t("Privat", "Private")}
                     </span>
+
                     {isMine ? <span className={styles.mine}>{t("Dig", "You")}</span> : null}
+
                     <span className={styles.sep}>·</span>
                     <span className={styles.when}>{fmt(l.created_at)}</span>
                   </div>
 
                   <h2 className={styles.h2}>{title}</h2>
-                  {l.species_query ? (
+
+                  {l.note ? (
+                    <p className={styles.note}>
+                      <strong>{t("Note: ", "Note: ")}</strong>
+                      {l.note}
+                    </p>
+                  ) : l.species_query ? (
                     <p className={styles.note}>
                       {t("Art (valgfrit): ", "Species (optional): ")}
                       <strong>{l.species_query}</strong>
@@ -104,7 +167,12 @@ export default function FeedClient({
                 <div className={styles.media}>
                   {imgUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img className={styles.img} src={imgUrl} alt="" />
+                    <img
+                      className={styles.img}
+                      src={imgUrl}
+                      alt=""
+                      loading="lazy"
+                    />
                   ) : (
                     <div className={styles.mediaEmpty}>
                       <div className={styles.mediaIcon}>📷</div>
