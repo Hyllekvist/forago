@@ -378,3 +378,77 @@
     line-height: 1.45;
   }
 }
+
+.intelBox{
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel2) 72%, transparent);
+  border-radius: 16px;
+  padding: 12px;
+}
+
+.intelTitle{
+  font-weight: 950;
+  font-size: 12px;
+  margin-bottom: 10px;
+  letter-spacing: -0.01em;
+}
+
+.intelError{
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.intelEmpty{
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.intelList{
+  display: grid;
+  gap: 8px;
+}
+
+.intelRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 14px;
+  padding: 10px 10px;
+}
+
+.intelMain{ min-width: 0; }
+
+.intelName{
+  font-weight: 950;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.intelMeta{
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.intelSep{ opacity: .65; margin: 0 4px; }
+
+.intelCount{
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-weight: 950;
+  font-size: 12px;
+}
