@@ -1,11 +1,11 @@
-"use client"; 
+"use client";
 
 import Link from "next/link";
 import { useMemo } from "react";
 import styles from "./FeedPage.module.css";
 import { CardLink } from "@/components/UI/CardLink";
 import { Card } from "@/components/UI/Card";
-import type { FeedFind } from "./page";
+import type { FeedFind, TopSpeciesSpot } from "./page";
 
 function fmt(ts?: string | null) {
   if (!ts) return "";
@@ -34,9 +34,17 @@ function computeTitle(locale: string, f: FeedFind) {
 
 function computeSub(locale: string, f: FeedFind) {
   const parts: string[] = [];
+  if (f.scientific_name && f.common_name) parts.push(f.scientific_name);
   if (f.primary_group) parts.push(f.primary_group);
   if (f.observed_at) parts.push(f.observed_at);
   return parts.length ? parts.join(" · ") : locale === "dk" ? "Fund" : "Find";
+}
+
+function topLabel(locale: string, r: TopSpeciesSpot) {
+  if (r.common_name) return r.common_name;
+  if (r.scientific_name) return r.scientific_name;
+  if (r.species_slug) return `#${r.species_slug}`;
+  return locale === "dk" ? "Ukendt art" : "Unknown species";
 }
 
 export default function FeedClient({
@@ -45,12 +53,17 @@ export default function FeedClient({
   finds,
   viewerUserId,
   errorMsg,
+  topSpecies,
+  topSpeciesError,
 }: {
   locale: string;
   month: number;
   finds: FeedFind[];
   viewerUserId: string | null;
   errorMsg?: string | null;
+
+  topSpecies: TopSpeciesSpot[];
+  topSpeciesError?: string | null;
 }) {
   const t = (dk: string, en: string) => (locale === "dk" ? dk : en);
 
@@ -104,6 +117,60 @@ export default function FeedClient({
         </Link>
       </div>
 
+      {/* ✅ Social proof widget */}
+      <div className={styles.widget}>
+        <div className={styles.widgetTop}>
+          <div className={styles.widgetTitle}>
+            {t("Hotte spots lige nu", "Hot spots right now")}
+          </div>
+          <div className={styles.widgetHint}>
+            {t("Seneste 14 dage", "Last 14 days")}
+          </div>
+        </div>
+
+        {topSpeciesError ? (
+          <div className={styles.widgetError}>
+            {t("Kunne ikke hente widget-data.", "Could not load widget data.")}{" "}
+            <strong>{topSpeciesError}</strong>
+          </div>
+        ) : topSpecies?.length ? (
+          <div className={styles.widgetGrid}>
+            {topSpecies.map((r) => {
+              const spot = r.spot_id ?? "";
+              const label = topLabel(locale, r);
+              const count = Number(r.finds_count ?? 0);
+
+              // Deep link to map, we keep it consistent with your map patterns
+              const href = `/${locale}/map?spot=${encodeURIComponent(spot)}`;
+
+              return (
+                <Link key={`${spot}-${r.species_id ?? "x"}`} className={styles.widgetCard} href={href}>
+                  <div className={styles.widgetCardTop}>
+                    <div className={styles.widgetSpot}>Spot {spot}</div>
+                    <div className={styles.widgetCount}>
+                      {count} {t("fund", "finds")}
+                    </div>
+                  </div>
+
+                  <div className={styles.widgetSpecies}>{label}</div>
+
+                  <div className={styles.widgetMeta}>
+                    {r.primary_group ? r.primary_group : t("art", "species")}
+                    <span className={styles.widgetDot}>·</span>
+                    {t("Åbn på kort", "Open on map")} →
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <div className={styles.widgetEmpty}>
+            {t("Ingen data endnu.", "No data yet.")}
+          </div>
+        )}
+      </div>
+
+      {/* Feed errors */}
       {errorMsg ? (
         <Card className={styles.empty}>
           <div className={styles.emptyIcon}>⚠️</div>
@@ -121,10 +188,7 @@ export default function FeedClient({
             const sub = computeSub(locale, f);
             const imgUrl = f.photo_url ? f.photo_url : null;
 
-            // ✅ primary link: Find Detail
             const detailHref = `/${locale}/find/${encodeURIComponent(f.id)}`;
-
-            // ✅ secondary: open map for this find
             const mapHref = `/${locale}/map?find=${encodeURIComponent(f.id)}`;
 
             return (
