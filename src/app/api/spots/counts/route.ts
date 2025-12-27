@@ -3,13 +3,15 @@ import { supabaseServer } from "@/lib/supabase/server";
 
 function quarterStartISO(d = new Date()) {
   const q = Math.floor(d.getMonth() / 3); // 0..3
-  const startMonth = q * 3; // 0,3,6,9
+  const startMonth = q * 3;
   const start = new Date(d.getFullYear(), startMonth, 1);
   return start.toISOString();
 }
 
 function daysAgoISO(days: number) {
-  return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.toISOString();
 }
 
 export async function GET(req: Request) {
@@ -23,26 +25,22 @@ export async function GET(req: Request) {
     const fresh = searchParams.get("fresh") === "1";
     const supabase = await supabaseServer();
 
-    // Base filter (keep consistent everywhere)
-    const base = supabase
-      .from("finds")
-      .eq("spot_id", spot_id)
-      .eq("country", "DK")
-      .eq("visibility", "public_aggregate");
+    // ✅ IMPORTANT: call select() first, then filter with eq/gte
+    const base = () =>
+      supabase
+        .from("finds")
+        .select("id", { count: "exact", head: true })
+        .eq("spot_id", spot_id)
+        .eq("country", "DK")
+        .eq("visibility", "public_aggregate");
 
-    // Total count
-    const totalQ = await supabase
-      .from("finds")
-      .select("id", { count: "exact", head: true })
-      .eq("spot_id", spot_id)
-      .eq("country", "DK")
-      .eq("visibility", "public_aggregate");
-
+    // total
+    const totalQ = await base();
     if (totalQ.error) {
       return NextResponse.json({ ok: false, error: totalQ.error.message }, { status: 500 });
     }
 
-    // qtr count (current quarter)
+    // qtr
     const qtrFrom = quarterStartISO();
     const qtrQ = await supabase
       .from("finds")
@@ -56,7 +54,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, error: qtrQ.error.message }, { status: 500 });
     }
 
-    // last30 count
+    // last 30 days
     const last30From = daysAgoISO(30);
     const last30Q = await supabase
       .from("finds")
@@ -70,7 +68,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, error: last30Q.error.message }, { status: 500 });
     }
 
-    // first_seen
+    // first_seen (oldest)
     const firstQ = await supabase
       .from("finds")
       .select("created_at")
@@ -84,7 +82,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, error: firstQ.error.message }, { status: 500 });
     }
 
-    // last_seen
+    // last_seen (newest)
     const lastQ = await supabase
       .from("finds")
       .select("created_at")
