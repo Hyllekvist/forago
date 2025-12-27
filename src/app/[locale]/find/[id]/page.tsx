@@ -5,7 +5,7 @@ import styles from "./FindPage.module.css";
 type Locale = "dk" | "en" | "se" | "de";
 function safeLocale(v: unknown): Locale {
   return v === "dk" || v === "en" || v === "se" || v === "de" ? v : "dk";
-}
+} 
 
 type FindDetailPayload = {
   find: {
