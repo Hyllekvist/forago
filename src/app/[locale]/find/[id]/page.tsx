@@ -1,3 +1,6 @@
+// src/app/[locale]/find/[id]/page.tsx
+export const dynamic = "force-dynamic";
+
 import { supabaseServer } from "@/lib/supabase/server";
 import FindClient from "./FindClient";
 import styles from "./FindPage.module.css";
@@ -5,7 +8,7 @@ import styles from "./FindPage.module.css";
 type Locale = "dk" | "en" | "se" | "de";
 function safeLocale(v: unknown): Locale {
   return v === "dk" || v === "en" || v === "se" || v === "de" ? v : "dk";
-} 
+}
 
 type FindDetailPayload = {
   find: {
@@ -90,7 +93,6 @@ async function fetchSpotIntelligence(
   supabase: any,
   args: { country: string; spot_id: string }
 ): Promise<{ data: SpotIntelligence | null; error: string | null }> {
-  // Vi prøver et par signaturer for at være robust mod dit faktiske RPC setup
   const attempts: Array<{ fn: string; payload: any }> = [
     { fn: "spot_intelligence", payload: { p_country: args.country, p_spot_id: args.spot_id } },
     { fn: "spot_intelligence", payload: { p_spot_id: args.spot_id } },
@@ -100,22 +102,12 @@ async function fetchSpotIntelligence(
     const { data, error } = await supabase.rpc(a.fn, a.payload);
     if (!error) {
       const raw = (data ?? null) as any;
-
-      // support:
-      // 1) { spot_intelligence: {...} }
-      // 2) {...}
-      // 3) [{ spot_intelligence: {...}}]
-      const pick =
-        raw?.spot_intelligence ??
-        raw?.[0]?.spot_intelligence ??
-        raw ??
-        null;
-
+      const pick = raw?.spot_intelligence ?? raw?.[0]?.spot_intelligence ?? raw ?? null;
       return { data: (pick ?? null) as SpotIntelligence | null, error: null };
     }
   }
 
-  // hvis alle fejler, returnér stille fejl
+  // fallback: return last error message if any
   const last = await supabase.rpc("spot_intelligence", { p_spot_id: args.spot_id });
   return { data: null, error: last?.error?.message ?? "Unknown" };
 }
@@ -147,15 +139,19 @@ export default async function FindPage({
 
   try {
     const country = payload?.find?.country ?? "DK";
-    const geo_cell = payload?.cell?.geo_cell ?? null;
-    const spot_id = geo_cell ? null : payload?.find?.spot_id ?? null;
 
-    // Top species: geo_cell først, ellers spot_id
+    // geo_cell can come from cell OR find (fallback)
+    const geo_cell = payload?.cell?.geo_cell ?? payload?.find?.geo_cell ?? null;
+
+    // ✅ IMPORTANT: never null spot_id just because geo_cell exists
+    const spot_id = payload?.find?.spot_id ?? null;
+
+    // Top species: prefer geo_cell; otherwise spot_id
     if (geo_cell || spot_id) {
       const { data: ts, error: tsErr } = await supabase.rpc("top_species_area", {
         p_country: country,
         p_geo_cell: geo_cell,
-        p_spot_id: spot_id,
+        p_spot_id: geo_cell ? null : spot_id,
         p_locale: locale,
         p_limit: 8,
       });
@@ -164,13 +160,14 @@ export default async function FindPage({
       topSpecies = (ts ?? []) as any[];
     }
 
-    // Spot intelligence: kun spot_id (geo_cell kan komme senere, hvis du laver geo_cell_intelligence)
+    // Spot intelligence: spot-based for now
     if (spot_id) {
       const r = await fetchSpotIntelligence(supabase, { country, spot_id });
       spotIntel = r.data;
       spotIntelError = r.error;
     }
   } catch (e: any) {
+    // keep it non-fatal
     topSpeciesError = topSpeciesError ?? (e?.message ?? "Unknown");
   }
 
