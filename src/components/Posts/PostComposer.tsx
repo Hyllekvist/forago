@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import styles from "./PostComposer.module.css";
 
@@ -13,26 +13,86 @@ function clamp(s: string, n: number) {
   return t.length > n ? t.slice(0, n) : t;
 }
 
+type Draft = {
+  title: string;
+  body: string;
+  type: string;
+  ts: number;
+};
+
 export function PostComposer() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  const locale = (pathname?.split("/")[1] || "dk") as string;
+
+  // ✅ Default væk fra “Identification”
+  const [type, setType] = useState("How-to");
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-
-  // ✅ Default væk fra “Identification” (forago er ikke svampe-only længere)
-  const [type, setType] = useState("How-to");
-
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const [okId, setOkId] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const locale = (pathname?.split("/")[1] || "dk") as string;
+  // ---------- Draft storage (så login ikke smider teksten væk) ----------
+  const draftKey = useMemo(() => `forago_draft:${locale}:ask`, [locale]);
 
-  // ✅ Prefill fra URL: /ask?q=... (&type=How-to)
+  function saveDraft(partial?: Partial<Draft>) {
+    if (typeof window === "undefined") return;
+    const draft: Draft = {
+      title,
+      body,
+      type,
+      ts: Date.now(),
+      ...(partial ?? {}),
+    };
+    try {
+      window.localStorage.setItem(draftKey, JSON.stringify(draft));
+    } catch {}
+  }
+
+  function clearDraft() {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.removeItem(draftKey);
+    } catch {}
+  }
+
+  // Restore draft on mount (fx efter login redirect)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(draftKey);
+      if (!raw) return;
+      const d = JSON.parse(raw) as Draft;
+
+      // drop old drafts (7 dage)
+      if (!d?.ts || Date.now() - d.ts > 7 * 24 * 60 * 60 * 1000) {
+        clearDraft();
+        return;
+      }
+
+      if (d.title) setTitle((prev) => (prev ? prev : d.title));
+      if (d.body) setBody((prev) => (prev ? prev : d.body));
+      if (d.type) setType(d.type);
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftKey]);
+
+  // Gem draft løbende (lightweight)
+  useEffect(() => {
+    // gem ikke tomt
+    if (!title && !body) return;
+    const t = window.setTimeout(() => saveDraft(), 250);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, body, type]);
+
+  // ---------- Prefill fra URL (eksempler) ----------
   const qParam = (searchParams?.get("q") || "").trim();
   const typeParam = (searchParams?.get("type") || "").trim();
 
@@ -40,8 +100,16 @@ export function PostComposer() {
     const q = clamp(qParam, 180);
     const t = clamp(typeParam, 30);
 
-    if (q) setTitle((prev) => (prev ? prev : q));
-    if (t) setType(t);
+    if (q) {
+      setTitle((prev) => (prev ? prev : q));
+      // Gem med det samme så login-loop ikke mister det
+      saveDraft({ title: q });
+    }
+    if (t) {
+      setType(t);
+      saveDraft({ type: t });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qParam, typeParam]);
 
   async function submit(e: React.FormEvent) {
@@ -59,24 +127,25 @@ export function PostComposer() {
 
       const json = (await res.json()) as ApiResp;
 
+      // Ikke logged in → gem draft og send til login
       if (res.status === 401) {
+        saveDraft();
         const returnTo = encodeURIComponent(pathname || `/${locale}/ask`);
         router.push(`/${locale}/login?returnTo=${returnTo}`);
         return;
       }
 
+      // Fejl (TS-sikkert)
       if (!res.ok || json.ok === false) {
         setErr(json.ok === false ? json.error : "Failed");
         return;
       }
 
+      // ✅ Success: ryd draft + redirect til post-siden (samme som PostCard)
       setOkId(json.id);
-      setTitle("");
-      setBody("");
-      setType("How-to");
-      setShowAdvanced(false);
-
-      router.replace(pathname || `/${locale}/ask`);
+      clearDraft();
+      router.push(`/${locale}/post/${json.id}`);
+      return;
     } catch (e: any) {
       setErr(e?.message ?? "Noget gik galt");
     } finally {
@@ -86,7 +155,6 @@ export function PostComposer() {
 
   return (
     <form className={styles.form} onSubmit={submit}>
-      {/* ✅ Avanceret toggle i stedet for at vise Type upfront */}
       <div className={styles.topRow}>
         <button
           type="button"
@@ -97,19 +165,13 @@ export function PostComposer() {
           {showAdvanced ? "Skjul avanceret" : "Avanceret"}
         </button>
 
-        <div className={styles.hint}>
-          Tip: 1 sætning i titel + 1–3 linjer i detaljer.
-        </div>
+        <div className={styles.hint}>Tip: 1 sætning i titel + 1–3 linjer i detaljer.</div>
       </div>
 
       {showAdvanced ? (
         <label className={styles.label}>
           Type
-          <select
-            className={styles.input}
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-          >
+          <select className={styles.input} value={type} onChange={(e) => setType(e.target.value)}>
             <option>How-to</option>
             <option>Guide</option>
             <option>Recipe</option>
