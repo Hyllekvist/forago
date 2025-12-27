@@ -1,7 +1,7 @@
-// src/app/[locale]/map/MapClient.tsx
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import styles from "./MapClient.module.css";
 
 import LeafletMap, { type Spot, type LeafletLikeMap } from "./LeafletMap";
@@ -13,10 +13,7 @@ import { SpotPeekCard } from "./ui/SpotPeekCard";
 type Mode = "daily" | "forage";
 type Props = { spots: Spot[] };
 
-function haversineKm(
-  a: { lat: number; lng: number },
-  b: { lat: number; lng: number }
-) {
+function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
   const dLng = ((b.lng - a.lng) * Math.PI) / 180;
@@ -24,20 +21,23 @@ function haversineKm(
   const s2 = Math.sin(dLng / 2);
   const q =
     s1 * s1 +
-    Math.cos((a.lat * Math.PI) / 180) *
-      Math.cos((b.lat * Math.PI) / 180) *
-      s2 *
-      s2;
+    Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * s2 * s2;
   return 2 * R * Math.asin(Math.sqrt(q));
 }
 
+function isDesktop() {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia?.("(min-width: 1024px)")?.matches ?? false;
+}
+
 export default function MapClient({ spots }: Props) {
+  const search = useSearchParams();
+  const deepLinkHandledRef = useRef(false);
+
   const [mode, setMode] = useState<Mode>("daily");
   const [activeInsight, setActiveInsight] = useState<InsightKey | null>(null);
 
-  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(
-    null
-  );
+  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [mapApi, setMapApi] = useState<LeafletLikeMap | null>(null);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -52,15 +52,10 @@ export default function MapClient({ spots }: Props) {
   const [logOk, setLogOk] = useState(false);
 
   // spot counters (total + this quarter) for selected spot
-  const [spotCounts, setSpotCounts] = useState<{
-    total: number;
-    qtr: number;
-  } | null>(null);
+  const [spotCounts, setSpotCounts] = useState<{ total: number; qtr: number } | null>(null);
 
   // batch counts for visible list (used for sorting)
-  const [countsMap, setCountsMap] = useState<
-    Record<string, { total: number; qtr: number }>
-  >({});
+  const [countsMap, setCountsMap] = useState<Record<string, { total: number; qtr: number }>>({});
 
   // --- geolocation
   useEffect(() => {
@@ -76,11 +71,9 @@ export default function MapClient({ spots }: Props) {
     const total = spots.length;
 
     const nearbyCount = userPos
-      ? spots.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2)
-          .length
+      ? spots.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2).length
       : 0;
 
-    // placeholder season math (same as you had)
     const seasonNowCount = Math.min(total, Math.max(0, Math.round(total * 0.35)));
     const peakCount = Math.min(total, Math.max(0, Math.round(total * 0.12)));
 
@@ -154,12 +147,73 @@ export default function MapClient({ spots }: Props) {
       const targetZoom = Math.max(mapApi.getZoom(), 14);
       mapApi.flyTo(s.lat, s.lng, targetZoom);
 
-      // ✅ mobile needs extra lift; desktop uses sidebar so less is fine
-      // We'll handle this in LeafletMap via panBy anyway; keep it modest:
-      mapApi.panBy?.(0, -120);
+      // ✅ pan offset depends on desktop/mobile UI
+      const dy = isDesktop() ? -80 : -140;
+      mapApi.panBy?.(0, dy);
     },
     [mapApi, spotsById]
   );
+
+  // ✅ Deep-links:
+  // /map?spot=d7 -> select spot
+  // /map?find=<uuid> -> fetch spot_id, then select spot
+  useEffect(() => {
+    if (deepLinkHandledRef.current) return;
+    if (!mapApi) return; // wait until map ready
+    if (!spotsById.size) return;
+
+    const spot = search.get("spot");
+    const findId = search.get("find");
+
+    const trySelectSpot = (spotId: string | null | undefined) => {
+      if (!spotId) return false;
+      if (!spotsById.has(spotId)) return false;
+      onSelectSpot(spotId);
+      return true;
+    };
+
+    // 1) direct spot deep-link
+    if (spot && trySelectSpot(spot)) {
+      deepLinkHandledRef.current = true;
+      return;
+    }
+
+    // 2) find deep-link -> resolve to spot_id via API
+    if (findId) {
+      deepLinkHandledRef.current = true;
+
+      (async () => {
+        try {
+          // Try two common query names to match whichever route you already have
+          const urls = [
+            `/api/finds/detail?find_id=${encodeURIComponent(findId)}`,
+            `/api/finds/detail?id=${encodeURIComponent(findId)}`,
+          ];
+
+          for (const url of urls) {
+            const res = await fetch(url);
+            if (!res.ok) continue;
+            const json = await res.json();
+
+            // supports either:
+            // { ok:true, find_detail:{ find:{ spot_id:"d7" } } }
+            // or { ok:true, spot_id:"d7" }
+            const spotId =
+              json?.find_detail?.find?.spot_id ??
+              json?.find?.spot_id ??
+              json?.spot_id ??
+              null;
+
+            if (trySelectSpot(spotId)) return;
+          }
+        } catch {
+          // ignore
+        }
+      })();
+
+      return;
+    }
+  }, [search, mapApi, spotsById, onSelectSpot]);
 
   // fetch counts whenever selected spot changes (single spot)
   useEffect(() => {
@@ -299,21 +353,12 @@ export default function MapClient({ spots }: Props) {
       : "Flyt kortet for at finde spots";
 
   return (
- <div
-    className={styles.page}
-    data-sheet-open={sheetExpanded ? "1" : "0"}>
+    <div className={styles.page}>
       <MapTopbar mode={mode} onToggleMode={onToggleMode} />
 
-      <InsightStrip
-        mode={mode}
-        active={activeInsight}
-        insights={insights}
-        onPick={onPickInsight}
-      />
+      <InsightStrip mode={mode} active={activeInsight} insights={insights} onPick={onPickInsight} />
 
-      {/* ✅ Desktop split view wrapper */}
       <div className={styles.desktopBody}>
-        {/* ✅ Desktop left panel (only visible >= 1024px) */}
         <aside className={styles.desktopPanel}>
           <div className={styles.panelInner}>
             <div className={styles.panelHeader}>
@@ -331,7 +376,6 @@ export default function MapClient({ spots }: Props) {
               </button>
             </div>
 
-            {/* Desktop content: show selected peek OR list */}
             {selectedSpot ? (
               <SpotPeekCard
                 spot={selectedSpot}
@@ -345,8 +389,6 @@ export default function MapClient({ spots }: Props) {
                 onLearn={() => setSelectedId(null)}
               />
             ) : (
-              // Render MapSheet in "always expanded" mode for desktop.
-              // It will look like a list panel, NOT a floating dock.
               <div className={styles.desktopListWrap}>
                 <MapSheet
                   mode={mode}
@@ -366,7 +408,6 @@ export default function MapClient({ spots }: Props) {
           </div>
         </aside>
 
-        {/* ✅ Map area (always visible) */}
         <div className={styles.mapShell}>
           <LeafletMap
             spots={filteredSpots}
@@ -378,7 +419,6 @@ export default function MapClient({ spots }: Props) {
             onPanningChange={setIsPanning}
           />
 
-          {/* ✅ Mobile-only dock: sheet OR peek over map */}
           <div className={styles.mobileDock}>
             {selectedSpot ? (
               <div className={styles.peekWrap}>
