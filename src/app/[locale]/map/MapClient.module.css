@@ -215,3 +215,25 @@
     overflow: auto;
   }
 }
+
+/* ---------------------------------------------------------
+   MOBILE SCROLL LOCK (kun på map route)
+   Når sheet er expanded: lås page/map, scroll kun inde i sheet
+   --------------------------------------------------------- */
+
+@media (max-width: 1023px) {
+  .page[data-sheet-open="1"] {
+    /* ✅ stop page-scroll rubber band */
+    overscroll-behavior: none;
+    touch-action: none; /* vigtig: siden skal ikke scrolle */
+  }
+
+  .page[data-sheet-open="1"] .mapShell {
+    touch-action: none;
+  }
+
+  /* Allow sheet to handle touch/scroll */
+  .page[data-sheet-open="1"] .sheetWrap {
+    touch-action: pan-y;
+  }
+}
