@@ -2,13 +2,27 @@ import styles from "./Ask.module.css";
 import { supabaseServer } from "@/lib/supabase/server";
 import { PostComposer } from "@/components/Posts/PostComposer";
 import { PostCard, type PostItem } from "@/components/Posts/PostCard";
- 
+
 type Locale = "dk" | "en" | "se" | "de";
 function safeLocale(v: unknown): Locale {
   return v === "dk" || v === "en" || v === "se" || v === "de" ? v : "dk";
 }
 
-export default async function AskPage({ params }: { params: { locale: string } }) {
+const STARTERS_DK = [
+  "Hvor finder man de bedste østers på Sjælland?",
+  "Hvilken varmepumpe giver bedst mening i et 70’er hus?",
+  "God børnevenlig strand nær Kalundborg?",
+  "Bedste kaffebar til at arbejde i København?",
+  "Hvad er den mest undervurderede restaurant i Aarhus?",
+];
+
+export default async function AskPage({
+  params,
+  searchParams,
+}: {
+  params: { locale: string };
+  searchParams?: { q?: string };
+}) {
   const locale = safeLocale(params?.locale);
   const supabase = await supabaseServer();
 
@@ -17,16 +31,46 @@ export default async function AskPage({ params }: { params: { locale: string } }
     p_limit: 30,
   });
 
+  // Vi bruger kun q til UI / deep-linking (ingen PostComposer props)
+  const q = (searchParams?.q ?? "").slice(0, 180);
+
   return (
     <main className={styles.wrap}>
       <header className={styles.header}>
-        <h1 className={styles.h1}>{locale === "dk" ? "Spørg" : "Ask"}</h1>
+        <h1 className={styles.h1}>{locale === "dk" ? "Stil et spørgsmål" : "Ask a question"}</h1>
         <p className={styles.sub}>
           {locale === "dk"
-            ? "Vær konkret: sæson, habitat, kendetegn + klare fotos. Ingen præcise spots."
-            : "Be specific: season, habitat, traits + clear photos. No exact spots."}
+            ? "Hold det konkret. Jo mere praktisk, jo bedre svar."
+            : "Keep it practical. The clearer the question, the better the answers."}
         </p>
       </header>
+
+      {/* ONBOARDING: eksempler før composer */}
+      <section className={styles.starters} aria-label="Examples">
+        <div className={styles.startersTitle}>
+          {locale === "dk" ? "Start med et eksempel" : "Start with an example"}
+        </div>
+
+        <div className={styles.startersGrid}>
+          {STARTERS_DK.map((s) => (
+            <a
+              key={s}
+              className={styles.starter}
+              href={`/${locale}/ask?q=${encodeURIComponent(s)}`}
+            >
+              <div className={styles.starterQ}>{s}</div>
+              <div className={styles.starterCta}>{locale === "dk" ? "Brug denne →" : "Use this →"}</div>
+            </a>
+          ))}
+        </div>
+
+        {/* Hvis der er q i URL, viser vi det som “valgt” uden at påvirke composer */}
+        {q ? (
+          <div className={styles.selectedHint}>
+            {locale === "dk" ? "Valgt eksempel:" : "Selected example:"} <span className={styles.selectedText}>{q}</span>
+          </div>
+        ) : null}
+      </section>
 
       <section className={styles.compose}>
         <PostComposer />
