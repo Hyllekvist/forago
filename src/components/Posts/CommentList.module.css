@@ -10,3 +10,12 @@
 }
 .author{ font-weight: 800; font-size: 13px; }
 .text{ margin-top: 4px; color: var(--muted); }
+
+.empty{
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--shadow-1);
+  padding: 12px 14px;
+  color: var(--muted);
+}
