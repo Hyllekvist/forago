@@ -210,3 +210,16 @@
 @media (min-width: 1024px){
   .card{ grid-column: span 4; }
 }
+
+.metaSpacer{ flex: 1; }
+
+.mapMini{
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel2) 70%, transparent);
+}
