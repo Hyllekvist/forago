@@ -6,32 +6,50 @@ import styles from "./FeedPage.module.css";
 import { CardLink } from "@/components/UI/CardLink";
 import { Card } from "@/components/UI/Card";
 
-type LogItem = {
+type FeedFind = {
   id: string;
   created_at?: string | null;
-  locale?: string | null;
-
-  species_query?: string | null;
-  note?: string | null;
-
-  photo_path?: string | null;
-  photo_width?: number | null;
-  photo_height?: number | null;
-
-  visibility?: "public" | "private" | string | null;
+  observed_at?: string | null; // date as string
+  species_id?: string | null;
+  notes?: string | null;
+  photo_url?: string | null;
+  visibility?: "private" | "friends" | "public_aggregate" | string | null;
   user_id?: string | null;
+  spot_id?: string | null;
 };
+
+function fmt(ts?: string | null) {
+  if (!ts) return "";
+  const d = new Date(ts);
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(
+    2,
+    "0"
+  )} · ${hh}:${mm}`;
+}
+
+function isPublicAggregate(v?: string | null) {
+  return v === "public_aggregate";
+}
+
+function labelVisibility(locale: string, v?: string | null) {
+  const dk = locale === "dk";
+  if (v === "public_aggregate") return dk ? "Offentlig" : "Public";
+  if (v === "friends") return dk ? "Venner" : "Friends";
+  return dk ? "Privat" : "Private";
+}
 
 export default function FeedClient({
   locale,
   month,
-  logs,
+  finds,
   viewerUserId,
   errorMsg,
 }: {
   locale: string;
   month: number;
-  logs: LogItem[];
+  finds: FeedFind[];
   viewerUserId: string | null;
   errorMsg?: string | null;
 }) {
@@ -71,21 +89,6 @@ export default function FeedClient({
     return (locale === "dk" ? dk : en)[month] ?? String(month);
   }, [locale, month]);
 
-  function fmt(ts?: string | null) {
-    if (!ts) return "";
-    const d = new Date(ts);
-    const hh = String(d.getHours()).padStart(2, "0");
-    const mm = String(d.getMinutes()).padStart(2, "0");
-    return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(
-      2,
-      "0"
-    )} · ${hh}:${mm}`;
-  }
-
-  function isPublic(v?: string | null) {
-    return v === "public";
-  }
-
   return (
     <div className={styles.page}>
       <div className={styles.hero}>
@@ -110,56 +113,56 @@ export default function FeedClient({
             {t("DB sagde:", "DB said:")} <strong>{errorMsg}</strong>
           </div>
         </Card>
-      ) : logs.length ? (
+      ) : finds.length ? (
         <div className={styles.grid}>
-          {logs.map((l) => {
-            const isMine = viewerUserId && l.user_id === viewerUserId;
+          {finds.map((f) => {
+            const isMine = viewerUserId && f.user_id === viewerUserId;
 
-            const title =
-              l.species_query ||
-              (locale === "dk" ? "Nyt fund" : "New find");
+            // Title logic (you don't have species name yet)
+            const title = f.species_id
+              ? t("Fund registreret", "Find recorded")
+              : t("Ukendt art", "Unknown species");
 
-            const imgUrl = l.photo_path
-              ? `/api/logs/photo?path=${encodeURIComponent(l.photo_path)}`
-              : null;
+            // Photo: feed_finds returns first photo_urls element as photo_url
+            const imgUrl = f.photo_url ? f.photo_url : null;
+
+            // Link target: keep your current behavior (map with log param)
+            // Better later: /[locale]/find/[id]
+            const href = `/${locale}/map?find=${encodeURIComponent(f.id)}`;
 
             return (
-              <CardLink
-                key={l.id}
-                href={`/${locale}/map?log=${encodeURIComponent(l.id)}`}
-                className={styles.card}
-              >
+              <CardLink key={f.id} href={href} className={styles.card}>
                 <div className={styles.cardTop}>
                   <div className={styles.metaRow}>
                     <span
                       className={`${styles.badge} ${
-                        isPublic(l.visibility) ? styles.badgePublic : styles.badgePrivate
+                        isPublicAggregate(f.visibility)
+                          ? styles.badgePublic
+                          : styles.badgePrivate
                       }`}
                     >
-                      {isPublic(l.visibility) ? t("Offentlig", "Public") : t("Privat", "Private")}
+                      {labelVisibility(locale, f.visibility)}
                     </span>
 
                     {isMine ? <span className={styles.mine}>{t("Dig", "You")}</span> : null}
 
                     <span className={styles.sep}>·</span>
-                    <span className={styles.when}>{fmt(l.created_at)}</span>
+                    <span className={styles.when}>{fmt(f.created_at)}</span>
                   </div>
 
                   <h2 className={styles.h2}>{title}</h2>
 
-                  {l.note ? (
+                  {f.notes ? (
                     <p className={styles.note}>
                       <strong>{t("Note: ", "Note: ")}</strong>
-                      {l.note}
-                    </p>
-                  ) : l.species_query ? (
-                    <p className={styles.note}>
-                      {t("Art (valgfrit): ", "Species (optional): ")}
-                      <strong>{l.species_query}</strong>
+                      {f.notes}
                     </p>
                   ) : (
                     <p className={styles.note}>
-                      {t("Ukendt art — fællesskabet kan hjælpe.", "Unknown species — community can help.")}
+                      {t(
+                        "Ingen note — du kan tilføje detaljer næste gang.",
+                        "No note — add details next time."
+                      )}
                     </p>
                   )}
                 </div>
@@ -167,12 +170,7 @@ export default function FeedClient({
                 <div className={styles.media}>
                   {imgUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      className={styles.img}
-                      src={imgUrl}
-                      alt=""
-                      loading="lazy"
-                    />
+                    <img className={styles.img} src={imgUrl} alt="" loading="lazy" />
                   ) : (
                     <div className={styles.mediaEmpty}>
                       <div className={styles.mediaIcon}>📷</div>
