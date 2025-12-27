@@ -1,4 +1,4 @@
-// src/app/[locale]/post/[id]/page.tsx
+// src/app/[locale]/post/[id]/page.tsx 
 import styles from "./PostPage.module.css";
 import { supabaseServer } from "@/lib/supabase/server";
 import { CommentList } from "@/components/Posts/CommentList";
