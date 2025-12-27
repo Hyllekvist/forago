@@ -1,11 +1,16 @@
-// src/app/[locale]/map/ui/SpotPeekCard.tsx
 "use client";
 
 import { useMemo } from "react";
 import styles from "./SpotPeekCard.module.css";
 import type { Spot } from "../LeafletMap";
 
-type Counts = { total: number; qtr: number };
+type Counts = {
+  total: number;
+  qtr: number;
+  last30?: number;
+  first_seen?: string | null;
+  last_seen?: string | null;
+};
 
 type Props = {
   spot: Spot;
@@ -25,8 +30,10 @@ type Props = {
 function emojiForSlug(slug?: string | null) {
   const s = (slug ?? "").toLowerCase();
   if (!s) return "📍";
-  if (s.includes("svamp") || s.includes("mush") || s.includes("chanter") || s.includes("kantarel")) return "🍄";
-  if (s.includes("bær") || s.includes("berry") || s.includes("blåb") || s.includes("hindb")) return "🫐";
+  if (s.includes("svamp") || s.includes("mush") || s.includes("chanter") || s.includes("kantarel"))
+    return "🍄";
+  if (s.includes("bær") || s.includes("berry") || s.includes("blåb") || s.includes("hindb"))
+    return "🫐";
   if (s.includes("urt") || s.includes("herb")) return "🌿";
   if (s.includes("nød") || s.includes("nut")) return "🌰";
   return "📍";
@@ -71,6 +78,25 @@ function formatFreshness(iso?: string | null) {
   return `for ${months} måneder siden`;
 }
 
+function computeStability(counts?: Counts | null) {
+  if (!counts) return { key: "loading" as const, label: "Henter…", hint: "" };
+
+  const total = counts.total ?? 0;
+  const last30 = counts.last30 ?? 0;
+  const qtr = counts.qtr ?? 0;
+
+  // Logik (skarp og enkel):
+  // Stabil: mange og nylige
+  if (total >= 10 && last30 >= 3) return { key: "stable" as const, label: "Stabil", hint: "aktiv spot" };
+
+  // Tilbagevendende: noget traction
+  if (total >= 3 || qtr >= 2 || last30 >= 2)
+    return { key: "returning" as const, label: "Tilbagevendende", hint: "finder dukker op" };
+
+  // Ellers: sporadisk
+  return { key: "sporadic" as const, label: "Sporadisk", hint: "få fund" };
+}
+
 function isIOS() {
   if (typeof navigator === "undefined") return false;
   return /iPad|iPhone|iPod/.test(navigator.userAgent);
@@ -91,7 +117,9 @@ export function SpotPeekCard({
   const label = mode === "forage" ? "Muligt fund" : spot.species_slug ? "Spot" : "Lokation";
 
   const distance = useMemo(() => formatDistance(userPos, spot), [userPos, spot.lat, spot.lng]);
-  const freshness = useMemo(() => formatFreshness(spot.last_seen_at ?? null), [spot.last_seen_at]);
+
+  const lastSeenIso = counts?.last_seen ?? null;
+  const freshness = useMemo(() => formatFreshness(lastSeenIso), [lastSeenIso]);
 
   const mapsHref = useMemo(() => {
     const q = encodeURIComponent(`${spot.lat},${spot.lng}`);
@@ -99,7 +127,13 @@ export function SpotPeekCard({
     return `https://www.google.com/maps/search/?api=1&query=${q}`;
   }, [spot.lat, spot.lng]);
 
-  const socialLine = counts ? `${counts.total} logs · ${counts.qtr} i kvartalet` : "Henter aktivitet…";
+  const stability = useMemo(() => computeStability(counts), [counts]);
+
+  const socialLine = useMemo(() => {
+    if (!counts) return "Henter aktivitet…";
+    const last30 = counts.last30 ?? 0;
+    return `${counts.total} fund · ${counts.qtr} i kvartalet · ${last30} sidste 30d`;
+  }, [counts]);
 
   return (
     <section className={styles.card} role="dialog" aria-label="Selected spot">
@@ -117,12 +151,14 @@ export function SpotPeekCard({
         <div className={styles.headMain}>
           <div className={styles.kickerRow}>
             <span className={styles.kicker}>{label}</span>
+
             <span className={styles.dot} aria-hidden />
             <span className={styles.meta}>{distance}</span>
+
             {freshness ? (
               <>
                 <span className={styles.dot} aria-hidden />
-                <span className={styles.meta}>{freshness}</span>
+                <span className={styles.meta}>senest {freshness}</span>
               </>
             ) : null}
           </div>
@@ -131,6 +167,22 @@ export function SpotPeekCard({
 
           <div className={styles.pills}>
             <span className={styles.pill}>{spot.species_slug ? `#${spot.species_slug}` : "#unclassified"}</span>
+
+            <span
+              className={`${styles.pillStatus} ${
+                stability.key === "stable"
+                  ? styles.pillStable
+                  : stability.key === "returning"
+                    ? styles.pillReturning
+                    : stability.key === "sporadic"
+                      ? styles.pillSporadic
+                      : styles.pillLoading
+              }`}
+              title={stability.hint}
+            >
+              {stability.label}
+            </span>
+
             <span className={styles.pillAccent}>{mode === "forage" ? "Peak potential" : "I nærheden"}</span>
           </div>
 
