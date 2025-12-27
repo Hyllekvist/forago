@@ -70,6 +70,20 @@ export type TopSpeciesRow = {
   c_qtr: number;
 };
 
+export type SpotIntelligence = {
+  country: string | null;
+  spot_id: string | null;
+  total: number;
+  last30: number;
+  qtr: number;
+  first_seen: string | null; // timestamp
+  last_seen: string | null; // timestamp
+  last_observed_at: string | null; // date (YYYY-MM-DD)
+  years_active: number;
+  stable_over_years: boolean;
+  year_counts: Array<{ year: number; count: number }>;
+};
+
 function t(locale: string, dk: string, en: string) {
   return locale === "dk" ? dk : en;
 }
@@ -119,12 +133,16 @@ export default function FindClient({
   errorMsg,
   topSpecies,
   topSpeciesError,
+  spotIntel,
+  spotIntelError,
 }: {
   locale: string;
   payload: FindDetailPayload | null;
   errorMsg: string | null;
   topSpecies: TopSpeciesRow[];
   topSpeciesError: string | null;
+  spotIntel: SpotIntelligence | null;
+  spotIntelError: string | null;
 }) {
   if (!payload) {
     return (
@@ -168,7 +186,7 @@ export default function FindClient({
   const areaCount = cell?.finds_count ?? null;
   const areaPrecision = cell?.precision_km ?? f?.geo_precision_km ?? null;
 
-  // ✅ FIX: send correct param type
+  // ✅ correct param type for map deep-links
   const mapHref = cell?.geo_cell
     ? `/${locale}/map?cell=${encodeURIComponent(cell.geo_cell)}`
     : f?.spot_id
@@ -184,8 +202,27 @@ export default function FindClient({
 
   const overviewText = tr?.short_description ?? f?.notes ?? null;
 
+  // simple, user-facing answers
+  const intelAnswers = useMemo(() => {
+    if (!spotIntel) return null;
+
+    const beenHereBefore = spotIntel.years_active >= 2;
+    const stable = !!spotIntel.stable_over_years;
+
+    return {
+      beenHereBeforeLabel: beenHereBefore
+        ? t(locale, "Ja (flere år)", "Yes (multiple years)")
+        : t(locale, "Ikke bekræftet endnu", "Not confirmed yet"),
+      lastObservedLabel: spotIntel.last_observed_at
+        ? fmtDate(spotIntel.last_observed_at)
+        : "—",
+      stableLabel: stable ? t(locale, "Ja", "Yes") : t(locale, "Ikke endnu", "Not yet"),
+    };
+  }, [spotIntel, locale]);
+
   return (
     <div className={styles.wrap}>
+      {/* Top row */}
       <div className={styles.topRow}>
         <Link className={styles.backTop} href={`/${locale}/feed`}>
           ← {t(locale, "Feed", "Feed")}
@@ -210,6 +247,7 @@ export default function FindClient({
       </div>
 
       <div className={styles.shell}>
+        {/* LEFT */}
         <section className={styles.left}>
           <header className={styles.header}>
             <div className={styles.badges}>
@@ -270,20 +308,46 @@ export default function FindClient({
             )}
           </div>
 
+          {/* Tabs */}
           <div className={styles.tabs}>
-            <button className={styles.tab} data-active={tab === "overview"} onClick={() => setTab("overview")}>
+            <button
+              className={styles.tab}
+              data-active={tab === "overview"}
+              onClick={() => setTab("overview")}
+              type="button"
+            >
               {t(locale, "Overblik", "Overview")}
             </button>
-            <button className={styles.tab} data-active={tab === "identify"} onClick={() => setTab("identify")}>
+            <button
+              className={styles.tab}
+              data-active={tab === "identify"}
+              onClick={() => setTab("identify")}
+              type="button"
+            >
               {t(locale, "Kendetegn", "Identification")}
             </button>
-            <button className={styles.tab} data-active={tab === "lookalikes"} onClick={() => setTab("lookalikes")}>
+            <button
+              className={styles.tab}
+              data-active={tab === "lookalikes"}
+              onClick={() => setTab("lookalikes")}
+              type="button"
+            >
               {t(locale, "Forvekslinger", "Lookalikes")}
             </button>
-            <button className={styles.tab} data-active={tab === "usage"} onClick={() => setTab("usage")}>
+            <button
+              className={styles.tab}
+              data-active={tab === "usage"}
+              onClick={() => setTab("usage")}
+              type="button"
+            >
               {t(locale, "Brug", "Usage")}
             </button>
-            <button className={styles.tab} data-active={tab === "safety"} onClick={() => setTab("safety")}>
+            <button
+              className={styles.tab}
+              data-active={tab === "safety"}
+              onClick={() => setTab("safety")}
+              type="button"
+            >
               {t(locale, "Sikkerhed", "Safety")}
             </button>
           </div>
@@ -291,7 +355,9 @@ export default function FindClient({
           <div className={styles.tabPanel}>
             {tab === "overview" ? (
               <div className={styles.panelCard}>
-                <div className={styles.panelTitle}>{t(locale, "Kort beskrivelse", "Short description")}</div>
+                <div className={styles.panelTitle}>
+                  {t(locale, "Kort beskrivelse", "Short description")}
+                </div>
                 <div className={styles.panelBody}>
                   {overviewText ? overviewText : t(locale, "Ingen tekst endnu.", "No text yet.")}
                 </div>
@@ -300,9 +366,15 @@ export default function FindClient({
 
             {tab === "identify" ? (
               <div className={styles.panelCard}>
-                <div className={styles.panelTitle}>{t(locale, "Sådan genkender du den", "How to identify")}</div>
+                <div className={styles.panelTitle}>
+                  {t(locale, "Sådan genkender du den", "How to identify")}
+                </div>
                 {identify.length ? (
-                  <ul className={styles.bullets}>{identify.map((x, i) => <li key={i}>{x}</li>)}</ul>
+                  <ul className={styles.bullets}>
+                    {identify.map((x, i) => (
+                      <li key={i}>{x}</li>
+                    ))}
+                  </ul>
                 ) : (
                   <div className={styles.panelBody}>{t(locale, "Ingen data endnu.", "No data yet.")}</div>
                 )}
@@ -311,9 +383,15 @@ export default function FindClient({
 
             {tab === "lookalikes" ? (
               <div className={styles.panelCard}>
-                <div className={styles.panelTitle}>{t(locale, "Vigtige forvekslinger", "Important lookalikes")}</div>
+                <div className={styles.panelTitle}>
+                  {t(locale, "Vigtige forvekslinger", "Important lookalikes")}
+                </div>
                 {lookalikes.length ? (
-                  <ul className={styles.bullets}>{lookalikes.map((x, i) => <li key={i}>{x}</li>)}</ul>
+                  <ul className={styles.bullets}>
+                    {lookalikes.map((x, i) => (
+                      <li key={i}>{x}</li>
+                    ))}
+                  </ul>
                 ) : (
                   <div className={styles.panelBody}>{t(locale, "Ingen data endnu.", "No data yet.")}</div>
                 )}
@@ -324,7 +402,11 @@ export default function FindClient({
               <div className={styles.panelCard}>
                 <div className={styles.panelTitle}>{t(locale, "Brug i køkkenet", "How to use")}</div>
                 {usage.length ? (
-                  <ul className={styles.bullets}>{usage.map((x, i) => <li key={i}>{x}</li>)}</ul>
+                  <ul className={styles.bullets}>
+                    {usage.map((x, i) => (
+                      <li key={i}>{x}</li>
+                    ))}
+                  </ul>
                 ) : (
                   <div className={styles.panelBody}>{t(locale, "Ingen data endnu.", "No data yet.")}</div>
                 )}
@@ -335,7 +417,11 @@ export default function FindClient({
               <div className={styles.panelCard} data-danger="true">
                 <div className={styles.panelTitle}>{t(locale, "Sikkerhed", "Safety")}</div>
                 {safety.length ? (
-                  <ul className={styles.bullets}>{safety.map((x, i) => <li key={i}>{x}</li>)}</ul>
+                  <ul className={styles.bullets}>
+                    {safety.map((x, i) => (
+                      <li key={i}>{x}</li>
+                    ))}
+                  </ul>
                 ) : (
                   <div className={styles.panelBody}>{t(locale, "Ingen data endnu.", "No data yet.")}</div>
                 )}
@@ -343,7 +429,7 @@ export default function FindClient({
             ) : null}
           </div>
 
-          {/* Related (unchanged) */}
+          {/* Related */}
           <div className={styles.section}>
             <div className={styles.sectionTop}>
               <div className={styles.sectionTitle}>
@@ -380,7 +466,9 @@ export default function FindClient({
               </div>
             ) : (
               <Card className={styles.emptyRelated}>
-                <div className={styles.emptyTitle}>{t(locale, "Ingen andre fund endnu", "No other finds yet")}</div>
+                <div className={styles.emptyTitle}>
+                  {t(locale, "Ingen andre fund endnu", "No other finds yet")}
+                </div>
                 <div className={styles.emptyBody}>
                   {t(locale, "Det her område er stadig nyt i systemet.", "This area is still new in the system.")}
                 </div>
@@ -413,7 +501,7 @@ export default function FindClient({
               </div>
             </div>
 
-            {/* ✅ NEW: Top species widget */}
+            {/* Top species */}
             <div className={styles.intelBox}>
               <div className={styles.intelTitle}>{t(locale, "Top arter i området", "Top species in area")}</div>
 
@@ -428,7 +516,8 @@ export default function FindClient({
                       <div className={styles.intelMain}>
                         <div className={styles.intelName}>{labelSpecies(locale, r)}</div>
                         <div className={styles.intelMeta}>
-                          {(r.primary_group ?? "—")} · {t(locale, "30d", "30d")}: <strong>{r.c_last30}</strong>{" "}
+                          {(r.primary_group ?? "—")} · {t(locale, "30d", "30d")}:{" "}
+                          <strong>{r.c_last30}</strong>
                           <span className={styles.intelSep}>·</span> {t(locale, "Q", "Q")}:{" "}
                           <strong>{r.c_qtr}</strong>
                         </div>
@@ -444,6 +533,51 @@ export default function FindClient({
               )}
             </div>
 
+            {/* Spot Intelligence (simple answers) */}
+            <div className={styles.intelBox}>
+              <div className={styles.intelTitle}>{t(locale, "Forago Intelligence", "Forago Intelligence")}</div>
+
+              {spotIntelError ? (
+                <div className={styles.intelError}>
+                  {t(locale, "Fejl:", "Error:")} <strong>{spotIntelError}</strong>
+                </div>
+              ) : !spotIntel || !intelAnswers ? (
+                <div className={styles.intelEmpty}>{t(locale, "Ingen data endnu.", "No data yet.")}</div>
+              ) : (
+                <div className={styles.intelList}>
+                  <div className={styles.intelRow}>
+                    <div className={styles.intelMain}>
+                      <div className={styles.intelName}>
+                        {t(locale, "Har arten været her før?", "Has it been here before?")}
+                      </div>
+                      <div className={styles.intelMeta}>{intelAnswers.beenHereBeforeLabel}</div>
+                    </div>
+                    <div className={styles.intelCount}>{spotIntel.years_active}</div>
+                  </div>
+
+                  <div className={styles.intelRow}>
+                    <div className={styles.intelMain}>
+                      <div className={styles.intelName}>
+                        {t(locale, "Hvornår var sidste observation?", "When was the last observation?")}
+                      </div>
+                      <div className={styles.intelMeta}>{intelAnswers.lastObservedLabel}</div>
+                    </div>
+                    <div className={styles.intelCount}>{spotIntel.last30}</div>
+                  </div>
+
+                  <div className={styles.intelRow}>
+                    <div className={styles.intelMain}>
+                      <div className={styles.intelName}>
+                        {t(locale, "Er dette spot stabilt over år?", "Is this spot stable over years?")}
+                      </div>
+                      <div className={styles.intelMeta}>{intelAnswers.stableLabel}</div>
+                    </div>
+                    <div className={styles.intelCount}>{spotIntel.total}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <Link className={styles.primary} href={mapHref}>
               {t(locale, "Åbn område på kort", "Open area on map")} →
             </Link>
@@ -451,8 +585,8 @@ export default function FindClient({
             <div className={styles.sideHint}>
               {t(
                 locale,
-                "Næste: Forago Intelligence-score (risiko + confidence + momentum).",
-                "Next: Forago Intelligence score (risk + confidence + momentum)."
+                "Intelligence er baseret på loggede fund i dette spot over tid.",
+                "Intelligence is based on logged finds in this spot over time."
               )}
             </div>
           </div>
