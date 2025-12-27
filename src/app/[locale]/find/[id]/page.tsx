@@ -1,4 +1,4 @@
-import { supabaseServer } from "@/lib/supabase/server"; 
+import { supabaseServer } from "@/lib/supabase/server";
 import FindClient from "./FindClient";
 import styles from "./FindPage.module.css";
 
@@ -72,6 +72,20 @@ export type TopSpeciesRow = {
   c_qtr: number;
 };
 
+export type SpotIntelligence = {
+  country: string | null;
+  spot_id: string | null;
+  total: number;
+  last30: number;
+  qtr: number;
+  first_seen: string | null;        // timestamp
+  last_seen: string | null;         // timestamp
+  last_observed_at: string | null;  // date
+  years_active: number;
+  stable_over_years: boolean;
+  year_counts: Array<{ year: number; count: number }>;
+};
+
 export default async function FindPage({
   params,
 }: {
@@ -89,7 +103,7 @@ export default async function FindPage({
 
   const payload = (data ?? null) as FindDetailPayload | null;
 
-  // Top species widget (safe defaults)
+  // ---- Top species widget ----
   let topSpecies: TopSpeciesRow[] = [];
   let topSpeciesError: string | null = null;
 
@@ -114,6 +128,28 @@ export default async function FindPage({
     topSpeciesError = e?.message ?? "Unknown";
   }
 
+  // ---- Spot intelligence (simple + safe) ----
+  let spotIntel: SpotIntelligence | null = null;
+  let spotIntelError: string | null = null;
+
+  try {
+    const spot_id = payload?.find?.spot_id ?? null;
+    const country = payload?.find?.country ?? "DK";
+
+    if (spot_id) {
+      const { data: si, error: siErr } = await supabase.rpc("spot_intelligence", {
+        p_spot_id: spot_id,
+        p_country: country,
+      });
+
+      if (siErr) spotIntelError = siErr.message;
+      // nogle RPC’er returnerer { spot_intelligence: {...} } – andre bare {...}
+      spotIntel = (si?.spot_intelligence ?? si ?? null) as any;
+    }
+  } catch (e: any) {
+    spotIntelError = e?.message ?? "Unknown";
+  }
+
   return (
     <main className={styles.page}>
       <FindClient
@@ -122,6 +158,8 @@ export default async function FindPage({
         errorMsg={error?.message ?? null}
         topSpecies={topSpecies}
         topSpeciesError={topSpeciesError}
+        spotIntel={spotIntel}
+        spotIntelError={spotIntelError}
       />
     </main>
   );
