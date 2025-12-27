@@ -1,3 +1,4 @@
+// src/app/[locale]/map/MapClient.tsx
 "use client";
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
@@ -13,7 +14,18 @@ import { SpotPeekCard } from "./ui/SpotPeekCard";
 type Mode = "daily" | "forage";
 type Props = { spots: Spot[] };
 
-function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+type SpotCounts = {
+  total: number;
+  qtr: number;
+  last30: number;
+  first_seen: string | null;
+  last_seen: string | null;
+};
+
+function haversineKm(
+  a: { lat: number; lng: number },
+  b: { lat: number; lng: number }
+) {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
   const dLng = ((b.lng - a.lng) * Math.PI) / 180;
@@ -21,7 +33,10 @@ function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
   const s2 = Math.sin(dLng / 2);
   const q =
     s1 * s1 +
-    Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * s2 * s2;
+    Math.cos((a.lat * Math.PI) / 180) *
+      Math.cos((b.lat * Math.PI) / 180) *
+      s2 *
+      s2;
   return 2 * R * Math.asin(Math.sqrt(q));
 }
 
@@ -51,8 +66,8 @@ export default function MapClient({ spots }: Props) {
   const [logError, setLogError] = useState<string | null>(null);
   const [logOk, setLogOk] = useState(false);
 
-  // spot counters (total + this quarter) for selected spot
-  const [spotCounts, setSpotCounts] = useState<{ total: number; qtr: number } | null>(null);
+  // ✅ selected spot counts (now includes last30 + first/last seen)
+  const [spotCounts, setSpotCounts] = useState<SpotCounts | null>(null);
 
   // batch counts for visible list (used for sorting)
   const [countsMap, setCountsMap] = useState<Record<string, { total: number; qtr: number }>>({});
@@ -135,7 +150,6 @@ export default function MapClient({ spots }: Props) {
     [mapApi, userPos]
   );
 
-  // selection + center
   const onSelectSpot = useCallback(
     (id: string) => {
       setSelectedId(id);
@@ -147,7 +161,6 @@ export default function MapClient({ spots }: Props) {
       const targetZoom = Math.max(mapApi.getZoom(), 14);
       mapApi.flyTo(s.lat, s.lng, targetZoom);
 
-      // ✅ pan offset depends on desktop/mobile UI
       const dy = isDesktop() ? -80 : -140;
       mapApi.panBy?.(0, dy);
     },
@@ -159,7 +172,7 @@ export default function MapClient({ spots }: Props) {
   // /map?find=<uuid> -> fetch spot_id, then select spot
   useEffect(() => {
     if (deepLinkHandledRef.current) return;
-    if (!mapApi) return; // wait until map ready
+    if (!mapApi) return;
     if (!spotsById.size) return;
 
     const spot = search.get("spot");
@@ -172,19 +185,16 @@ export default function MapClient({ spots }: Props) {
       return true;
     };
 
-    // 1) direct spot deep-link
     if (spot && trySelectSpot(spot)) {
       deepLinkHandledRef.current = true;
       return;
     }
 
-    // 2) find deep-link -> resolve to spot_id via API
     if (findId) {
       deepLinkHandledRef.current = true;
 
       (async () => {
         try {
-          // Try two common query names to match whichever route you already have
           const urls = [
             `/api/finds/detail?find_id=${encodeURIComponent(findId)}`,
             `/api/finds/detail?id=${encodeURIComponent(findId)}`,
@@ -195,9 +205,6 @@ export default function MapClient({ spots }: Props) {
             if (!res.ok) continue;
             const json = await res.json();
 
-            // supports either:
-            // { ok:true, find_detail:{ find:{ spot_id:"d7" } } }
-            // or { ok:true, spot_id:"d7" }
             const spotId =
               json?.find_detail?.find?.spot_id ??
               json?.find?.spot_id ??
@@ -210,12 +217,10 @@ export default function MapClient({ spots }: Props) {
           // ignore
         }
       })();
-
-      return;
     }
   }, [search, mapApi, spotsById, onSelectSpot]);
 
-  // fetch counts whenever selected spot changes (single spot)
+  // ✅ fetch counts whenever selected spot changes
   useEffect(() => {
     if (!selectedSpot?.id) {
       setSpotCounts(null);
@@ -227,21 +232,19 @@ export default function MapClient({ spots }: Props) {
     (async () => {
       try {
         const res = await fetch(
-          `/api/spots/counts?spot_id=${encodeURIComponent(selectedSpot.id)}`,
+          `/api/spots/counts?spot_id=${encodeURIComponent(selectedSpot.id)}&fresh=1`,
           { signal: ac.signal }
         );
         const json = await res.json();
         if (!res.ok || !json?.ok) return;
-setSpotCounts({
-  total: Number(json.total ?? 0),
-  qtr: Number(json.qtr ?? 0),
-  // @ts-expect-error – we extend shape in UI
-  last30: Number(json.last30 ?? 0),
-  // @ts-expect-error
-  first_seen: json.first_seen ?? null,
-  // @ts-expect-error
-  last_seen: json.last_seen ?? null,
-} as any);
+
+        setSpotCounts({
+          total: Number(json.total ?? 0),
+          qtr: Number(json.qtr ?? 0),
+          last30: Number(json.last30 ?? 0),
+          first_seen: (json.first_seen ?? null) as string | null,
+          last_seen: (json.last_seen ?? null) as string | null,
+        });
       } catch {
         // ignore
       }
@@ -297,7 +300,6 @@ setSpotCounts({
     return arr;
   }, [visibleSpots, countsMap, userPos]);
 
-  // single source of truth for logging + UX feedback
   const onQuickLog = useCallback(
     async (spot: Spot) => {
       if (isLogging) return;
@@ -329,10 +331,24 @@ setSpotCounts({
 
         setLogOk(true);
 
-        setSpotCounts((prev) =>
-          prev ? { total: prev.total + 1, qtr: prev.qtr + 1 } : { total: 1, qtr: 1 }
-        );
+        // ✅ optimistic update for selected spot counts
+        setSpotCounts((prev) => {
+          if (!prev) {
+            const nowIso = new Date().toISOString();
+            return { total: 1, qtr: 1, last30: 1, first_seen: nowIso, last_seen: nowIso };
+          }
+          const nowIso = new Date().toISOString();
+          return {
+            ...prev,
+            total: prev.total + 1,
+            qtr: prev.qtr + 1,
+            last30: prev.last30 + 1,
+            first_seen: prev.first_seen ?? nowIso,
+            last_seen: nowIso,
+          };
+        });
 
+        // ✅ optimistic update for list sorting map (qtr/total)
         setCountsMap((prev) => ({
           ...prev,
           [spot.id]: {
@@ -365,7 +381,12 @@ setSpotCounts({
     <div className={styles.page}>
       <MapTopbar mode={mode} onToggleMode={onToggleMode} />
 
-      <InsightStrip mode={mode} active={activeInsight} insights={insights} onPick={onPickInsight} />
+      <InsightStrip
+        mode={mode}
+        active={activeInsight}
+        insights={insights}
+        onPick={onPickInsight}
+      />
 
       <div className={styles.desktopBody}>
         <aside className={styles.desktopPanel}>
