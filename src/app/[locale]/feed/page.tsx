@@ -8,17 +8,16 @@ function safeLocale(v: unknown): Locale {
   return v === "dk" || v === "en" || v === "se" || v === "de" ? v : "dk";
 }
 
-type LogItem = { 
+type FeedFind = {
   id: string;
   created_at?: string | null;
-  locale?: string | null;
-  species_query?: string | null;
-  note?: string | null;
-  photo_path?: string | null;
-  photo_width?: number | null;
-  photo_height?: number | null;
-  visibility?: "public" | "private" | string | null;
+  observed_at?: string | null; // date comes as string
+  species_id?: string | null;
+  notes?: string | null;
+  photo_url?: string | null;
+  visibility?: "private" | "friends" | "public_aggregate" | string | null;
   user_id?: string | null;
+  spot_id?: string | null;
 };
 
 export default async function FeedPage({
@@ -35,22 +34,22 @@ export default async function FeedPage({
   const now = new Date();
   const month = now.getMonth() + 1;
 
-  // ✅ secure: DB returns only public + mine (via RPC + RLS)
-  const { data: logs, error } = await supabase.rpc("feed_logs", {
-    p_locale: locale,
+  // ✅ Secure feed from finds: public_aggregate + mine
+  const { data, error } = await supabase.rpc("feed_finds", {
+    p_country: "DK",
     p_limit: 30,
     p_cursor_created_at: null,
     p_cursor_id: null,
   });
 
-  const feed = (logs ?? []) as LogItem[];
+  const feed = (data ?? []) as FeedFind[];
 
   return (
     <main className={styles.page}>
       <FeedClient
         locale={locale}
         month={month}
-        logs={feed}
+        finds={feed}
         viewerUserId={uid}
         errorMsg={error?.message ?? null}
       />
