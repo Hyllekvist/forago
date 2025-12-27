@@ -6,7 +6,7 @@ type Locale = "dk" | "en" | "se" | "de";
 function safeLocale(v: unknown): Locale {
   return v === "dk" || v === "en" || v === "se" || v === "de" ? v : "dk";
 }
-
+ 
 export type FeedFind = {
   id: string;
   created_at: string | null;
