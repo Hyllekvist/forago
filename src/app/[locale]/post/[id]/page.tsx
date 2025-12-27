@@ -1,10 +1,12 @@
-// src/app/[locale]/post/[id]/page.tsx  
+// src/app/[locale]/post/[id]/page.tsx
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 import styles from "./PostPage.module.css";
 import { supabaseServer } from "@/lib/supabase/server";
 import { CommentList } from "@/components/Posts/CommentList";
 import { VoteButton } from "@/components/Posts/VoteButton";
 import { ReplyComposer } from "@/components/Posts/ReplyComposer";
-
 
 type CommentItem = {
   id: string;
@@ -18,11 +20,10 @@ export default async function PostPage({
 }: {
   params: { locale: string; id: string };
 }) {
-  const supabase = supabaseServer();
+  const supabase = await supabaseServer(); // ✅ vigtigt
   const locale = params.locale;
   const postId = params.id;
 
-  // 1) Fetch post
   const { data: post, error: postErr } = await supabase
     .from("posts")
     .select("id, locale, type, title, body, created_at, user_id")
@@ -41,21 +42,18 @@ export default async function PostPage({
     );
   }
 
-  // 2) Fetch votes (score + my vote)
   const [{ data: votes }, { data: auth }] = await Promise.all([
     supabase.from("post_votes").select("user_id, vote").eq("post_id", postId),
     supabase.auth.getUser(),
   ]);
 
-  const score =
-    (votes ?? []).reduce((sum, v) => sum + (v?.vote ?? 0), 0) || 0;
+  const score = (votes ?? []).reduce((sum, v) => sum + (v?.vote ?? 0), 0) || 0;
 
   const myVote =
-    (auth?.user?.id
+    auth?.user?.id
       ? (votes ?? []).find((v) => v.user_id === auth.user.id)?.vote ?? 0
-      : 0) || 0;
+      : 0;
 
-  // 3) Fetch comments (with profile)
   const { data: commentsRaw } = await supabase
     .from("post_comments")
     .select("id, body, created_at, profiles(handle, display_name)")
@@ -65,8 +63,7 @@ export default async function PostPage({
   const comments: CommentItem[] =
     (commentsRaw ?? []).map((c: any) => {
       const p = c.profiles || {};
-      const author =
-        p.display_name || p.handle || "User";
+      const author = p.display_name || p.handle || "User";
       return {
         id: c.id,
         body: c.body,
@@ -85,18 +82,16 @@ export default async function PostPage({
             <p className={styles.sub}>{post.created_at ?? ""}</p>
           </div>
 
-          <VoteButton
-            postId={postId}
-            initialScore={score}
-            initialMyVote={myVote}
-          />
+          <VoteButton postId={postId} initialScore={score} initialMyVote={myVote} />
         </div>
 
         <div className={styles.body}>{post.body}</div>
       </div>
-<ReplyComposer postId={postId} />
-<CommentList comments={comments} />
 
+      {/* ✅ composer før listen, så refresh giver “aha” */}
+      <ReplyComposer postId={postId} />
+
+      <CommentList comments={comments} />
     </div>
   );
 }
