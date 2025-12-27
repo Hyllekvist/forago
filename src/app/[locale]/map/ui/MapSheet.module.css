@@ -13,29 +13,34 @@
   box-shadow: var(--shadow-2);
 }
 
+/* -------- Grab handle -------- */
+
 .grab{
-  width:100%;
-  background:transparent;
-  border:0;
+  width: 100%;
+  background: transparent;
+  border: 0;
   padding: 10px 0 0;
-  cursor:pointer;
+  cursor: pointer;
 }
 
 .handle{
-  display:block;
-  margin:0 auto;
-  width:44px;
-  height:5px;
-  border-radius:999px;
+  display: block;
+  margin: 0 auto;
+  width: 44px;
+  height: 5px;
+  border-radius: 999px;
   background: color-mix(in srgb, var(--ink) 18%, transparent);
 }
 
+/* -------- Header -------- */
+
 .header{
-  display:flex;
-  align-items:baseline;
-  justify-content:space-between;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
   padding: 10px 14px 12px;
-  cursor:pointer;
+  cursor: pointer;
+  user-select: none;
 }
 
 .hTitle{
@@ -50,37 +55,38 @@
   font-weight: 850;
 }
 
+/* -------- Body (ONLY exists in DOM when expanded) -------- */
+
 .body{
+  max-height: 52vh;
   overflow: auto;
   min-height: 0;
   -webkit-overflow-scrolling: touch;
-}
-
-.sheet[data-expanded="true"] .body{
-  max-height: 52vh;
-  overflow:auto;
+  overscroll-behavior: contain;
 }
 
 .empty{ padding: 18px 14px 22px; }
 .emptyTitle{ font-weight: 950; font-size: 13px; }
 .emptySub{
-  margin-top:6px;
-  font-size:12px;
+  margin-top: 6px;
+  font-size: 12px;
   color: var(--muted);
-  line-height:1.35;
+  line-height: 1.35;
 }
+
+/* -------- List -------- */
 
 .list{
   padding: 0 10px 12px;
-  display:grid;
-  gap:8px;
+  display: grid;
+  gap: 8px;
 }
 
 .row{
-  display:grid;
+  display: grid;
   grid-template-columns: 1fr auto;
-  gap:10px;
-  align-items:center;
+  gap: 10px;
+  align-items: center;
 
   padding: 10px 10px;
   border-radius: var(--r-md);
@@ -94,30 +100,30 @@
 }
 
 .rowMain{
-  background:transparent;
-  border:0;
+  background: transparent;
+  border: 0;
   color: inherit;
-  text-align:left;
-  cursor:pointer;
-  padding:0;
-  min-width:0;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+  min-width: 0;
 }
 
 .rowTitle{
   font-weight: 900;
   font-size: 13px;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .rowMeta{
-  margin-top:2px;
-  font-size:12px;
+  margin-top: 2px;
+  font-size: 12px;
   color: var(--muted);
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .logBtn{
@@ -131,27 +137,5 @@
 
   font-weight: 900;
   font-size: 12px;
-  cursor:pointer;
-}
-
-.desktopBody{
-  flex: 1;
-  min-height: 0;
-  overflow: hidden; /* ✅ */
-}
-
-@media (min-width: 1024px){
-  .desktopPanel{
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    overflow: hidden; /* ✅ */
-  }
-
-  .panelInner{
-    flex: 1;
-    height: auto;
-    min-height: 0;
-    overflow: auto; /* ✅ */
-  }
+  cursor: pointer;
 }
