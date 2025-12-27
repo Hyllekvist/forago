@@ -1,45 +1,140 @@
-.wrap{
+/* Ask.module.css */
+
+/* ---------- Page shell ---------- */
+.wrap {
   padding: 18px var(--pad) 110px;
   max-width: var(--maxw);
   margin: 0 auto;
 }
- 
-.header{
+
+/* ---------- Header ---------- */
+.header {
   margin-bottom: 14px;
 }
 
-.h1{ margin:0; }
-.sub{ margin: 8px 0 0; color: var(--muted); max-width: 70ch; }
-
-.compose{
-  margin-top: 14px;
+.h1 {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 
-.list{
-  margin-top: 18px;
+.sub {
+  margin: 8px 0 0;
+  color: var(--muted);
+  max-width: 70ch;
+  line-height: 1.55;
 }
 
-.listTitle{
-  display:flex;
-  align-items:center;
-  gap: 10px;
+/* ---------- Onboarding: starters/examples ---------- */
+.starters {
+  margin: 14px 0 16px;
+}
+
+.startersTitle {
   font-size: 12px;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--muted);
   margin: 0 0 10px;
 }
 
-.count{
+.startersGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 640px) {
+  .startersGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.starter {
+  display: block;
+  padding: 12px 14px;
+  border-radius: 14px;
+  text-decoration: none;
+  color: var(--ink);
+
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+
+  transition: transform 0.06s ease, background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.starter:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.starter:active {
+  transform: translateY(1px);
+}
+
+.starterQ {
+  font-size: 14px;
+  font-weight: 750;
+  line-height: 1.32;
+  letter-spacing: -0.01em;
+}
+
+.starterCta {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.selectedHint {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.selectedText {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* ---------- Composer container ---------- */
+.compose {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--panel) 75%, transparent);
+  border: 1px solid var(--line);
+}
+
+/* ---------- Latest list ---------- */
+.list {
+  margin-top: 18px;
+}
+
+.listTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted);
+
+  margin: 0 0 10px;
+}
+
+.count {
   padding: 6px 10px;
   border-radius: 999px;
   border: 1px solid var(--line);
   background: color-mix(in srgb, var(--panel) 80%, transparent);
   letter-spacing: normal;
-  font-weight: 700;
+  font-weight: 800;
 }
 
-.stack{
+.stack {
   display: grid;
   gap: 10px;
 }
