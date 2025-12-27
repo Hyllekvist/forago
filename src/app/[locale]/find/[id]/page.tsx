@@ -1,4 +1,4 @@
-import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseServer } from "@/lib/supabase/server"; 
 import FindClient from "./FindClient";
 import styles from "./FindPage.module.css";
 
