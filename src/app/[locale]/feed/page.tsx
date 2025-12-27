@@ -8,7 +8,7 @@ function safeLocale(v: unknown): Locale {
   return v === "dk" || v === "en" || v === "se" || v === "de" ? v : "dk";
 }
 
-type LogItem = {
+type LogItem = { 
   id: string;
   created_at?: string | null;
   locale?: string | null;
