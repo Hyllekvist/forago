@@ -232,7 +232,16 @@ export default function MapClient({ spots }: Props) {
         );
         const json = await res.json();
         if (!res.ok || !json?.ok) return;
-        setSpotCounts({ total: Number(json.total ?? 0), qtr: Number(json.qtr ?? 0) });
+setSpotCounts({
+  total: Number(json.total ?? 0),
+  qtr: Number(json.qtr ?? 0),
+  // @ts-expect-error – we extend shape in UI
+  last30: Number(json.last30 ?? 0),
+  // @ts-expect-error
+  first_seen: json.first_seen ?? null,
+  // @ts-expect-error
+  last_seen: json.last_seen ?? null,
+} as any);
       } catch {
         // ignore
       }
