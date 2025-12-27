@@ -51,9 +51,9 @@
 }
 
 .body{
-  max-height:0;
-  overflow:hidden;
-  transition: max-height 220ms ease;
+  overflow: auto;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 .sheet[data-expanded="true"] .body{
@@ -132,4 +132,26 @@
   font-weight: 900;
   font-size: 12px;
   cursor:pointer;
+}
+
+.desktopBody{
+  flex: 1;
+  min-height: 0;
+  overflow: hidden; /* ✅ */
+}
+
+@media (min-width: 1024px){
+  .desktopPanel{
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden; /* ✅ */
+  }
+
+  .panelInner{
+    flex: 1;
+    height: auto;
+    min-height: 0;
+    overflow: auto; /* ✅ */
+  }
 }
