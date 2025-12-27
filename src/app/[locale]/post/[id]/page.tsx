@@ -3,6 +3,8 @@ import styles from "./PostPage.module.css";
 import { supabaseServer } from "@/lib/supabase/server";
 import { CommentList } from "@/components/Posts/CommentList";
 import { VoteButton } from "@/components/Posts/VoteButton";
+import { ReplyComposer } from "@/components/Posts/ReplyComposer";
+
 
 type CommentItem = {
   id: string;
@@ -92,8 +94,9 @@ export default async function PostPage({
 
         <div className={styles.body}>{post.body}</div>
       </div>
+<ReplyComposer postId={postId} />
+<CommentList comments={comments} />
 
-      <CommentList comments={comments} />
     </div>
   );
 }
