@@ -452,3 +452,88 @@
   font-weight: 950;
   font-size: 12px;
 }
+
+/* --- Intelligence Q/A --- */
+
+.qa{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.q{
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.35;
+}
+
+.a{
+  font-weight: 950;
+  font-size: 12px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.intelDivider{
+  height: 1px;
+  background: var(--line);
+  margin: 10px 0;
+  opacity: .8;
+}
+
+.kpis{
+  display:grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.kpi{
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 14px;
+  padding: 10px;
+}
+
+.kpiK{
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.kpiV{
+  margin-top: 4px;
+  font-weight: 950;
+  font-size: 14px;
+}
+
+.yearLine{
+  margin-top: 10px;
+  display:flex;
+  justify-content:space-between;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.yearK{ font-weight: 850; }
+.yearV{ font-weight: 950; color: var(--ink); }
+
+.years{
+  margin-top: 8px;
+  display:flex;
+  flex-wrap:wrap;
+  gap: 8px;
+}
+
+.yearPill{
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel2) 72%, transparent);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 850;
+}
