@@ -26,8 +26,6 @@ function labelVisibility(locale: string, v?: string | null) {
 }
 
 function computeTitle(locale: string, f: FeedFind) {
-  // Prefer common name if you have it; otherwise scientific name
-  if (f.common_name) return f.common_name;
   if (f.scientific_name) return f.scientific_name;
   if (f.species_slug) return `#${f.species_slug}`;
   return locale === "dk" ? "Ukendt art" : "Unknown species";
@@ -35,9 +33,8 @@ function computeTitle(locale: string, f: FeedFind) {
 
 function computeSub(locale: string, f: FeedFind) {
   const parts: string[] = [];
-  if (f.scientific_name && f.common_name) parts.push(f.scientific_name);
   if (f.primary_group) parts.push(f.primary_group);
-  if (f.observed_at) parts.push(f.observed_at); // OK for now (ISO)
+  if (f.observed_at) parts.push(f.observed_at);
   return parts.length ? parts.join(" · ") : locale === "dk" ? "Fund" : "Find";
 }
 
@@ -121,13 +118,12 @@ export default function FeedClient({
 
             const title = computeTitle(locale, f);
             const sub = computeSub(locale, f);
-
             const imgUrl = f.photo_url ? f.photo_url : null;
 
-            // ✅ Primary click goes to Find Detail
+            // ✅ primary link: Find Detail
             const detailHref = `/${locale}/find/${encodeURIComponent(f.id)}`;
 
-            // ✅ Secondary action: map deep-link
+            // ✅ secondary: open map for this find
             const mapHref = `/${locale}/map?find=${encodeURIComponent(f.id)}`;
 
             return (
@@ -144,14 +140,11 @@ export default function FeedClient({
                       {labelVisibility(locale, f.visibility)}
                     </span>
 
-                    {isMine ? (
-                      <span className={styles.mine}>{t("Dig", "You")}</span>
-                    ) : null}
+                    {isMine ? <span className={styles.mine}>{t("Dig", "You")}</span> : null}
 
                     <span className={styles.sep}>·</span>
                     <span className={styles.when}>{fmt(f.created_at)}</span>
 
-                    {/* ✅ optional: map button on the right */}
                     <span className={styles.metaSpacer} />
                     <Link
                       className={styles.mapMini}
