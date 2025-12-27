@@ -1,5 +1,5 @@
 // src/app/[locale]/map/MapClient.tsx
-"use client";
+"use client"; 
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
