@@ -5,7 +5,7 @@ import styles from "./FindPage.module.css";
 type Locale = "dk" | "en" | "se" | "de";
 function safeLocale(v: unknown): Locale {
   return v === "dk" || v === "en" || v === "se" || v === "de" ? v : "dk";
-} 
+}
 
 type FindDetailPayload = {
   find: {
@@ -76,15 +76,49 @@ export type SpotIntelligence = {
   country: string | null;
   spot_id: string | null;
   total: number;
-  last30: number;
   qtr: number;
-  first_seen: string | null;        // timestamp
-  last_seen: string | null;         // timestamp
-  last_observed_at: string | null;  // date
+  last30: number;
+  first_seen: string | null; // timestamptz
+  last_seen: string | null; // timestamptz
+  last_observed_at: string | null; // date string
   years_active: number;
   stable_over_years: boolean;
   year_counts: Array<{ year: number; count: number }>;
 };
+
+async function fetchSpotIntelligence(
+  supabase: any,
+  args: { country: string; spot_id: string }
+): Promise<{ data: SpotIntelligence | null; error: string | null }> {
+  // Vi prøver et par signaturer for at være robust mod dit faktiske RPC setup
+  const attempts: Array<{ fn: string; payload: any }> = [
+    { fn: "spot_intelligence", payload: { p_country: args.country, p_spot_id: args.spot_id } },
+    { fn: "spot_intelligence", payload: { p_spot_id: args.spot_id } },
+  ];
+
+  for (const a of attempts) {
+    const { data, error } = await supabase.rpc(a.fn, a.payload);
+    if (!error) {
+      const raw = (data ?? null) as any;
+
+      // support:
+      // 1) { spot_intelligence: {...} }
+      // 2) {...}
+      // 3) [{ spot_intelligence: {...}}]
+      const pick =
+        raw?.spot_intelligence ??
+        raw?.[0]?.spot_intelligence ??
+        raw ??
+        null;
+
+      return { data: (pick ?? null) as SpotIntelligence | null, error: null };
+    }
+  }
+
+  // hvis alle fejler, returnér stille fejl
+  const last = await supabase.rpc("spot_intelligence", { p_spot_id: args.spot_id });
+  return { data: null, error: last?.error?.message ?? "Unknown" };
+}
 
 export default async function FindPage({
   params,
@@ -103,15 +137,20 @@ export default async function FindPage({
 
   const payload = (data ?? null) as FindDetailPayload | null;
 
-  // ---- Top species widget ----
+  // --- Top species widget
   let topSpecies: TopSpeciesRow[] = [];
   let topSpeciesError: string | null = null;
+
+  // --- Spot intelligence (Q/A + stability)
+  let spotIntel: SpotIntelligence | null = null;
+  let spotIntelError: string | null = null;
 
   try {
     const country = payload?.find?.country ?? "DK";
     const geo_cell = payload?.cell?.geo_cell ?? null;
     const spot_id = geo_cell ? null : payload?.find?.spot_id ?? null;
 
+    // Top species: geo_cell først, ellers spot_id
     if (geo_cell || spot_id) {
       const { data: ts, error: tsErr } = await supabase.rpc("top_species_area", {
         p_country: country,
@@ -124,30 +163,15 @@ export default async function FindPage({
       if (tsErr) topSpeciesError = tsErr.message;
       topSpecies = (ts ?? []) as any[];
     }
-  } catch (e: any) {
-    topSpeciesError = e?.message ?? "Unknown";
-  }
 
-  // ---- Spot intelligence (simple + safe) ----
-  let spotIntel: SpotIntelligence | null = null;
-  let spotIntelError: string | null = null;
-
-  try {
-    const spot_id = payload?.find?.spot_id ?? null;
-    const country = payload?.find?.country ?? "DK";
-
+    // Spot intelligence: kun spot_id (geo_cell kan komme senere, hvis du laver geo_cell_intelligence)
     if (spot_id) {
-      const { data: si, error: siErr } = await supabase.rpc("spot_intelligence", {
-        p_spot_id: spot_id,
-        p_country: country,
-      });
-
-      if (siErr) spotIntelError = siErr.message;
-      // nogle RPC’er returnerer { spot_intelligence: {...} } – andre bare {...}
-      spotIntel = (si?.spot_intelligence ?? si ?? null) as any;
+      const r = await fetchSpotIntelligence(supabase, { country, spot_id });
+      spotIntel = r.data;
+      spotIntelError = r.error;
     }
   } catch (e: any) {
-    spotIntelError = e?.message ?? "Unknown";
+    topSpeciesError = topSpeciesError ?? (e?.message ?? "Unknown");
   }
 
   return (
