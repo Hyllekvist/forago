@@ -26,6 +26,7 @@ function labelVisibility(locale: string, v?: string | null) {
 }
 
 function computeTitle(locale: string, f: FeedFind) {
+  if (f.common_name) return f.common_name;
   if (f.scientific_name) return f.scientific_name;
   if (f.species_slug) return `#${f.species_slug}`;
   return locale === "dk" ? "Ukendt art" : "Unknown species";
