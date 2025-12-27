@@ -1,49 +1,48 @@
 /* src/app/[locale]/map/ui/SpotPeekCard.module.css */
- 
+
 .card{
   position: relative;
   overflow: hidden;
 
-  border-radius: var(--r-lg);
+  /* compact baseline */
+  padding: 10px;
+  border-radius: 18px;
+
   border: var(--stroke) solid rgba(255,255,255,0.12);
 
-  /* ✅ Dark glass baseline (fixer “mælket/washed” look) */
+  /* dark glass baseline */
   background: rgba(15, 23, 42, 0.78);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 
   box-shadow: var(--shadow-2);
-  padding: 12px;
 }
 
-/* soft haze (bag indholdet) */
+/* soft haze */
 .bg{
   position: absolute;
   inset: -40px;
   z-index: 0;
   pointer-events: none;
 
-  /* gradient haze */
   background:
     radial-gradient(380px 220px at 20% 10%, rgba(16,185,129,0.35), transparent 60%),
     radial-gradient(320px 220px at 90% 30%, rgba(34,211,238,0.22), transparent 60%),
     radial-gradient(340px 220px at 50% 110%, rgba(99,102,241,0.18), transparent 55%);
   filter: blur(30px);
-
-  /* ✅ vigtig: lav opacity så den ikke “bleger” alt */
   opacity: 0.22;
 }
 
-/* close button */
+/* close */
 .close{
   position: absolute;
   z-index: 2;
   right: 10px;
   top: 10px;
 
-  width: 38px;
-  height: 38px;
-  border-radius: 14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 13px;
 
   border: var(--stroke) solid rgba(255,255,255,0.12);
   background: rgba(255,255,255,0.06);
@@ -60,11 +59,7 @@
   background: rgba(255,255,255,0.10);
   border-color: rgba(255,255,255,0.16);
 }
-
-.close:active{
-  transform: translateY(1px);
-}
-
+.close:active{ transform: translateY(1px); }
 .close:focus-visible{
   outline: 2px solid var(--focus);
   outline-offset: 2px;
@@ -76,16 +71,17 @@
   z-index: 1;
 
   display: grid;
-  grid-template-columns: 44px 1fr;
+  grid-template-columns: 40px 1fr;
   gap: 10px;
   align-items: start;
+
   padding-right: 44px; /* plads til close */
 }
 
 .badge{
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
 
   background: rgba(255,255,255,0.07);
   border: var(--stroke) solid rgba(255,255,255,0.12);
@@ -96,21 +92,16 @@
   box-shadow: 0 14px 34px rgba(0,0,0,0.25);
 }
 
-.badgeEmoji{
-  font-size: 20px;
-  line-height: 1;
-}
+.badgeEmoji{ font-size: 18px; line-height: 1; }
 
-.headMain{
-  min-width: 0;
-}
+.headMain{ min-width: 0; }
 
 .kickerRow{
   display: flex;
   align-items: center;
   gap: 8px;
 
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-weight: 900;
@@ -118,9 +109,7 @@
   color: rgba(255,255,255,0.60);
 }
 
-.kicker{
-  color: rgba(255,255,255,0.70);
-}
+.kicker{ color: rgba(255,255,255,0.70); }
 
 .meta{
   color: rgba(255,255,255,0.62);
@@ -138,7 +127,7 @@
 
 .title{
   margin: 6px 0 0;
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1.1;
   letter-spacing: -0.02em;
   font-weight: 950;
@@ -155,14 +144,14 @@
 
 .pill,
 .pillAccent{
-  height: 32px;
-  padding: 0 12px;
+  height: 28px;
+  padding: 0 10px;
   border-radius: 999px;
 
   display: inline-flex;
   align-items: center;
 
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 900;
 
   border: var(--stroke) solid rgba(255,255,255,0.12);
@@ -175,25 +164,65 @@
   background: color-mix(in srgb, var(--accent) 14%, rgba(255,255,255,0.04));
 }
 
+/* ✅ status pill — matches system, no “warning badge” vibes */
+.pillStatus{
+  border-color: rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.05);
+}
+
+/* Stable = accent */
+.pillStable{
+  border-color: color-mix(in srgb, var(--accent) 45%, rgba(255,255,255,0.12));
+  background: color-mix(in srgb, var(--accent) 12%, rgba(255,255,255,0.04));
+}
+
+/* Returning = neutral/soft (NOT amber) */
+.pillReturning{
+  border-color: color-mix(in srgb, rgba(255,255,255,0.22) 55%, rgba(255,255,255,0.12));
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.88);
+}
+
+/* Sporadic = dim */
+.pillSporadic{
+  border-color: rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.035);
+  color: rgba(255,255,255,0.80);
+}
+
+/* Loading = dimmer */
+.pillLoading{
+  opacity: 0.72;
+}
+
+/* social line */
+.social{
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.2;
+  color: rgba(255,255,255,0.72);
+  letter-spacing: 0.01em;
+}
+
 /* actions */
 .actions{
   position: relative;
   z-index: 1;
 
-  margin-top: 12px;
+  margin-top: 10px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 8px;
 }
 
 .primary,
 .secondary,
 .ghost{
-  height: 46px;
-  border-radius: 16px;
+  height: 40px;
+  border-radius: 14px;
 
   font-weight: 950;
-  font-size: 14px;
+  font-size: 13px;
 
   display: inline-flex;
   align-items: center;
@@ -211,19 +240,15 @@
   color: rgba(255,255,255,0.96);
   box-shadow: 0 16px 36px rgba(16,185,129,0.18);
 }
-
 .primary:hover{
   background: color-mix(in srgb, var(--accent) 22%, rgba(255,255,255,0.06));
 }
-
-.primary:active{
-  transform: translateY(1px);
-}
+.primary:active{ transform: translateY(1px); }
 
 .primaryIcon{
-  width: 26px;
-  height: 26px;
-  border-radius: 10px;
+  width: 22px;
+  height: 22px;
+  border-radius: 9px;
 
   display: grid;
   place-items: center;
@@ -237,32 +262,25 @@
   background: rgba(255,255,255,0.06);
   color: rgba(255,255,255,0.92);
 }
-
 .secondary:hover{
   background: rgba(255,255,255,0.10);
   border-color: rgba(255,255,255,0.16);
 }
-
-.secondary:active{
-  transform: translateY(1px);
-}
+.secondary:active{ transform: translateY(1px); }
 
 .ghost{
   grid-column: 1 / -1;
 
+  height: 38px;
   border: var(--stroke) solid rgba(255,255,255,0.10);
   background: rgba(255,255,255,0.03);
   color: rgba(255,255,255,0.78);
 }
-
 .ghost:hover{
   background: rgba(255,255,255,0.06);
   border-color: rgba(255,255,255,0.14);
 }
-
-.ghost:active{
-  transform: translateY(1px);
-}
+.ghost:active{ transform: translateY(1px); }
 
 .primary:focus-visible,
 .secondary:focus-visible,
@@ -276,14 +294,24 @@
   position: relative;
   z-index: 1;
 
-  margin-top: 10px;
-  padding-top: 10px;
+  margin-top: 8px;
+  padding-top: 8px;
 
   border-top: 1px solid rgba(255,255,255,0.10);
 
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.35;
   color: rgba(255,255,255,0.55);
+}
+
+/* small screens */
+@media (max-width: 420px){
+  .actions{
+    grid-template-columns: 1fr 1fr; /* keep two buttons */
+  }
+  .ghost{
+    grid-column: 1 / -1;
+  }
 }
 
 /* -------- Light theme overrides -------- */
@@ -307,25 +335,12 @@
   color: rgba(15,23,42,0.78);
 }
 
-:root[data-theme="light"] .kickerRow{
-  color: rgba(15,23,42,0.55);
-}
+:root[data-theme="light"] .kickerRow{ color: rgba(15,23,42,0.55); }
+:root[data-theme="light"] .kicker{ color: rgba(15,23,42,0.62); }
+:root[data-theme="light"] .meta{ color: rgba(15,23,42,0.60); }
+:root[data-theme="light"] .dot{ background: rgba(15,23,42,0.18); }
 
-:root[data-theme="light"] .kicker{
-  color: rgba(15,23,42,0.62);
-}
-
-:root[data-theme="light"] .meta{
-  color: rgba(15,23,42,0.60);
-}
-
-:root[data-theme="light"] .dot{
-  background: rgba(15,23,42,0.18);
-}
-
-:root[data-theme="light"] .title{
-  color: rgba(2,6,23,0.92);
-}
+:root[data-theme="light"] .title{ color: rgba(2,6,23,0.92); }
 
 :root[data-theme="light"] .badge{
   background: rgba(255,255,255,0.70);
@@ -343,6 +358,33 @@
 :root[data-theme="light"] .pillAccent{
   border-color: color-mix(in srgb, var(--accent) 35%, rgba(15,23,42,0.10));
   background: color-mix(in srgb, var(--accent) 10%, rgba(255,255,255,0.60));
+}
+
+:root[data-theme="light"] .pillStatus{
+  border-color: rgba(15,23,42,0.10);
+  background: rgba(15,23,42,0.03);
+  color: rgba(2,6,23,0.74);
+}
+
+:root[data-theme="light"] .pillStable{
+  border-color: color-mix(in srgb, var(--accent) 30%, rgba(15,23,42,0.12));
+  background: color-mix(in srgb, var(--accent) 10%, rgba(255,255,255,0.70));
+}
+
+:root[data-theme="light"] .pillReturning{
+  border-color: rgba(15,23,42,0.12);
+  background: rgba(15,23,42,0.035);
+  color: rgba(2,6,23,0.72);
+}
+
+:root[data-theme="light"] .pillSporadic{
+  border-color: rgba(15,23,42,0.10);
+  background: rgba(15,23,42,0.02);
+  color: rgba(2,6,23,0.62);
+}
+
+:root[data-theme="light"] .social{
+  color: rgba(2,6,23,0.62);
 }
 
 :root[data-theme="light"] .primary{
@@ -372,138 +414,4 @@
 :root[data-theme="light"] .hint{
   border-top-color: rgba(15,23,42,0.08);
   color: rgba(2,6,23,0.55);
-}
-
-/* small screens tweaks */
-@media (max-width: 420px){
-  .title{ font-size: 17px; }
-  .actions{
-    grid-template-columns: 1fr;
-  }
-  .ghost{
-    grid-column: auto;
-  }
-}
-/* --- Compact tuning (append nederst i SpotPeekCard.module.css) --- */
-
-/* mindre padding + lidt mindre radius */
-.card{
-  padding: 10px;
-  border-radius: 18px; /* hvis var(--r-lg) er høj */
-}
-
-/* badge + close lidt mindre */
-.badge{
-  width: 40px;
-  height: 40px;
-  border-radius: 13px;
-}
-.badgeEmoji{ font-size: 18px; }
-
-.close{
-  width: 34px;
-  height: 34px;
-  border-radius: 13px;
-}
-
-/* titel/kicker mindre */
-.title{
-  font-size: 16px;
-}
-.kickerRow{
-  font-size: 10px;
-}
-
-/* pills mindre */
-.pill,
-.pillAccent{
-  height: 28px;
-  padding: 0 10px;
-  font-size: 11px;
-}
-
-/* knapper: lavere + mindre tekst */
-.primary,
-.secondary,
-.ghost{
-  height: 40px;
-  border-radius: 14px;
-  font-size: 13px;
-}
-
-/* primary icon mindre */
-.primaryIcon{
-  width: 22px;
-  height: 22px;
-  border-radius: 9px;
-}
-
-/* hint mere tight */
-.hint{
-  margin-top: 8px;
-  padding-top: 8px;
-  font-size: 11px;
-}
-
-/* lidt mindre vertikal luft overall */
-.actions{
-  margin-top: 10px;
-  gap: 8px;
-}
-
-/* hvis du vil beholde 2-col knapper på mobile, så fjern din max-width:420 rule.
-   Alternativ: keep 2-col ved at override her: */
-@media (max-width: 420px){
-  .actions{
-    grid-template-columns: 1fr 1fr;
-  }
-  .ghost{
-    grid-column: 1 / -1;
-    height: 38px;
-  }
-}
-
-/* SpotPeekCard.module.css */
-.success {
-  padding: 10px 14px;
-  border-radius: 10px;
-  background: rgba(16,185,129,0.15);
-  color: rgb(16,185,129);
-  font-weight: 600;
-  text-align: center;
-}
-
-.social {
-  margin-top: 8px;
-  font-size: 12px;
-  line-height: 1.2;
-  color: rgba(255,255,255,0.72);
-  letter-spacing: 0.01em;
-}
-
-.pillStatus{
-  border: var(--stroke) solid var(--chipLine);
-  background: var(--chipBg);
-  color: inherit;
-  font-weight: 900;
-}
-
-.pillStable{
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--chipLine));
-  background: color-mix(in srgb, var(--accent) 16%, var(--chipBg));
-}
-
-.pillReturning{
-  border-color: color-mix(in srgb, #f59e0b 45%, var(--chipLine));
-  background: color-mix(in srgb, #f59e0b 14%, var(--chipBg));
-}
-
-.pillSporadic{
-  border-color: color-mix(in srgb, var(--ink) 22%, var(--chipLine));
-  background: color-mix(in srgb, var(--ink) 6%, var(--chipBg));
-  opacity: .95;
-}
-
-.pillLoading{
-  opacity: .75;
 }
