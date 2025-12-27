@@ -1,3 +1,4 @@
+// src/app/[locale]/feed/page.tsx
 import { supabaseServer } from "@/lib/supabase/server";
 import FeedClient from "./FeedClient";
 import styles from "./FeedPage.module.css";
@@ -16,6 +17,8 @@ export type FeedFind = {
   species_slug: string | null;
   scientific_name: string | null;
   primary_group: string | null;
+
+  common_name: string | null; // ✅ NEW
 
   notes: string | null;
   photo_url: string | null;
@@ -41,6 +44,7 @@ export default async function FeedPage({
 
   const { data, error } = await supabase.rpc("feed_finds", {
     p_country: "DK",
+    p_locale: locale, // ✅ NEW (uses species_translations)
     p_limit: 30,
     p_cursor_created_at: null,
     p_cursor_id: null,
