@@ -3,7 +3,7 @@
   margin: 0 auto;
   padding: 18px var(--pad) 120px;
 }
-
+ 
 .hero{
   border: 1px solid var(--line);
   background: var(--panel);
