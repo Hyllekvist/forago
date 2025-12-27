@@ -30,7 +30,12 @@ type Props = {
 function emojiForSlug(slug?: string | null) {
   const s = (slug ?? "").toLowerCase();
   if (!s) return "📍";
-  if (s.includes("svamp") || s.includes("mush") || s.includes("chanter") || s.includes("kantarel"))
+  if (
+    s.includes("svamp") ||
+    s.includes("mush") ||
+    s.includes("chanter") ||
+    s.includes("kantarel")
+  )
     return "🍄";
   if (s.includes("bær") || s.includes("berry") || s.includes("blåb") || s.includes("hindb"))
     return "🫐";
@@ -85,13 +90,13 @@ function computeStability(counts?: Counts | null) {
   const last30 = counts.last30 ?? 0;
   const qtr = counts.qtr ?? 0;
 
-  // Logik (skarp og enkel):
   // Stabil: mange og nylige
-  if (total >= 10 && last30 >= 3) return { key: "stable" as const, label: "Stabil", hint: "aktiv spot" };
+  if (total >= 10 && last30 >= 3)
+    return { key: "stable" as const, label: "Stabil", hint: "aktiv spot" };
 
-  // Tilbagevendende: noget traction
+  // Tilbagevendende: noget traction (men ikke “alarm”)
   if (total >= 3 || qtr >= 2 || last30 >= 2)
-    return { key: "returning" as const, label: "Tilbagevendende", hint: "finder dukker op" };
+    return { key: "returning" as const, label: "Tilbagevendende", hint: "dukker op igen" };
 
   // Ellers: sporadisk
   return { key: "sporadic" as const, label: "Sporadisk", hint: "få fund" };
@@ -114,7 +119,7 @@ export function SpotPeekCard({
   logOk,
 }: Props) {
   const emoji = emojiForSlug(spot.species_slug);
-  const label = mode === "forage" ? "Muligt fund" : spot.species_slug ? "Spot" : "Lokation";
+  const label = mode === "forage" ? "SPOT" : spot.species_slug ? "SPOT" : "LOKATION";
 
   const distance = useMemo(() => formatDistance(userPos, spot), [userPos, spot.lat, spot.lng]);
 
@@ -166,10 +171,13 @@ export function SpotPeekCard({
           <h3 className={styles.title}>{spot.title ?? "Ukendt spot"}</h3>
 
           <div className={styles.pills}>
-            <span className={styles.pill}>{spot.species_slug ? `#${spot.species_slug}` : "#unclassified"}</span>
+            <span className={styles.pill}>
+              {spot.species_slug ? `#${spot.species_slug}` : "#unclassified"}
+            </span>
 
+            {/* ✅ Status chip — designet så den matcher resten (ikke “warning badge”) */}
             <span
-              className={`${styles.pillStatus} ${
+              className={`${styles.pill} ${styles.pillStatus} ${
                 stability.key === "stable"
                   ? styles.pillStable
                   : stability.key === "returning"
@@ -180,10 +188,10 @@ export function SpotPeekCard({
               }`}
               title={stability.hint}
             >
-              {stability.label}
+              {stability.key === "returning" ? "↺ Tilbagevendende" : stability.label}
             </span>
 
-            <span className={styles.pillAccent}>{mode === "forage" ? "Peak potential" : "I nærheden"}</span>
+            <span className={styles.pillAccent}>{mode === "forage" ? "Peak" : "I nærheden"}</span>
           </div>
 
           <div className={styles.social}>{socialLine}</div>
