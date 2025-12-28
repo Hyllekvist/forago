@@ -1,8 +1,15 @@
+// src/app/api/spots/counts/route.ts
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 
+function isUuid(s: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    s
+  );
+}
+
 function quarterStartISO(d = new Date()) {
-  const q = Math.floor(d.getMonth() / 3); // 0..3
+  const q = Math.floor(d.getMonth() / 3);
   const startMonth = q * 3;
   const start = new Date(d.getFullYear(), startMonth, 1);
   return start.toISOString();
@@ -21,12 +28,17 @@ export async function GET(req: Request) {
     if (!spot_id) {
       return NextResponse.json({ ok: false, error: "Missing spot_id" }, { status: 400 });
     }
+    if (!isUuid(spot_id)) {
+      return NextResponse.json(
+        { ok: false, error: "spot_id must be UUID (places.id)" },
+        { status: 400 }
+      );
+    }
 
     const fresh = searchParams.get("fresh") === "1";
     const supabase = await supabaseServer();
 
-    // ✅ IMPORTANT: call select() first, then filter with eq/gte
-    const base = () =>
+    const baseCount = () =>
       supabase
         .from("finds")
         .select("id", { count: "exact", head: true })
@@ -34,41 +46,23 @@ export async function GET(req: Request) {
         .eq("country", "DK")
         .eq("visibility", "public_aggregate");
 
-    // total
-    const totalQ = await base();
+    const totalQ = await baseCount();
     if (totalQ.error) {
       return NextResponse.json({ ok: false, error: totalQ.error.message }, { status: 500 });
     }
 
-    // qtr
     const qtrFrom = quarterStartISO();
-    const qtrQ = await supabase
-      .from("finds")
-      .select("id", { count: "exact", head: true })
-      .eq("spot_id", spot_id)
-      .eq("country", "DK")
-      .eq("visibility", "public_aggregate")
-      .gte("created_at", qtrFrom);
-
+    const qtrQ = await baseCount().gte("created_at", qtrFrom);
     if (qtrQ.error) {
       return NextResponse.json({ ok: false, error: qtrQ.error.message }, { status: 500 });
     }
 
-    // last 30 days
     const last30From = daysAgoISO(30);
-    const last30Q = await supabase
-      .from("finds")
-      .select("id", { count: "exact", head: true })
-      .eq("spot_id", spot_id)
-      .eq("country", "DK")
-      .eq("visibility", "public_aggregate")
-      .gte("created_at", last30From);
-
+    const last30Q = await baseCount().gte("created_at", last30From);
     if (last30Q.error) {
       return NextResponse.json({ ok: false, error: last30Q.error.message }, { status: 500 });
     }
 
-    // first_seen (oldest)
     const firstQ = await supabase
       .from("finds")
       .select("created_at")
@@ -82,7 +76,6 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, error: firstQ.error.message }, { status: 500 });
     }
 
-    // last_seen (newest)
     const lastQ = await supabase
       .from("finds")
       .select("created_at")
