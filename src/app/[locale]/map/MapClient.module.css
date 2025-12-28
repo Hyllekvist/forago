@@ -343,3 +343,41 @@
     font-size: 12.5px !important;
   }
 }
+
+.forageBar{
+  padding: 8px 12px 0;
+}
+
+.forageChip{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 78%, transparent);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 12px;
+  line-height: 1;
+  max-width: 100%;
+}
+
+.forageChip:active{ transform: translateY(1px); }
+
+.forageLabel{
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.forageValue{
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 60vw;
+}
+
+.forageX{
+  opacity: .7;
+  font-weight: 900;
+}
