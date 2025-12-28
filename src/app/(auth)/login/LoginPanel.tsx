@@ -1,8 +1,20 @@
-// src/components/Auth/LoginPanel.tsx
 "use client";
 
 import { useMemo, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
+import { usePathname, useSearchParams } from "next/navigation";
+
+function inferLocaleFromPath(pathname: string) {
+  const seg = (pathname.split("/")[1] || "").toLowerCase();
+  return seg === "dk" || seg === "en" || seg === "se" || seg === "de" ? seg : "dk";
+}
+
+function safeLocalReturnTo(value: string | null) {
+  if (!value) return null;
+  if (!value.startsWith("/")) return null;
+  if (value.startsWith("//")) return null;
+  return value;
+}
 
 export function LoginPanel() {
   const supabase = useMemo(() => {
@@ -11,6 +23,9 @@ export function LoginPanel() {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
   }, []);
+
+  const pathname = usePathname() || "/dk/login";
+  const searchParams = useSearchParams();
 
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
@@ -26,7 +41,19 @@ export function LoginPanel() {
     setLoading(true);
     try {
       const origin = window.location.origin;
-      const redirectTo = `${origin}/callback`;
+
+      const locale = inferLocaleFromPath(pathname);
+
+      // 👇 hvis du kommer fra en beskyttet side, bør den sende ?returnTo=/dk/post/123
+      // fallback: send tilbage til /[locale]/today
+      const returnToFromQuery =
+        safeLocalReturnTo(searchParams?.get("returnTo")) ||
+        safeLocalReturnTo(searchParams?.get("next"));
+
+      const returnTo = returnToFromQuery ?? `/${locale}/today`;
+
+      // ✅ callback med locale + returnTo
+      const redirectTo = `${origin}/${locale}/callback?returnTo=${encodeURIComponent(returnTo)}`;
 
       const { error } = await supabase.auth.signInWithOtp({
         email: trimmed,
@@ -36,7 +63,6 @@ export function LoginPanel() {
       });
 
       if (error) {
-        // Den her er guld: den fortæller præcist hvorfor det fejler
         console.log("signInWithOtp error:", error);
         throw error;
       }
@@ -45,7 +71,6 @@ export function LoginPanel() {
     } catch (e: any) {
       console.log("magic link error raw:", e);
 
-      // SupabaseError har typisk `message`
       const msg =
         e?.message ||
         e?.error_description ||
