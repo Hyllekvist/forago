@@ -22,10 +22,7 @@ type SpotCounts = {
   last_seen: string | null;
 };
 
-function haversineKm(
-  a: { lat: number; lng: number },
-  b: { lat: number; lng: number }
-) {
+function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
   const dLng = ((b.lng - a.lng) * Math.PI) / 180;
@@ -48,6 +45,7 @@ function isDesktop() {
 export default function MapClient({ spots }: Props) {
   const search = useSearchParams();
   const deepLinkHandledRef = useRef(false);
+  const didAutoFocusRef = useRef(false);
 
   const [mode, setMode] = useState<Mode>("daily");
   const [activeInsight, setActiveInsight] = useState<InsightKey | null>(null);
@@ -69,7 +67,7 @@ export default function MapClient({ spots }: Props) {
   const [spotCounts, setSpotCounts] = useState<SpotCounts | null>(null);
   const [countsMap, setCountsMap] = useState<Record<string, { total: number; qtr: number }>>({});
 
-  // --- geolocation
+  // geolocation
   useEffect(() => {
     if (!("geolocation" in navigator)) return;
     navigator.geolocation.getCurrentPosition(
@@ -85,18 +83,15 @@ export default function MapClient({ spots }: Props) {
     return () => window.clearTimeout(t);
   }, [visibleIds]);
 
-  const insights = useMemo(() => {
-    const total = spots.length;
-    const nearbyCount = userPos
-      ? spots.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2).length
-      : 0;
+  // auto focus when entering Sankemode
+  useEffect(() => {
+    if (mode !== "forage") return;
+    if (!userPos || !mapApi) return;
+    if (didAutoFocusRef.current) return;
 
-    return {
-      season_now: { label: "I sæson nu", value: Math.round(total * 0.35), hint: "Arter" },
-      peak: { label: "Peak", value: Math.round(total * 0.12), hint: "I området" },
-      nearby: { label: "Tæt på dig", value: nearbyCount, hint: "< 2 km" },
-    } as const;
-  }, [spots, userPos]);
+    didAutoFocusRef.current = true;
+    mapApi.flyTo(userPos.lat, userPos.lng, 13);
+  }, [mode, userPos, mapApi]);
 
   const spotsById = useMemo(() => {
     const m = new Map<string, Spot>();
@@ -114,7 +109,6 @@ export default function MapClient({ spots }: Props) {
     [visibleIds, spotsById]
   );
 
-  // filtering
   const filteredSpots = useMemo(() => {
     let base = spots;
 
@@ -133,8 +127,9 @@ export default function MapClient({ spots }: Props) {
     return base;
   }, [spots, activeInsight, userPos, mode, selectedSpot?.species_slug]);
 
-  // toggle mode (Sankemode gør noget)
   const onToggleMode = useCallback(() => {
+    didAutoFocusRef.current = false;
+
     setMode((m) => {
       const next = m === "daily" ? "forage" : "daily";
       if (next === "forage" && userPos) setActiveInsight("nearby");
@@ -148,20 +143,6 @@ export default function MapClient({ spots }: Props) {
     setLogOk(false);
     setLogError(null);
   }, [userPos]);
-
-  const onPickInsight = useCallback(
-    (k: InsightKey) => {
-      setActiveInsight((prev) => (prev === k ? null : k));
-      setSheetExpanded(true);
-      setSelectedId(null);
-      setSpotCounts(null);
-
-      if (k === "nearby" && userPos && mapApi) {
-        mapApi.flyTo(userPos.lat, userPos.lng, 13);
-      }
-    },
-    [mapApi, userPos]
-  );
 
   const onSelectSpot = useCallback(
     (id: string) => {
@@ -177,45 +158,53 @@ export default function MapClient({ spots }: Props) {
     [mapApi, spotsById]
   );
 
-  // deep links
-  useEffect(() => {
-    if (deepLinkHandledRef.current || !mapApi || !spotsById.size) return;
+  // 🔥 log fund direkte fra sheet (Sankemode)
+  const onQuickLog = useCallback(
+    async (spot: Spot) => {
+      if (isLogging) return;
 
-    const spot = search.get("spot");
-    if (spot && spotsById.has(spot)) {
-      onSelectSpot(spot);
-      deepLinkHandledRef.current = true;
-    }
-  }, [search, mapApi, spotsById, onSelectSpot]);
-
-  // counts for selected
-  useEffect(() => {
-    if (!selectedSpot?.id) {
-      setSpotCounts(null);
-      return;
-    }
-
-    const ac = new AbortController();
-    (async () => {
       try {
-        const res = await fetch(`/api/spots/counts?spot_id=${selectedSpot.id}`, { signal: ac.signal });
-        const json = await res.json();
-        if (!res.ok || !json?.ok) return;
+        setIsLogging(true);
+        setLogError(null);
 
-        setSpotCounts({
-          total: Number(json.total ?? 0),
-          qtr: Number(json.qtr ?? 0),
-          last30: Number(json.last30 ?? 0),
-          first_seen: json.first_seen ?? null,
-          last_seen: json.last_seen ?? null,
+        const res = await fetch("/api/finds/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            spot_id: spot.id,
+            species_slug: spot.species_slug ?? null,
+            observed_at: new Date().toISOString(),
+            visibility: "public_aggregate",
+            country: "DK",
+            geo_precision_km: 1,
+            photo_urls: [],
+          }),
         });
-      } catch {}
-    })();
 
-    return () => ac.abort();
-  }, [selectedSpot?.id]);
+        const json = await res.json();
+        if (!res.ok || !json?.ok) throw new Error(json?.error ?? "Kunne ikke logge fund");
 
-  // batch counts (debounced)
+        setLogOk(true);
+
+        setCountsMap((prev) => ({
+          ...prev,
+          [spot.id]: {
+            total: (prev[spot.id]?.total ?? 0) + 1,
+            qtr: (prev[spot.id]?.qtr ?? 0) + 1,
+          },
+        }));
+
+        setTimeout(() => setLogOk(false), 1200);
+      } catch (e: any) {
+        setLogError(e?.message ?? "Ukendt fejl");
+      } finally {
+        setIsLogging(false);
+      }
+    },
+    [isLogging]
+  );
+
+  // batch counts
   useEffect(() => {
     if (!debouncedVisibleIds.length) return;
     const ac = new AbortController();
@@ -228,7 +217,6 @@ export default function MapClient({ spots }: Props) {
         );
         const json = await res.json();
         if (!res.ok || !json?.ok || !json.map) return;
-
         setCountsMap((prev) => ({ ...prev, ...json.map }));
       } catch {}
     })();
@@ -252,70 +240,52 @@ export default function MapClient({ spots }: Props) {
     return arr;
   }, [visibleSpots, countsMap, userPos, mode]);
 
-  const sheetTitle =
-    isPanning ? "Finder spots…" :
-    visibleIds.length ? `${visibleIds.length} relevante spots i view` :
-    "Flyt kortet for at finde spots";
-
   return (
     <div className={styles.page}>
       <MapTopbar mode={mode} onToggleMode={onToggleMode} />
 
-      <InsightStrip mode={mode} active={activeInsight} insights={insights} onPick={onPickInsight} />
+      <InsightStrip mode={mode} active={activeInsight} insights={{} as any} onPick={() => {}} />
 
       <div className={styles.desktopBody}>
         <aside className={styles.desktopPanel}>
-          <div className={styles.panelInner}>
-            <div className={styles.panelHeader}>
-              <div className={styles.panelTitle}>{sheetTitle}</div>
-              <button
-                className={styles.clearBtn}
-                onClick={() => {
-                  setSelectedId(null);
-                  setSpotCounts(null);
-                  setSheetExpanded(true);
-                }}
-              >
-                Nulstil
-              </button>
+          {mode === "forage" && sortedVisibleSpots.length === 0 ? (
+            <div className={styles.emptyHint}>
+              {!userPos ? (
+                <p><strong>Aktivér lokation</strong> for at bruge Sankemode.</p>
+              ) : (
+                <p>
+                  <strong>Ingen sikre fund &lt; 2 km.</strong><br />
+                  Zoom ud eller flyt kortet.
+                </p>
+              )}
             </div>
-
-            {mode === "forage" && sortedVisibleSpots.length === 0 ? (
-              <div className={styles.emptyHint}>
-                {!userPos ? (
-                  <p><strong>Aktivér lokation</strong> for at bruge Sankemode.</p>
-                ) : (
-                  <p>
-                    <strong>Ingen sikre fund &lt; 2 km.</strong><br />
-                    Zoom ud, flyt kortet, eller skift til <em>I dag</em>.
-                  </p>
-                )}
-              </div>
-            ) : selectedSpot ? (
-              <SpotPeekCard
-                spot={selectedSpot}
-                mode={mode}
-                userPos={userPos}
-                counts={spotCounts}
-                isLogging={isLogging}
-                logOk={logOk}
-                onClose={() => setSelectedId(null)}
-                onLog={() => {}}
-                onLearn={() => setSelectedId(null)}
-              />
-            ) : (
-              <MapSheet
-                mode={mode}
-                expanded
-                onToggle={() => {}}
-                title={sheetTitle}
-                items={sortedVisibleSpots}
-                selectedId={selectedId}
-                onSelect={onSelectSpot}
-                onLog={() => {}}
-              />
-            )}
-          </div>
+          ) : selectedSpot ? (
+            <SpotPeekCard
+              spot={selectedSpot}
+              mode={mode}
+              userPos={userPos}
+              counts={spotCounts}
+              isLogging={isLogging}
+              logOk={logOk}
+              onClose={() => setSelectedId(null)}
+              onLog={() => onQuickLog(selectedSpot)}
+              onLearn={() => setSelectedId(null)}
+            />
+          ) : (
+            <MapSheet
+              mode={mode}
+              expanded
+              onToggle={() => {}}
+              title="Spots i view"
+              items={sortedVisibleSpots}
+              selectedId={selectedId}
+              onSelect={onSelectSpot}
+              onLog={(id) => {
+                const s = spotsById.get(id);
+                if (s && mode === "forage") onQuickLog(s);
+              }}
+            />
+          )}
         </aside>
 
         <div className={styles.mapShell}>
@@ -330,6 +300,9 @@ export default function MapClient({ spots }: Props) {
           />
         </div>
       </div>
+
+      {logError ? <div className={styles.toastError}>{logError}</div> : null}
+      {isLogging ? <div className={styles.toastInfo}>Logger fund…</div> : null}
     </div>
   );
 }
