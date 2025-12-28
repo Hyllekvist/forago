@@ -1,34 +1,79 @@
 /* src/components/Posts/VoteButton.module.css */
+
 .wrap{
-  width: 34px;
+  width: 36px;
   display:flex;
   flex-direction: column;
   align-items:center;
   gap: 6px;
 }
 
+/* knapper */
 .btn{
   width: 32px;
   height: 32px;
   border-radius: 12px;
-  border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--panel) 75%, transparent);
-  color: var(--ink);
+  border: 1px solid color-mix(in srgb, var(--line) 90%, transparent);
+  background: color-mix(in srgb, var(--panel) 78%, transparent);
+  color: color-mix(in srgb, var(--ink) 90%, transparent);
   display:flex;
   align-items:center;
   justify-content:center;
+  cursor: pointer;
+  user-select: none;
+  transition: transform .06s ease, background .15s ease, border-color .15s ease, opacity .15s ease;
 }
 
-.btn:active{ transform: translateY(1px); }
+.btn:hover{
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  border-color: color-mix(in srgb, var(--line) 100%, transparent);
+}
 
+.btn:active{
+  transform: translateY(1px);
+}
+
+.btn:focus-visible{
+  outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: 2px;
+}
+
+/* active vote */
 .on{
   background: color-mix(in srgb, var(--accent) 18%, transparent);
-  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--line));
+  color: color-mix(in srgb, var(--ink) 100%, transparent);
 }
 
+/* score */
 .score{
-  font-weight: 800;
+  font-weight: 900;
   font-size: 14px;
   line-height: 1;
   color: var(--ink);
+  opacity: .95;
+}
+
+/* busy state */
+.wrap[data-busy="1"] .btn{
+  opacity: .65;
+  cursor: default;
+}
+
+/* mobile: mindre visuelt tung */
+@media (max-width: 640px){
+  .wrap{
+    width: 34px;
+    gap: 5px;
+  }
+
+  .btn{
+    width: 30px;
+    height: 30px;
+    border-radius: 12px;
+  }
+
+  .score{
+    font-size: 13px;
+  }
 }
