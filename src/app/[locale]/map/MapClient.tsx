@@ -498,18 +498,18 @@ export default function MapClient({ spots }: Props) {
             onPanningChange={setIsPanning}
           />
 
-          {/* ✅ små “targets” som rail – IKKE overlay-kort */}
-          {!selectedSpot && topTargets.length ? (
-            <div className={styles.targetsRailWrap}>
-              <TargetsBar
-                locale={locale}
-                title="Top targets i view"
-                items={topTargets}
-                onJumpSpot={(spotId) => onSelectSpot(spotId)}
-                variant="rail"
-              />
-            </div>
-          ) : null}
+{/* ✅ små “targets” som rail – IKKE overlay-kort */}
+{!selectedSpot && topTargets.length ? (
+  <div className={styles.targetsRailSlot} aria-label="Top targets">
+    <TargetsBar
+      locale={locale}
+      title="Top targets i view"
+      items={topTargets}
+      onJumpSpot={(spotId) => onSelectSpot(spotId)}
+      variant="rail"
+    />
+  </div>
+) : null}
 
           <div className={styles.mobileDock}>
             {selectedSpot ? (
