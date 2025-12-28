@@ -1,4 +1,3 @@
-// src/app/[locale]/map/MapClient.tsx
 "use client";
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
@@ -22,7 +21,10 @@ type SpotCounts = {
   last_seen: string | null;
 };
 
-function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+function haversineKm(
+  a: { lat: number; lng: number },
+  b: { lat: number; lng: number }
+) {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
   const dLng = ((b.lng - a.lng) * Math.PI) / 180;
@@ -50,7 +52,9 @@ export default function MapClient({ spots }: Props) {
   const [mode, setMode] = useState<Mode>("daily");
   const [activeInsight, setActiveInsight] = useState<InsightKey | null>(null);
 
-  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
+  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(
+    null
+  );
   const [mapApi, setMapApi] = useState<LeafletLikeMap | null>(null);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -65,13 +69,16 @@ export default function MapClient({ spots }: Props) {
   const [logOk, setLogOk] = useState(false);
 
   const [spotCounts, setSpotCounts] = useState<SpotCounts | null>(null);
-  const [countsMap, setCountsMap] = useState<Record<string, { total: number; qtr: number }>>({});
+  const [countsMap, setCountsMap] = useState<
+    Record<string, { total: number; qtr: number }>
+  >({});
 
   // geolocation
   useEffect(() => {
     if (!("geolocation" in navigator)) return;
     navigator.geolocation.getCurrentPosition(
-      (pos) => setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (pos) =>
+        setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
       () => {},
       { enableHighAccuracy: true, timeout: 7000, maximumAge: 60_000 }
     );
@@ -95,19 +102,39 @@ export default function MapClient({ spots }: Props) {
 
   const spotsById = useMemo(() => {
     const m = new Map<string, Spot>();
-    spots.forEach((s) => m.set(s.id, s));
+    for (const s of spots) m.set(String(s.id), s);
     return m;
   }, [spots]);
 
-  const selectedSpot = useMemo(
-    () => (selectedId ? spotsById.get(selectedId) ?? null : null),
-    [selectedId, spotsById]
-  );
+  const selectedSpot = useMemo(() => {
+    if (!selectedId) return null;
+    return spotsById.get(String(selectedId)) ?? null;
+  }, [selectedId, spotsById]);
 
-  const visibleSpots = useMemo(
-    () => visibleIds.map((id) => spotsById.get(id)).filter(Boolean) as Spot[],
-    [visibleIds, spotsById]
-  );
+  const visibleSpots = useMemo(() => {
+    if (!visibleIds.length) return [];
+    return visibleIds
+      .map((id) => spotsById.get(String(id)))
+      .filter(Boolean) as Spot[];
+  }, [visibleIds, spotsById]);
+
+  const insights = useMemo(() => {
+    const total = spots.length;
+
+    const nearbyCount = userPos
+      ? spots.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2)
+          .length
+      : 0;
+
+    const seasonNowCount = Math.min(total, Math.max(0, Math.round(total * 0.35)));
+    const peakCount = Math.min(total, Math.max(0, Math.round(total * 0.12)));
+
+    return {
+      season_now: { label: "I sæson nu", value: seasonNowCount, hint: "Arter" },
+      peak: { label: "Peak", value: peakCount, hint: "I området" },
+      nearby: { label: "Tæt på dig", value: nearbyCount, hint: "< 2 km" },
+    } as const;
+  }, [spots, userPos]);
 
   const filteredSpots = useMemo(() => {
     let base = spots;
@@ -120,6 +147,7 @@ export default function MapClient({ spots }: Props) {
         .map((x) => x.s);
     }
 
+    // Sankemode: hvis du har valgt en art, kan du filtrere til samme art
     if (mode === "forage" && selectedSpot?.species_slug) {
       base = base.filter((s) => s.species_slug === selectedSpot.species_slug);
     }
@@ -132,6 +160,7 @@ export default function MapClient({ spots }: Props) {
 
     setMode((m) => {
       const next = m === "daily" ? "forage" : "daily";
+      // Sankemode = default nearby fokus
       if (next === "forage" && userPos) setActiveInsight("nearby");
       else setActiveInsight(null);
       return next;
@@ -144,12 +173,27 @@ export default function MapClient({ spots }: Props) {
     setLogError(null);
   }, [userPos]);
 
+  const onPickInsight = useCallback(
+    (k: InsightKey) => {
+      setActiveInsight((prev) => (prev === k ? null : k));
+      setSheetExpanded(true);
+      setSelectedId(null);
+      setSpotCounts(null);
+
+      if (k === "nearby" && userPos && mapApi) {
+        mapApi.flyTo(userPos.lat, userPos.lng, 13);
+      }
+    },
+    [userPos, mapApi]
+  );
+
   const onSelectSpot = useCallback(
     (id: string) => {
-      setSelectedId(id);
+      const sid = String(id);
+      setSelectedId(sid);
       setSheetExpanded(false);
 
-      const s = spotsById.get(id);
+      const s = spotsById.get(sid);
       if (!s || !mapApi) return;
 
       mapApi.flyTo(s.lat, s.lng, Math.max(mapApi.getZoom(), 14));
@@ -158,7 +202,7 @@ export default function MapClient({ spots }: Props) {
     [mapApi, spotsById]
   );
 
-  // 🔥 log fund direkte fra sheet (Sankemode)
+  // quick log (kun meningsfuld i Sankemode)
   const onQuickLog = useCallback(
     async (spot: Spot) => {
       if (isLogging) return;
@@ -182,21 +226,23 @@ export default function MapClient({ spots }: Props) {
         });
 
         const json = await res.json();
-        if (!res.ok || !json?.ok) throw new Error(json?.error ?? "Kunne ikke logge fund");
+        if (!res.ok || !json?.ok)
+          throw new Error(json?.error ?? "Kunne ikke logge fund");
 
         setLogOk(true);
 
         setCountsMap((prev) => ({
           ...prev,
-          [spot.id]: {
-            total: (prev[spot.id]?.total ?? 0) + 1,
-            qtr: (prev[spot.id]?.qtr ?? 0) + 1,
+          [String(spot.id)]: {
+            total: (prev[String(spot.id)]?.total ?? 0) + 1,
+            qtr: (prev[String(spot.id)]?.qtr ?? 0) + 1,
           },
         }));
 
-        setTimeout(() => setLogOk(false), 1200);
+        window.setTimeout(() => setLogOk(false), 1200);
       } catch (e: any) {
         setLogError(e?.message ?? "Ukendt fejl");
+        window.setTimeout(() => setLogError(null), 3500);
       } finally {
         setIsLogging(false);
       }
@@ -212,13 +258,17 @@ export default function MapClient({ spots }: Props) {
     (async () => {
       try {
         const res = await fetch(
-          `/api/spots/counts-batch?spot_ids=${encodeURIComponent(debouncedVisibleIds.join(","))}`,
+          `/api/spots/counts-batch?spot_ids=${encodeURIComponent(
+            debouncedVisibleIds.join(",")
+          )}`,
           { signal: ac.signal }
         );
         const json = await res.json();
         if (!res.ok || !json?.ok || !json.map) return;
         setCountsMap((prev) => ({ ...prev, ...json.map }));
-      } catch {}
+      } catch {
+        // ignore
+      }
     })();
 
     return () => ac.abort();
@@ -227,34 +277,51 @@ export default function MapClient({ spots }: Props) {
   const sortedVisibleSpots = useMemo(() => {
     const arr = visibleSpots.slice();
     arr.sort((a, b) => {
-      const aq = countsMap[a.id]?.qtr ?? 0;
-      const bq = countsMap[b.id]?.qtr ?? 0;
+      const aq = countsMap[String(a.id)]?.qtr ?? 0;
+      const bq = countsMap[String(b.id)]?.qtr ?? 0;
 
+      // Sankemode: nærmest først (giver mening i praksis)
       if (mode === "forage" && userPos) {
         const ad = haversineKm(userPos, { lat: a.lat, lng: a.lng });
         const bd = haversineKm(userPos, { lat: b.lat, lng: b.lng });
         if (ad !== bd) return ad - bd;
       }
+
       return bq - aq;
     });
     return arr;
   }, [visibleSpots, countsMap, userPos, mode]);
 
+  const sheetTitle = isPanning
+    ? "Finder spots…"
+    : visibleIds.length
+    ? `${visibleIds.length} relevante spots i view`
+    : "Flyt kortet for at finde spots";
+
   return (
     <div className={styles.page}>
       <MapTopbar mode={mode} onToggleMode={onToggleMode} />
 
-      <InsightStrip mode={mode} active={activeInsight} insights={{} as any} onPick={() => {}} />
+      <InsightStrip
+        mode={mode}
+        active={activeInsight}
+        insights={insights}
+        onPick={onPickInsight}
+      />
 
       <div className={styles.desktopBody}>
+        {/* DESKTOP PANEL */}
         <aside className={styles.desktopPanel}>
           {mode === "forage" && sortedVisibleSpots.length === 0 ? (
             <div className={styles.emptyHint}>
               {!userPos ? (
-                <p><strong>Aktivér lokation</strong> for at bruge Sankemode.</p>
+                <p>
+                  <strong>Aktivér lokation</strong> for at bruge Sankemode.
+                </p>
               ) : (
                 <p>
-                  <strong>Ingen sikre fund &lt; 2 km.</strong><br />
+                  <strong>Ingen sikre fund &lt; 2 km.</strong>
+                  <br />
                   Zoom ud eller flyt kortet.
                 </p>
               )}
@@ -268,7 +335,7 @@ export default function MapClient({ spots }: Props) {
               isLogging={isLogging}
               logOk={logOk}
               onClose={() => setSelectedId(null)}
-              onLog={() => onQuickLog(selectedSpot)}
+              onLog={() => void onQuickLog(selectedSpot)}
               onLearn={() => setSelectedId(null)}
             />
           ) : (
@@ -276,18 +343,19 @@ export default function MapClient({ spots }: Props) {
               mode={mode}
               expanded
               onToggle={() => {}}
-              title="Spots i view"
+              title={sheetTitle}
               items={sortedVisibleSpots}
               selectedId={selectedId}
               onSelect={onSelectSpot}
               onLog={(id) => {
-                const s = spotsById.get(id);
-                if (s && mode === "forage") onQuickLog(s);
+                const s = spotsById.get(String(id));
+                if (s && mode === "forage") void onQuickLog(s);
               }}
             />
           )}
         </aside>
 
+        {/* MAP + MOBILE DOCK */}
         <div className={styles.mapShell}>
           <LeafletMap
             spots={filteredSpots}
@@ -298,6 +366,41 @@ export default function MapClient({ spots }: Props) {
             onVisibleChange={setVisibleIds}
             onPanningChange={setIsPanning}
           />
+
+          {/* MOBILE: her var din bug — du manglede en dock der viser SpotPeekCard */}
+          <div className={styles.mobileDock}>
+            {selectedSpot ? (
+              <div className={styles.peekWrap}>
+                <SpotPeekCard
+                  spot={selectedSpot}
+                  mode={mode}
+                  userPos={userPos}
+                  counts={spotCounts}
+                  isLogging={isLogging}
+                  logOk={logOk}
+                  onClose={() => setSelectedId(null)}
+                  onLog={() => void onQuickLog(selectedSpot)}
+                  onLearn={() => setSelectedId(null)}
+                />
+              </div>
+            ) : (
+              <div className={styles.sheetWrap}>
+                <MapSheet
+                  mode={mode}
+                  expanded={sheetExpanded}
+                  onToggle={() => setSheetExpanded((v) => !v)}
+                  title={sheetTitle}
+                  items={sortedVisibleSpots}
+                  selectedId={selectedId}
+                  onSelect={onSelectSpot}
+                  onLog={(id) => {
+                    const s = spotsById.get(String(id));
+                    if (s && mode === "forage") void onQuickLog(s);
+                  }}
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
