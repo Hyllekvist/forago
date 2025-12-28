@@ -3,7 +3,10 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 
 type Body = {
+  // vi bruger spot_id som "place id" (uuid-string). spot_uuid er alias.
   spot_id?: string | null;
+  spot_uuid?: string | null;
+
   species_id?: string | null;
   species_slug?: string | null;
   observed_at?: string | null;
@@ -18,8 +21,14 @@ function asText(v: unknown) {
   return typeof v === "string" ? v.trim() : "";
 }
 
+function isUuid(s: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    s
+  );
+}
+
 function asIsoDateOrNow(v: unknown) {
-  // hvis finds.observed_at er DATE → YYYY-MM-DD
+  // finds.observed_at er DATE → YYYY-MM-DD
   const s = asText(v);
   if (!s) return new Date().toISOString().slice(0, 10);
   const t = Date.parse(s);
@@ -31,9 +40,17 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Body;
 
-    const spot_id = asText(body?.spot_id);
-    if (!spot_id) {
+    // spot_id = places.id (uuid-string)
+    const spot_id_raw = asText(body?.spot_id) || asText(body?.spot_uuid);
+    if (!spot_id_raw) {
       return NextResponse.json({ ok: false, error: "Missing spot_id" }, { status: 400 });
+    }
+    if (!isUuid(spot_id_raw)) {
+      // stop gamle "d6" / korte ids – de ødelægger hele modellen
+      return NextResponse.json(
+        { ok: false, error: "spot_id must be a UUID (places.id)" },
+        { status: 400 }
+      );
     }
 
     const species_id_in = asText(body?.species_id);
@@ -48,7 +65,7 @@ export async function POST(req: Request) {
 
     const supabase = await supabaseServer();
 
-    // auth user (du har FK til profiles.user_id, så denne bør normalt være sat)
+    // auth user
     const { data: auth, error: authErr } = await supabase.auth.getUser();
     if (authErr) {
       return NextResponse.json({ ok: false, error: authErr.message }, { status: 401 });
@@ -56,6 +73,23 @@ export async function POST(req: Request) {
     const user_id = auth?.user?.id ?? null;
     if (!user_id) {
       return NextResponse.json({ ok: false, error: "Not authenticated" }, { status: 401 });
+    }
+
+    // ✅ verify place exists (så du ikke logger på et random uuid)
+    const { data: place, error: placeErr } = await supabase
+      .from("places")
+      .select("id")
+      .eq("id", spot_id_raw)
+      .maybeSingle();
+
+    if (placeErr) {
+      return NextResponse.json({ ok: false, error: placeErr.message }, { status: 500 });
+    }
+    if (!place?.id) {
+      return NextResponse.json(
+        { ok: false, error: "Unknown spot_id (place not found)" },
+        { status: 400 }
+      );
     }
 
     // resolve species_id
@@ -101,15 +135,15 @@ export async function POST(req: Request) {
         ? body.geo_precision_km
         : 1;
 
-    // IMPORTANT: photo_urls er NOT NULL hos dig → default til []
+    // photo_urls er NOT NULL → default []
     const photo_urls = Array.isArray(body?.photo_urls) ? body.photo_urls : [];
 
-    // insert
+    // insert (spot_id = uuid-string)
     const { data, error } = await supabase
       .from("finds")
       .insert({
         user_id,
-        spot_id,
+        spot_id: spot_id_raw,
         species_id,
         observed_at,
         notes,
