@@ -1,7 +1,7 @@
 // src/app/[locale]/today/page.tsx
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
-import styles from "./TodayPage.module.css";
+import styles from "./Today.module.css";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
