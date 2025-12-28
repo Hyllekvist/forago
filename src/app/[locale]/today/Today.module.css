@@ -1,155 +1,255 @@
-.wrap {
-  padding: 18px var(--pad) 120px;
+.page{
   max-width: var(--maxw);
   margin: 0 auto;
+  padding: 18px var(--pad) 110px;
 }
 
-/* Header */
-.header {
-  margin-bottom: 18px;
-}
-.h1 {
-  margin: 0;
-  font-size: 28px;
-}
-.sub {
-  margin-top: 6px;
-  color: var(--muted);
+.hero{
+  border-radius: var(--r-xl);
+  border: var(--stroke) solid var(--glassLine);
+  background: var(--glassBg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-2);
+  padding: 16px;
 }
 
-/* Sections */
-.section {
-  margin-top: 22px;
-}
-.h2 {
-  margin: 0 0 12px;
-  font-size: 18px;
-}
-
-/* Season grid */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+.heroTop{
+  display:flex;
+  align-items:flex-start;
+  justify-content: space-between;
   gap: 12px;
 }
 
-.card {
-  border-radius: var(--radius);
-  border: 1px solid var(--line);
-  background: var(--panel);
-  box-shadow: var(--shadow-1);
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
+.h1{
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+}
+
+.sub{
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.heroActions{
+  display:flex;
+  align-items:center;
   gap: 8px;
 }
 
-.cardTop {
-  display: flex;
-  justify-content: space-between;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-}
-
-.group {
-  opacity: 0.7;
-}
-
-.confidence {
-  padding: 4px 8px;
+.pill{
   border-radius: 999px;
-  font-weight: 700;
-}
-
-.high {
-  background: rgba(61, 220, 151, 0.15);
-  color: #3ddc97;
-}
-
-.medium {
-  background: rgba(255, 200, 87, 0.15);
-  color: #ffc857;
-}
-
-.low {
-  background: rgba(255, 120, 120, 0.15);
-  color: #ff7878;
-}
-
-.name {
-  font-weight: 800;
-  font-size: 16px;
-}
-
-.latin {
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.reason {
-  font-size: 14px;
-  color: var(--ink);
-}
-
-.cta {
-  margin-top: auto;
-  font-weight: 700;
-  font-size: 14px;
-  color: var(--accent);
-}
-
-/* Nearby */
-.nearby {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-radius: var(--radius);
   border: 1px solid var(--line);
-  background: var(--panel);
-  padding: 14px;
-}
-
-.nearbyTitle {
+  background: color-mix(in srgb, var(--panel) 75%, transparent);
+  padding: 10px 12px;
+  font-size: 12px;
   font-weight: 800;
+  white-space: nowrap;
 }
 
-.nearbySub {
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.mapBtn {
-  font-weight: 800;
-  color: var(--accent);
-}
-
-/* Actions */
-.actions {
-  margin-top: 26px;
-  display: grid;
+.chips{
+  margin-top: 12px;
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
-.actionPrimary {
-  border-radius: var(--radius);
-  padding: 14px;
-  text-align: center;
-  font-weight: 900;
-  background: linear-gradient(
-    90deg,
-    rgba(61, 220, 151, 0.25),
-    rgba(61, 220, 151, 0.15)
-  );
-  border: 1px solid rgba(61, 220, 151, 0.45);
+.chip{
+  border-radius: var(--r-lg);
+  border: 1px solid var(--glassLine);
+  background: color-mix(in srgb, var(--panel) 65%, transparent);
+  box-shadow: var(--shadow-1);
+  padding: 12px 12px;
+  min-height: 62px;
+  display:flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.action {
-  border-radius: var(--radius);
-  padding: 12px;
-  text-align: center;
-  font-weight: 700;
+.chipLink{
+  cursor: pointer;
+}
+
+.chipTop{
+  font-size: 12px;
+  color: var(--muted);
+  display:flex;
+  align-items:center;
+  gap: 8px;
+}
+
+.chipValue{
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.section{
+  margin-top: 14px;
+}
+
+.sectionHead{
+  display:flex;
+  align-items:flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 10px;
+}
+
+.h2{
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+
+.more{
+  font-size: 13px;
+  color: var(--muted);
+  padding: 6px 10px;
+  border-radius: 999px;
   border: 1px solid var(--line);
-  background: var(--panel);
+  background: color-mix(in srgb, var(--panel) 70%, transparent);
+}
+
+.grid{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.card{
+  border-radius: var(--r-xl);
+  border: 1px solid var(--glassLine);
+  background: color-mix(in srgb, var(--panel) 72%, transparent);
+  box-shadow: var(--shadow-1);
+  padding: 14px 14px;
+}
+
+.cardTop{
+  display:flex;
+  align-items:flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cardTitle{
+  font-weight: 950;
+  letter-spacing: -0.01em;
+}
+
+.badge{
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.cardMeta{
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  display:flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items:center;
+}
+
+.dot{ opacity: 0.55; }
+
+.cardBody{
+  margin-top: 10px;
+  color: color-mix(in srgb, var(--ink) 78%, var(--muted));
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.list{
+  display:flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.row{
+  border-radius: var(--r-xl);
+  border: 1px solid var(--glassLine);
+  background: color-mix(in srgb, var(--panel) 70%, transparent);
+  box-shadow: var(--shadow-1);
+  padding: 12px 14px;
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rowKicker{
+  font-size: 12px;
+  color: var(--muted);
+  display:flex;
+  align-items:center;
+  gap: 8px;
+}
+
+.rowTitle{
+  margin-top: 4px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.rowMeta{
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+  display:flex;
+  align-items:center;
+  gap: 8px;
+}
+
+.rowRight{
+  opacity: 0.75;
+  font-weight: 900;
+}
+
+.activity{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.activityCard{
+  border-radius: var(--r-xl);
+  border: 1px solid var(--glassLine);
+  background: color-mix(in srgb, var(--panel) 72%, transparent);
+  box-shadow: var(--shadow-1);
+  padding: 14px;
+}
+
+.activityLabel{
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.activityValue{
+  margin-top: 8px;
+  font-size: 22px;
+  font-weight: 950;
+  letter-spacing: -0.02em;
+}
+
+.empty{
+  border-radius: var(--r-xl);
+  border: 1px dashed var(--line);
+  background: color-mix(in srgb, var(--panel) 55%, transparent);
+  padding: 14px;
+  color: var(--muted);
+}
+
+@media (min-width: 860px){
+  .chips{ grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
