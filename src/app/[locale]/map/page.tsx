@@ -1,3 +1,4 @@
+// src/app/[locale]/map/page.tsx
 import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import MapClient from "./MapClient";
@@ -14,29 +15,32 @@ function isLocale(x: string): x is Locale {
   return (SUPPORTED_LOCALES as readonly string[]).includes(x);
 }
 
-export default async function MapPage({
-  params,
-}: {
-  params: { locale: string };
-}) {
+export default async function MapPage({ params }: { params: { locale: string } }) {
   const locParam = params?.locale;
   if (!locParam || !isLocale(locParam)) return notFound();
 
   try {
     const supabase = await supabaseServer();
 
-    // ✅ NOTE: spots_map er en VIEW vi laver i Supabase
     const { data, error } = await supabase
-      .from("spots_map")
+      .from("spots_map") // ✅ VIEW
       .select("id, lat, lng, title, species_slug, created_at")
       .order("created_at", { ascending: false })
       .limit(500);
 
-    const realSpots = (data ?? []) as Spot[];
+    if (error) {
+      return <MapClient spots={DUMMY_SPOTS} />;
+    }
 
-    // Use dummy if DB is empty OR query failed (so UI is never "dead")
-    const spots = !error && realSpots.length > 0 ? realSpots : DUMMY_SPOTS;
+    const realSpots = (Array.isArray(data) ? data : []).map((r: any) => ({
+      id: String(r.id), // uuid-string
+      lat: Number(r.lat),
+      lng: Number(r.lng),
+      title: r.title ?? null,
+      species_slug: r.species_slug ?? null,
+    })) as Spot[];
 
+    const spots = realSpots.length > 0 ? realSpots : DUMMY_SPOTS;
     return <MapClient spots={spots} />;
   } catch {
     return <MapClient spots={DUMMY_SPOTS} />;
