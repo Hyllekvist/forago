@@ -1,40 +1,48 @@
-"use client";
-
+// src/app/[locale]/map/ui/TargetsBar.tsx
 import Link from "next/link";
 import styles from "./TargetsBar.module.css";
 
-export type TargetKind = "peak" | "stable" | "easy";
-
 export type TargetItem = {
-  kind: TargetKind;
-  species_slug: string;
+  kind: "stable" | "easy" | "mystery";
   label: string;
-  metric: string; // fx "24 fund (90d)"
-  hint: string;   // fx "Peak i view"
-  jumpSpotId: string; // spot vi flyver til ved klik
+  species_slug: string;
+  jumpSpotId: string;
+  metric: string;
+  hint: string;
 };
+
+function kindBadge(kind: TargetItem["kind"]) {
+  if (kind === "stable") return { emoji: "✅", text: "STABIL" };
+  if (kind === "easy") return { emoji: "🎯", text: "NEM" };
+  return { emoji: "❓", text: "MYSTERY" };
+}
 
 type Props = {
   locale: string;
   title: string;
   items: TargetItem[];
   onJumpSpot: (spotId: string) => void;
+  variant?: "grid" | "rail";
 };
 
-function kindBadge(kind: TargetKind) {
-  if (kind === "peak") return { text: "PEAK", emoji: "🔥" };
-  if (kind === "stable") return { text: "STABIL", emoji: "✅" };
-  return { text: "NEM", emoji: "🎯" };
-}
-
-export function TargetsBar({ locale, title, items, onJumpSpot }: Props) {
+export function TargetsBar({
+  locale,
+  title,
+  items,
+  onJumpSpot,
+  variant = "grid",
+}: Props) {
   if (!items?.length) return null;
 
   return (
-    <section className={styles.wrap} aria-label="Top targets in view">
+    <section
+      className={styles.wrap}
+      data-variant={variant}
+      aria-label="Top targets in view"
+    >
       <div className={styles.head}>
         <div className={styles.title}>{title}</div>
-        <div className={styles.sub}>Privacy-safe · uden præcise spots</div>
+        <div className={styles.sub}>Sæson + aktivitet</div>
       </div>
 
       <div className={styles.grid}>
@@ -42,7 +50,7 @@ export function TargetsBar({ locale, title, items, onJumpSpot }: Props) {
           const k = kindBadge(t.kind);
 
           return (
-            <div key={`${t.kind}-${t.species_slug}`} className={styles.card}>
+            <div key={`${t.kind}-${t.species_slug}-${t.jumpSpotId}`} className={styles.card}>
               <div className={styles.cardTop}>
                 <span className={styles.badge}>
                   <span aria-hidden="true">{k.emoji}</span> {k.text}
@@ -66,14 +74,12 @@ export function TargetsBar({ locale, title, items, onJumpSpot }: Props) {
                 <span className={styles.hint}>{t.hint}</span>
               </div>
 
-              <div className={styles.actions}>
-                <Link
-                  className={styles.link}
-                  href={`/${locale}/species/${encodeURIComponent(t.species_slug)}`}
-                >
-                  Se kendetegn →
-                </Link>
-              </div>
+              <Link
+                className={styles.link}
+                href={`/${locale}/species/${encodeURIComponent(t.species_slug)}`}
+              >
+                Se kendetegn →
+              </Link>
             </div>
           );
         })}
