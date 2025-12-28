@@ -52,11 +52,14 @@ export default function MapClient({ spots }: Props) {
   const [mode, setMode] = useState<Mode>("daily");
   const [activeInsight, setActiveInsight] = useState<InsightKey | null>(null);
 
-  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
+  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(
+    null
+  );
   const [mapApi, setMapApi] = useState<LeafletLikeMap | null>(null);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [visibleIds, setVisibleIds] = useState<string[]>([]);
+  const [debouncedVisibleIds, setDebouncedVisibleIds] = useState<string[]>([]);
   const [sheetExpanded, setSheetExpanded] = useState(false);
 
   const [isPanning, setIsPanning] = useState(false);
@@ -70,23 +73,35 @@ export default function MapClient({ spots }: Props) {
   const [spotCounts, setSpotCounts] = useState<SpotCounts | null>(null);
 
   // batch counts for visible list (used for sorting)
-  const [countsMap, setCountsMap] = useState<Record<string, { total: number; qtr: number }>>({});
+  const [countsMap, setCountsMap] = useState<
+    Record<string, { total: number; qtr: number }>
+  >({});
 
   // --- geolocation
   useEffect(() => {
     if (!("geolocation" in navigator)) return;
     navigator.geolocation.getCurrentPosition(
-      (pos) => setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (pos) =>
+        setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
       () => {},
       { enableHighAccuracy: true, timeout: 7000, maximumAge: 60_000 }
     );
   }, []);
 
+  // ✅ debounce visibleIds så counts-batch ikke spammer
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      setDebouncedVisibleIds(visibleIds);
+    }, 250);
+    return () => window.clearTimeout(t);
+  }, [visibleIds]);
+
   const insights = useMemo(() => {
     const total = spots.length;
 
     const nearbyCount = userPos
-      ? spots.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2).length
+      ? spots.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2)
+          .length
       : 0;
 
     // placeholders (kan senere blive “rigtige”)
@@ -127,7 +142,7 @@ export default function MapClient({ spots }: Props) {
         .map((x) => x.s);
     }
 
-    // ✅ Sankemode: hvis du har valgt et spot med art, så fokusér på samme art
+    // Sankemode: hvis valgt spot har art, fokusér på samme art
     if (mode === "forage" && selectedSpot?.species_slug) {
       base = base.filter((s) => s.species_slug === selectedSpot.species_slug);
     }
@@ -135,30 +150,28 @@ export default function MapClient({ spots }: Props) {
     return base;
   }, [spots, activeInsight, userPos, mode, selectedSpot?.species_slug]);
 
-const onToggleMode = useCallback(() => {
-  setMode((m) => {
-    const next = m === "daily" ? "forage" : "daily";
+  // ✅ Sankemode gør noget: auto "tæt på dig"
+  const onToggleMode = useCallback(() => {
+    setMode((m) => {
+      const next = m === "daily" ? "forage" : "daily";
 
-    // Sankemode = praktisk fokus
-    if (next === "forage") {
-      if (userPos) setActiveInsight("nearby");
-      else setActiveInsight(null);
-    } else {
-      // Daily = bredt overblik
-      setActiveInsight(null);
-    }
+      if (next === "forage") {
+        if (userPos) setActiveInsight("nearby");
+        else setActiveInsight(null);
+      } else {
+        setActiveInsight(null);
+      }
 
-    return next;
-  });
+      return next;
+    });
 
-  // reset for klar UI
-  setSheetExpanded(false);
-  setSelectedId(null);
-  setSpotCounts(null);
-  setLogOk(false);
-  setLogError(null);
-}, [userPos]);
-
+    // reset for klar UI
+    setSheetExpanded(false);
+    setSelectedId(null);
+    setSpotCounts(null);
+    setLogOk(false);
+    setLogError(null);
+  }, [userPos]);
 
   const onPickInsight = useCallback(
     (k: InsightKey) => {
@@ -191,9 +204,7 @@ const onToggleMode = useCallback(() => {
     [mapApi, spotsById]
   );
 
-  // ✅ Deep-links:
-  // /map?spot=<id> -> select spot
-  // /map?find=<uuid> -> fetch spot_id, then select spot
+  // Deep-links:
   useEffect(() => {
     if (deepLinkHandledRef.current) return;
     if (!mapApi) return;
@@ -244,7 +255,7 @@ const onToggleMode = useCallback(() => {
     }
   }, [search, mapApi, spotsById, onSelectSpot]);
 
-  // ✅ fetch counts whenever selected spot changes
+  // fetch counts when selected spot changes
   useEffect(() => {
     if (!selectedSpot?.id) {
       setSpotCounts(null);
@@ -256,7 +267,9 @@ const onToggleMode = useCallback(() => {
     (async () => {
       try {
         const res = await fetch(
-          `/api/spots/counts?spot_id=${encodeURIComponent(selectedSpot.id)}&fresh=1`,
+          `/api/spots/counts?spot_id=${encodeURIComponent(
+            selectedSpot.id
+          )}&fresh=1`,
           { signal: ac.signal }
         );
         const json = await res.json();
@@ -277,11 +290,11 @@ const onToggleMode = useCallback(() => {
     return () => ac.abort();
   }, [selectedSpot?.id]);
 
-  // batch counts for visible list (used for sorting)
+  // ✅ batch counts for visible list (debounced)
   useEffect(() => {
-    if (!visibleIds?.length) return;
+    if (!debouncedVisibleIds?.length) return;
 
-    const ids = visibleIds.slice(0, 200);
+    const ids = debouncedVisibleIds.slice(0, 200);
     const ac = new AbortController();
 
     (async () => {
@@ -303,11 +316,11 @@ const onToggleMode = useCallback(() => {
     })();
 
     return () => ac.abort();
-  }, [visibleIds]);
+  }, [debouncedVisibleIds]);
 
-  // ✅ mode påvirker sortering:
-  // Daily: qtr først (popularitet/stabilitet), så distance.
-  // Sankemode: distance først (praktisk), så qtr.
+  // mode påvirker sortering:
+  // Daily: qtr først, så distance.
+  // Sankemode: distance først, så qtr.
   const sortedVisibleSpots = useMemo(() => {
     const arr = visibleSpots.slice();
 
@@ -325,7 +338,6 @@ const onToggleMode = useCallback(() => {
         return 0;
       }
 
-      // daily
       if (bq !== aq) return bq - aq;
       if (userPos) {
         const ad = haversineKm(userPos, { lat: a.lat, lng: a.lng });
@@ -369,11 +381,17 @@ const onToggleMode = useCallback(() => {
 
         setLogOk(true);
 
-        // ✅ optimistic update for selected spot counts
+        // optimistic update for selected spot counts
         setSpotCounts((prev) => {
           const nowIso = new Date().toISOString();
           if (!prev) {
-            return { total: 1, qtr: 1, last30: 1, first_seen: nowIso, last_seen: nowIso };
+            return {
+              total: 1,
+              qtr: 1,
+              last30: 1,
+              first_seen: nowIso,
+              last_seen: nowIso,
+            };
           }
           return {
             ...prev,
@@ -385,7 +403,7 @@ const onToggleMode = useCallback(() => {
           };
         });
 
-        // ✅ optimistic update for list sorting map (qtr/total)
+        // optimistic update for list sorting map
         setCountsMap((prev) => ({
           ...prev,
           [spot.id]: {
@@ -408,32 +426,15 @@ const onToggleMode = useCallback(() => {
     [isLogging]
   );
 
-  const sheetTitle =
-    isPanning ? "Finder spots…" : visibleIds?.length ? `${visibleIds.length} relevante spots i view` : "Flyt kortet for at finde spots";
+  const sheetTitle = isPanning
+    ? "Finder spots…"
+    : visibleIds?.length
+    ? `${visibleIds.length} relevante spots i view`
+    : "Flyt kortet for at finde spots";
 
   return (
     <div className={styles.page}>
       <MapTopbar mode={mode} onToggleMode={onToggleMode} />
-
-      {mode === "forage" && selectedSpot?.species_slug ? (
-  <div className={styles.forageBar}>
-    <button
-      type="button"
-      className={styles.forageChip}
-      onClick={() => {
-        setSelectedId(null);
-        setSpotCounts(null);
-        setSheetExpanded(true);
-      }}
-      title="Ryd art-fokus"
-      aria-label="Ryd art-fokus"
-    >
-      <span className={styles.forageLabel}>Fokus:</span>
-      <span className={styles.forageValue}>{selectedSpot.species_slug}</span>
-      <span className={styles.forageX}>✕</span>
-    </button>
-  </div>
-) : null}
 
       <InsightStrip
         mode={mode}
