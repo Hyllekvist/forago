@@ -3,6 +3,19 @@ import { supabaseServer } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
+function safeLocalPath(p: string | null) {
+  if (!p) return null;
+  // kun interne paths
+  if (!p.startsWith("/")) return null;
+  if (p.startsWith("//")) return null;
+  return p;
+}
+
+function inferLocaleFromPath(pathname: string) {
+  const seg = (pathname.split("/")[1] || "").toLowerCase();
+  return seg === "dk" || seg === "en" || seg === "se" || seg === "de" ? seg : "dk";
+}
+
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
@@ -11,21 +24,35 @@ export async function GET(req: Request) {
   const errorDesc =
     url.searchParams.get("error_description") || url.searchParams.get("error");
 
+  // hvor skal vi hen bagefter?
+  // prioritet: returnTo -> next -> redirectTo
+  const returnTo =
+    safeLocalPath(url.searchParams.get("returnTo")) ||
+    safeLocalPath(url.searchParams.get("next")) ||
+    safeLocalPath(url.searchParams.get("redirectTo"));
+
+  const locale = inferLocaleFromPath(returnTo ?? "/dk");
+
   if (errorDesc) {
-    return NextResponse.redirect(new URL("/login?e=callback_failed", url.origin));
+    return NextResponse.redirect(new URL(`/${locale}/login?e=callback_failed`, url.origin));
   }
 
   if (!code) {
-    return NextResponse.redirect(new URL("/login?e=missing_code", url.origin));
+    return NextResponse.redirect(new URL(`/${locale}/login?e=missing_code`, url.origin));
   }
 
   const supabase = await supabaseServer();
 
   const { error } = await supabase.auth.exchangeCodeForSession(code);
   if (error) {
-    return NextResponse.redirect(new URL("/login?e=exchange_failed", url.origin));
+    return NextResponse.redirect(new URL(`/${locale}/login?e=exchange_failed`, url.origin));
   }
 
-  // vælg hvor du vil lande efter login
-  return NextResponse.redirect(new URL("/dk/feed", url.origin));
+  // ✅ hvis du kom fra en beskyttet side, så tilbage dertil
+  if (returnTo) {
+    return NextResponse.redirect(new URL(returnTo, url.origin));
+  }
+
+  // ✅ default efter login: Today
+  return NextResponse.redirect(new URL(`/${locale}/today`, url.origin));
 }
