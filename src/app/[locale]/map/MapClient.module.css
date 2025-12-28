@@ -381,3 +381,14 @@
   opacity: .7;
   font-weight: 900;
 }
+
+.emptyHint{
+  margin: 10px 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px dashed var(--line);
+  background: color-mix(in srgb, var(--panel) 85%, transparent);
+  color: var(--muted);
+  font-size: 13px;
+}
+.emptyHint strong{ color: var(--ink); }
