@@ -1,4 +1,4 @@
-import styles from "./Today.module.css";
+import styles from "./Today.module.css"; 
 import { supabaseServer } from "@/lib/supabase/server";
 
 type SeasonItem = {
