@@ -14,6 +14,18 @@ type ApiOk = { ok: true; score: number; my_vote: number };
 type ApiErr = { ok: false; error: string };
 type ApiResp = ApiOk | ApiErr;
 
+function safeLocale(v: string) {
+  const s = (v || "").toLowerCase();
+  return s === "dk" || s === "en" || s === "se" || s === "de" ? s : "dk";
+}
+
+function safeReturnTo(pathname: string | null, fallback: string) {
+  const p = pathname || fallback;
+  if (!p.startsWith("/")) return fallback;
+  if (p.startsWith("//")) return fallback;
+  return p;
+}
+
 export function VoteButton({
   postId,
   initialScore = 0,
@@ -21,7 +33,7 @@ export function VoteButton({
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
-  const locale = (pathname?.split("/")[1] || "dk") as string;
+  const locale = safeLocale((pathname?.split("/")[1] || "dk") as string);
 
   const [score, setScore] = useState(initialScore);
   const [myVote, setMyVote] = useState<number>(initialMyVote);
@@ -34,15 +46,12 @@ export function VoteButton({
   }, [myVote]);
 
   function goLogin() {
-    const returnTo = encodeURIComponent(pathname || `/${locale}/ask`);
-    router.push(`/${locale}/login?returnTo=${returnTo}`);
+    const rt = safeReturnTo(pathname, `/${locale}/ask`);
+    const returnTo = encodeURIComponent(rt);
+    router.replace(`/${locale}/login?returnTo=${returnTo}`);
   }
 
-  // Optimistic: beregn ny score ift. nuværende vote -> next vote
   function computeNextScore(currentScore: number, currentVote: number, nextVote: number) {
-    // nextVote: -1, 0, 1
-    // currentVote: -1, 0, 1
-    // ændring = next - current
     return currentScore + (nextVote - currentVote);
   }
 
@@ -53,10 +62,9 @@ export function VoteButton({
     const prevScore = score;
     const prevVote = myVote;
 
-    // toggle: klik samme igen => remove (0)
     const effectiveNext = myVote === next ? 0 : next;
 
-    // ✅ optimistic update
+    // optimistic
     setMyVote(effectiveNext);
     setScore(computeNextScore(score, myVote, effectiveNext));
 
@@ -64,10 +72,9 @@ export function VoteButton({
       let res: Response;
 
       if (effectiveNext === 0) {
-        res = await fetch(
-          `/api/posts/vote?post_id=${encodeURIComponent(postId)}`,
-          { method: "DELETE" }
-        );
+        res = await fetch(`/api/posts/vote?post_id=${encodeURIComponent(postId)}`, {
+          method: "DELETE",
+        });
       } else {
         res = await fetch("/api/posts/vote", {
           method: "POST",
@@ -77,7 +84,6 @@ export function VoteButton({
       }
 
       if (res.status === 401) {
-        // rollback
         setScore(prevScore);
         setMyVote(prevVote);
         goLogin();
@@ -87,13 +93,11 @@ export function VoteButton({
       const json = (await res.json()) as ApiResp;
 
       if (!res.ok || json.ok === false) {
-        // rollback on any error
         setScore(prevScore);
         setMyVote(prevVote);
         return;
       }
 
-      // server truth
       setScore(json.score);
       setMyVote(json.my_vote);
     } catch {
