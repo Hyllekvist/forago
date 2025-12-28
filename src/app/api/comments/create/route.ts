@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 
 export async function POST(req: Request) {
-  const supabase = supabaseServer();
+  const supabase = await supabaseServer();
 
   const { data: auth } = await supabase.auth.getUser();
   if (!auth?.user) {
@@ -29,11 +29,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Reply too long" }, { status: 400 });
   }
 
+  // ✅ jeres schema kræver author_id (NOT NULL)
   const { data, error } = await supabase
     .from("post_comments")
     .insert({
       post_id,
-      user_id: auth.user.id,
+      author_id: auth.user.id,
       body,
     })
     .select("id")
