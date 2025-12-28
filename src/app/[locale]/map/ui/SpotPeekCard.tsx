@@ -37,14 +37,22 @@ function emojiForSlug(slug?: string | null) {
     s.includes("kantarel")
   )
     return "🍄";
-  if (s.includes("bær") || s.includes("berry") || s.includes("blåb") || s.includes("hindb"))
+  if (
+    s.includes("bær") ||
+    s.includes("berry") ||
+    s.includes("blåb") ||
+    s.includes("hindb")
+  )
     return "🫐";
   if (s.includes("urt") || s.includes("herb")) return "🌿";
   if (s.includes("nød") || s.includes("nut")) return "🌰";
   return "📍";
 }
 
-function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+function haversineKm(
+  a: { lat: number; lng: number },
+  b: { lat: number; lng: number }
+) {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
   const dLng = ((b.lng - a.lng) * Math.PI) / 180;
@@ -52,11 +60,17 @@ function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
   const s2 = Math.sin(dLng / 2);
   const q =
     s1 * s1 +
-    Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * s2 * s2;
+    Math.cos((a.lat * Math.PI) / 180) *
+      Math.cos((b.lat * Math.PI) / 180) *
+      s2 *
+      s2;
   return 2 * R * Math.asin(Math.sqrt(q));
 }
 
-function formatDistance(userPos: { lat: number; lng: number } | null, spot: Spot) {
+function formatDistance(
+  userPos: { lat: number; lng: number } | null,
+  spot: Spot
+) {
   if (!userPos) return "—";
   const km = haversineKm(userPos, { lat: spot.lat, lng: spot.lng });
   if (km < 1) return `${Math.round(km * 1000)} m`;
@@ -90,15 +104,16 @@ function computeStability(counts?: Counts | null) {
   const last30 = counts.last30 ?? 0;
   const qtr = counts.qtr ?? 0;
 
-  // Stabil: mange og nylige
   if (total >= 10 && last30 >= 3)
     return { key: "stable" as const, label: "Stabil", hint: "aktiv spot" };
 
-  // Tilbagevendende: noget traction (men ikke “alarm”)
   if (total >= 3 || qtr >= 2 || last30 >= 2)
-    return { key: "returning" as const, label: "Tilbagevendende", hint: "dukker op igen" };
+    return {
+      key: "returning" as const,
+      label: "Tilbagevendende",
+      hint: "dukker op igen",
+    };
 
-  // Ellers: sporadisk
   return { key: "sporadic" as const, label: "Sporadisk", hint: "få fund" };
 }
 
@@ -119,9 +134,14 @@ export function SpotPeekCard({
   logOk,
 }: Props) {
   const emoji = emojiForSlug(spot.species_slug);
-  const label = mode === "forage" ? "SPOT" : spot.species_slug ? "SPOT" : "LOKATION";
+  const label =
+    mode === "forage" ? "SPOT" : spot.species_slug ? "SPOT" : "LOKATION";
 
-  const distance = useMemo(() => formatDistance(userPos, spot), [userPos, spot.lat, spot.lng]);
+  const distance = useMemo(
+    () => formatDistance(userPos, spot),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [userPos, spot.lat, spot.lng]
+  );
 
   const lastSeenIso = counts?.last_seen ?? null;
   const freshness = useMemo(() => formatFreshness(lastSeenIso), [lastSeenIso]);
@@ -144,7 +164,12 @@ export function SpotPeekCard({
     <section className={styles.card} role="dialog" aria-label="Selected spot">
       <div className={styles.bg} aria-hidden />
 
-      <button className={styles.close} onClick={onClose} aria-label="Close" type="button">
+      <button
+        className={styles.close}
+        onClick={onClose}
+        aria-label="Close"
+        type="button"
+      >
         <span aria-hidden>✕</span>
       </button>
 
@@ -175,23 +200,26 @@ export function SpotPeekCard({
               {spot.species_slug ? `#${spot.species_slug}` : "#unclassified"}
             </span>
 
-            {/* ✅ Status chip — designet så den matcher resten (ikke “warning badge”) */}
             <span
               className={`${styles.pill} ${styles.pillStatus} ${
                 stability.key === "stable"
                   ? styles.pillStable
                   : stability.key === "returning"
-                    ? styles.pillReturning
-                    : stability.key === "sporadic"
-                      ? styles.pillSporadic
-                      : styles.pillLoading
+                  ? styles.pillReturning
+                  : stability.key === "sporadic"
+                  ? styles.pillSporadic
+                  : styles.pillLoading
               }`}
               title={stability.hint}
             >
-              {stability.key === "returning" ? "↺ Tilbagevendende" : stability.label}
+              {stability.key === "returning"
+                ? "↺ Tilbagevendende"
+                : stability.label}
             </span>
 
-            <span className={styles.pillAccent}>{mode === "forage" ? "Peak" : "I nærheden"}</span>
+            <span className={styles.pillAccent}>
+              {mode === "forage" ? "Peak" : "I nærheden"}
+            </span>
           </div>
 
           <div className={styles.social}>{socialLine}</div>
@@ -199,14 +227,24 @@ export function SpotPeekCard({
       </header>
 
       <div className={styles.actions}>
-        <a className={styles.primary} href={mapsHref} target="_blank" rel="noreferrer">
+        <a
+          className={styles.primary}
+          href={mapsHref}
+          target="_blank"
+          rel="noreferrer"
+        >
           <span className={styles.primaryIcon} aria-hidden>
             ➜
           </span>
           Navigér
         </a>
 
-        <button className={styles.secondary} onClick={onLog} type="button" disabled={!!isLogging}>
+        <button
+          className={styles.secondary}
+          onClick={onLog}
+          type="button"
+          disabled={!!isLogging}
+        >
           {logOk ? "✅ Logget" : isLogging ? "Logger…" : "Log fund"}
         </button>
 
@@ -215,7 +253,9 @@ export function SpotPeekCard({
         </button>
       </div>
 
-      <div className={styles.hint}>Tip: Tryk på flere pins for at browse. Zoom ind for flere detaljer.</div>
+      <div className={styles.hint}>
+        Tip: Tryk på flere pins for at browse. Zoom ind for flere detaljer.
+      </div>
     </section>
   );
 }
