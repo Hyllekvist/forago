@@ -64,13 +64,13 @@ export default async function PostPage({
     .eq("post_id", postId)
     .order("created_at", { ascending: true });
 
-  const comments: CommentItem[] =
-    (commentsRaw ?? []).map((c: any) => ({
-      id: c.id,
-      body: c.body,
-      created_at: c.created_at,
-      author: "User",
-    })) ?? [];
+const comments: CommentItem[] =
+  (commentsRaw ?? []).map((c: any) => ({
+    id: c.id,
+    body: c.body,
+    created_at: c.created_at,
+    author: auth?.user?.id && c.author_id === auth.user.id ? "Du" : "Bruger",
+  })) ?? [];
 
   return (
     <div className={styles.wrap}>
