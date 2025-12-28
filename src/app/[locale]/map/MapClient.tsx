@@ -52,9 +52,7 @@ export default function MapClient({ spots }: Props) {
   const [mode, setMode] = useState<Mode>("daily");
   const [activeInsight, setActiveInsight] = useState<InsightKey | null>(null);
 
-  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(
-    null
-  );
+  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [mapApi, setMapApi] = useState<LeafletLikeMap | null>(null);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -64,53 +62,38 @@ export default function MapClient({ spots }: Props) {
 
   const [isPanning, setIsPanning] = useState(false);
 
-  // logging feedback
   const [isLogging, setIsLogging] = useState(false);
   const [logError, setLogError] = useState<string | null>(null);
   const [logOk, setLogOk] = useState(false);
 
-  // selected spot counts
   const [spotCounts, setSpotCounts] = useState<SpotCounts | null>(null);
-
-  // batch counts for visible list (used for sorting)
-  const [countsMap, setCountsMap] = useState<
-    Record<string, { total: number; qtr: number }>
-  >({});
+  const [countsMap, setCountsMap] = useState<Record<string, { total: number; qtr: number }>>({});
 
   // --- geolocation
   useEffect(() => {
     if (!("geolocation" in navigator)) return;
     navigator.geolocation.getCurrentPosition(
-      (pos) =>
-        setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (pos) => setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
       () => {},
       { enableHighAccuracy: true, timeout: 7000, maximumAge: 60_000 }
     );
   }, []);
 
-  // ✅ debounce visibleIds så counts-batch ikke spammer
+  // debounce visible ids
   useEffect(() => {
-    const t = window.setTimeout(() => {
-      setDebouncedVisibleIds(visibleIds);
-    }, 250);
+    const t = window.setTimeout(() => setDebouncedVisibleIds(visibleIds), 250);
     return () => window.clearTimeout(t);
   }, [visibleIds]);
 
   const insights = useMemo(() => {
     const total = spots.length;
-
     const nearbyCount = userPos
-      ? spots.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2)
-          .length
+      ? spots.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2).length
       : 0;
 
-    // placeholders (kan senere blive “rigtige”)
-    const seasonNowCount = Math.min(total, Math.max(0, Math.round(total * 0.35)));
-    const peakCount = Math.min(total, Math.max(0, Math.round(total * 0.12)));
-
     return {
-      season_now: { label: "I sæson nu", value: seasonNowCount, hint: "Arter" },
-      peak: { label: "Peak", value: peakCount, hint: "I området" },
+      season_now: { label: "I sæson nu", value: Math.round(total * 0.35), hint: "Arter" },
+      peak: { label: "Peak", value: Math.round(total * 0.12), hint: "I området" },
       nearby: { label: "Tæt på dig", value: nearbyCount, hint: "< 2 km" },
     } as const;
   }, [spots, userPos]);
@@ -121,16 +104,17 @@ export default function MapClient({ spots }: Props) {
     return m;
   }, [spots]);
 
-  const selectedSpot = useMemo(() => {
-    return selectedId ? spotsById.get(selectedId) ?? null : null;
-  }, [selectedId, spotsById]);
+  const selectedSpot = useMemo(
+    () => (selectedId ? spotsById.get(selectedId) ?? null : null),
+    [selectedId, spotsById]
+  );
 
-  const visibleSpots = useMemo(() => {
-    if (!visibleIds?.length) return [];
-    return visibleIds.map((id) => spotsById.get(id)).filter(Boolean) as Spot[];
-  }, [visibleIds, spotsById]);
+  const visibleSpots = useMemo(
+    () => visibleIds.map((id) => spotsById.get(id)).filter(Boolean) as Spot[],
+    [visibleIds, spotsById]
+  );
 
-  // ✅ filteredSpots: insight-filter + sankemode-focus (samme art som valgt spot)
+  // filtering
   const filteredSpots = useMemo(() => {
     let base = spots;
 
@@ -142,7 +126,6 @@ export default function MapClient({ spots }: Props) {
         .map((x) => x.s);
     }
 
-    // Sankemode: hvis valgt spot har art, fokusér på samme art
     if (mode === "forage" && selectedSpot?.species_slug) {
       base = base.filter((s) => s.species_slug === selectedSpot.species_slug);
     }
@@ -150,22 +133,15 @@ export default function MapClient({ spots }: Props) {
     return base;
   }, [spots, activeInsight, userPos, mode, selectedSpot?.species_slug]);
 
-  // ✅ Sankemode gør noget: auto "tæt på dig"
+  // toggle mode (Sankemode gør noget)
   const onToggleMode = useCallback(() => {
     setMode((m) => {
       const next = m === "daily" ? "forage" : "daily";
-
-      if (next === "forage") {
-        if (userPos) setActiveInsight("nearby");
-        else setActiveInsight(null);
-      } else {
-        setActiveInsight(null);
-      }
-
+      if (next === "forage" && userPos) setActiveInsight("nearby");
+      else setActiveInsight(null);
       return next;
     });
 
-    // reset for klar UI
     setSheetExpanded(false);
     setSelectedId(null);
     setSpotCounts(null);
@@ -195,67 +171,24 @@ export default function MapClient({ spots }: Props) {
       const s = spotsById.get(id);
       if (!s || !mapApi) return;
 
-      const targetZoom = Math.max(mapApi.getZoom(), 14);
-      mapApi.flyTo(s.lat, s.lng, targetZoom);
-
-      const dy = isDesktop() ? -80 : -140;
-      mapApi.panBy?.(0, dy);
+      mapApi.flyTo(s.lat, s.lng, Math.max(mapApi.getZoom(), 14));
+      mapApi.panBy?.(0, isDesktop() ? -80 : -140);
     },
     [mapApi, spotsById]
   );
 
-  // Deep-links:
+  // deep links
   useEffect(() => {
-    if (deepLinkHandledRef.current) return;
-    if (!mapApi) return;
-    if (!spotsById.size) return;
+    if (deepLinkHandledRef.current || !mapApi || !spotsById.size) return;
 
     const spot = search.get("spot");
-    const findId = search.get("find");
-
-    const trySelectSpot = (spotId: string | null | undefined) => {
-      if (!spotId) return false;
-      if (!spotsById.has(spotId)) return false;
-      onSelectSpot(spotId);
-      return true;
-    };
-
-    if (spot && trySelectSpot(spot)) {
+    if (spot && spotsById.has(spot)) {
+      onSelectSpot(spot);
       deepLinkHandledRef.current = true;
-      return;
-    }
-
-    if (findId) {
-      deepLinkHandledRef.current = true;
-
-      (async () => {
-        try {
-          const urls = [
-            `/api/finds/detail?find_id=${encodeURIComponent(findId)}`,
-            `/api/finds/detail?id=${encodeURIComponent(findId)}`,
-          ];
-
-          for (const url of urls) {
-            const res = await fetch(url);
-            if (!res.ok) continue;
-            const json = await res.json();
-
-            const spotId =
-              json?.find_detail?.find?.spot_id ??
-              json?.find?.spot_id ??
-              json?.spot_id ??
-              null;
-
-            if (trySelectSpot(spotId)) return;
-          }
-        } catch {
-          // ignore
-        }
-      })();
     }
   }, [search, mapApi, spotsById, onSelectSpot]);
 
-  // fetch counts when selected spot changes
+  // counts for selected
   useEffect(() => {
     if (!selectedSpot?.id) {
       setSpotCounts(null);
@@ -263,15 +196,9 @@ export default function MapClient({ spots }: Props) {
     }
 
     const ac = new AbortController();
-
     (async () => {
       try {
-        const res = await fetch(
-          `/api/spots/counts?spot_id=${encodeURIComponent(
-            selectedSpot.id
-          )}&fresh=1`,
-          { signal: ac.signal }
-        );
+        const res = await fetch(`/api/spots/counts?spot_id=${selectedSpot.id}`, { signal: ac.signal });
         const json = await res.json();
         if (!res.ok || !json?.ok) return;
 
@@ -279,169 +206,62 @@ export default function MapClient({ spots }: Props) {
           total: Number(json.total ?? 0),
           qtr: Number(json.qtr ?? 0),
           last30: Number(json.last30 ?? 0),
-          first_seen: (json.first_seen ?? null) as string | null,
-          last_seen: (json.last_seen ?? null) as string | null,
+          first_seen: json.first_seen ?? null,
+          last_seen: json.last_seen ?? null,
         });
-      } catch {
-        // ignore
-      }
+      } catch {}
     })();
 
     return () => ac.abort();
   }, [selectedSpot?.id]);
 
-  // ✅ batch counts for visible list (debounced)
+  // batch counts (debounced)
   useEffect(() => {
-    if (!debouncedVisibleIds?.length) return;
-
-    const ids = debouncedVisibleIds.slice(0, 200);
+    if (!debouncedVisibleIds.length) return;
     const ac = new AbortController();
 
     (async () => {
       try {
         const res = await fetch(
-          `/api/spots/counts-batch?spot_ids=${encodeURIComponent(ids.join(","))}`,
+          `/api/spots/counts-batch?spot_ids=${encodeURIComponent(debouncedVisibleIds.join(","))}`,
           { signal: ac.signal }
         );
         const json = await res.json();
-        if (!res.ok || !json?.ok || !json?.map) return;
+        if (!res.ok || !json?.ok || !json.map) return;
 
-        setCountsMap((prev) => ({
-          ...prev,
-          ...(json.map as Record<string, { total: number; qtr: number }>),
-        }));
-      } catch {
-        // ignore
-      }
+        setCountsMap((prev) => ({ ...prev, ...json.map }));
+      } catch {}
     })();
 
     return () => ac.abort();
   }, [debouncedVisibleIds]);
 
-  // mode påvirker sortering:
-  // Daily: qtr først, så distance.
-  // Sankemode: distance først, så qtr.
   const sortedVisibleSpots = useMemo(() => {
     const arr = visibleSpots.slice();
-
     arr.sort((a, b) => {
       const aq = countsMap[a.id]?.qtr ?? 0;
       const bq = countsMap[b.id]?.qtr ?? 0;
 
-      if (mode === "forage") {
-        if (userPos) {
-          const ad = haversineKm(userPos, { lat: a.lat, lng: a.lng });
-          const bd = haversineKm(userPos, { lat: b.lat, lng: b.lng });
-          if (ad !== bd) return ad - bd;
-        }
-        if (bq !== aq) return bq - aq;
-        return 0;
-      }
-
-      if (bq !== aq) return bq - aq;
-      if (userPos) {
+      if (mode === "forage" && userPos) {
         const ad = haversineKm(userPos, { lat: a.lat, lng: a.lng });
         const bd = haversineKm(userPos, { lat: b.lat, lng: b.lng });
-        return ad - bd;
+        if (ad !== bd) return ad - bd;
       }
-      return 0;
+      return bq - aq;
     });
-
     return arr;
   }, [visibleSpots, countsMap, userPos, mode]);
 
-  const onQuickLog = useCallback(
-    async (spot: Spot) => {
-      if (isLogging) return;
-
-      try {
-        setIsLogging(true);
-        setLogError(null);
-        setLogOk(false);
-
-        const res = await fetch("/api/finds/create", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            spot_id: spot.id,
-            species_slug: spot.species_slug ?? null,
-            observed_at: new Date().toISOString(),
-            visibility: "public_aggregate",
-            notes: null,
-            country: "DK",
-            geo_precision_km: 1,
-            photo_urls: [],
-          }),
-        });
-
-        const json = await res.json();
-        if (!res.ok || !json?.ok) {
-          throw new Error(json?.error ?? "Kunne ikke logge fund");
-        }
-
-        setLogOk(true);
-
-        // optimistic update for selected spot counts
-        setSpotCounts((prev) => {
-          const nowIso = new Date().toISOString();
-          if (!prev) {
-            return {
-              total: 1,
-              qtr: 1,
-              last30: 1,
-              first_seen: nowIso,
-              last_seen: nowIso,
-            };
-          }
-          return {
-            ...prev,
-            total: prev.total + 1,
-            qtr: prev.qtr + 1,
-            last30: prev.last30 + 1,
-            first_seen: prev.first_seen ?? nowIso,
-            last_seen: nowIso,
-          };
-        });
-
-        // optimistic update for list sorting map
-        setCountsMap((prev) => ({
-          ...prev,
-          [spot.id]: {
-            total: (prev[spot.id]?.total ?? 0) + 1,
-            qtr: (prev[spot.id]?.qtr ?? 0) + 1,
-          },
-        }));
-
-        window.setTimeout(() => {
-          setSelectedId(null);
-          setLogOk(false);
-        }, 1200);
-      } catch (e: any) {
-        setLogError(e?.message ?? "Ukendt fejl");
-        window.setTimeout(() => setLogError(null), 3500);
-      } finally {
-        setIsLogging(false);
-      }
-    },
-    [isLogging]
-  );
-
-  const sheetTitle = isPanning
-    ? "Finder spots…"
-    : visibleIds?.length
-    ? `${visibleIds.length} relevante spots i view`
-    : "Flyt kortet for at finde spots";
+  const sheetTitle =
+    isPanning ? "Finder spots…" :
+    visibleIds.length ? `${visibleIds.length} relevante spots i view` :
+    "Flyt kortet for at finde spots";
 
   return (
     <div className={styles.page}>
       <MapTopbar mode={mode} onToggleMode={onToggleMode} />
 
-      <InsightStrip
-        mode={mode}
-        active={activeInsight}
-        insights={insights}
-        onPick={onPickInsight}
-      />
+      <InsightStrip mode={mode} active={activeInsight} insights={insights} onPick={onPickInsight} />
 
       <div className={styles.desktopBody}>
         <aside className={styles.desktopPanel}>
@@ -455,13 +275,23 @@ export default function MapClient({ spots }: Props) {
                   setSpotCounts(null);
                   setSheetExpanded(true);
                 }}
-                type="button"
               >
                 Nulstil
               </button>
             </div>
 
-            {selectedSpot ? (
+            {mode === "forage" && sortedVisibleSpots.length === 0 ? (
+              <div className={styles.emptyHint}>
+                {!userPos ? (
+                  <p><strong>Aktivér lokation</strong> for at bruge Sankemode.</p>
+                ) : (
+                  <p>
+                    <strong>Ingen sikre fund &lt; 2 km.</strong><br />
+                    Zoom ud, flyt kortet, eller skift til <em>I dag</em>.
+                  </p>
+                )}
+              </div>
+            ) : selectedSpot ? (
               <SpotPeekCard
                 spot={selectedSpot}
                 mode={mode}
@@ -470,25 +300,20 @@ export default function MapClient({ spots }: Props) {
                 isLogging={isLogging}
                 logOk={logOk}
                 onClose={() => setSelectedId(null)}
-                onLog={() => void onQuickLog(selectedSpot)}
+                onLog={() => {}}
                 onLearn={() => setSelectedId(null)}
               />
             ) : (
-              <div className={styles.desktopListWrap}>
-                <MapSheet
-                  mode={mode}
-                  expanded={true}
-                  onToggle={() => {}}
-                  title={sheetTitle}
-                  items={sortedVisibleSpots}
-                  selectedId={selectedId}
-                  onSelect={(id) => onSelectSpot(id)}
-                  onLog={(id: string) => {
-                    const s = spotsById.get(id);
-                    if (s) void onQuickLog(s);
-                  }}
-                />
-              </div>
+              <MapSheet
+                mode={mode}
+                expanded
+                onToggle={() => {}}
+                title={sheetTitle}
+                items={sortedVisibleSpots}
+                selectedId={selectedId}
+                onSelect={onSelectSpot}
+                onLog={() => {}}
+              />
             )}
           </div>
         </aside>
@@ -503,43 +328,6 @@ export default function MapClient({ spots }: Props) {
             onVisibleChange={setVisibleIds}
             onPanningChange={setIsPanning}
           />
-
-          <div className={styles.mobileDock}>
-            {selectedSpot ? (
-              <div className={styles.peekWrap}>
-                <SpotPeekCard
-                  spot={selectedSpot}
-                  mode={mode}
-                  userPos={userPos}
-                  counts={spotCounts}
-                  isLogging={isLogging}
-                  logOk={logOk}
-                  onClose={() => setSelectedId(null)}
-                  onLog={() => void onQuickLog(selectedSpot)}
-                  onLearn={() => setSelectedId(null)}
-                />
-              </div>
-            ) : (
-              <div className={styles.sheetWrap}>
-                <MapSheet
-                  mode={mode}
-                  expanded={sheetExpanded}
-                  onToggle={() => setSheetExpanded((v) => !v)}
-                  title={sheetTitle}
-                  items={sortedVisibleSpots}
-                  selectedId={selectedId}
-                  onSelect={(id) => onSelectSpot(id)}
-                  onLog={(id: string) => {
-                    const s = spotsById.get(id);
-                    if (s) void onQuickLog(s);
-                  }}
-                />
-              </div>
-            )}
-          </div>
-
-          {logError ? <div className={styles.toastError}>{logError}</div> : null}
-          {isLogging ? <div className={styles.toastInfo}>Logger fund…</div> : null}
         </div>
       </div>
     </div>
