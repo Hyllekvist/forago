@@ -14,6 +14,7 @@ export function ReplyComposer({ postId }: { postId: string }) {
 
   const [body, setBody] = useState("");
   const [err, setErr] = useState<string | null>(null);
+  const [ok, setOk] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const locale = (pathname?.split("/")[1] || "dk") as string;
@@ -21,6 +22,7 @@ export function ReplyComposer({ postId }: { postId: string }) {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setErr(null);
+    setOk(false);
     setLoading(true);
 
     try {
@@ -43,8 +45,14 @@ export function ReplyComposer({ postId }: { postId: string }) {
         return;
       }
 
+      // ✅ Success feedback
+      setOk(true);
       setBody("");
-      router.refresh(); // ✅ viser nyt reply med det samme
+
+      // lille pause → så refresh giver mening
+      setTimeout(() => {
+        router.refresh();
+      }, 600);
     } catch (e: any) {
       setErr(e?.message ?? "Noget gik galt");
     } finally {
@@ -53,7 +61,7 @@ export function ReplyComposer({ postId }: { postId: string }) {
   }
 
   return (
-    <form className={styles.form} onSubmit={submit} aria-label="Write a reply">
+    <form className={styles.form} onSubmit={submit}>
       <div className={styles.head}>
         <div className={styles.title}>Skriv et svar</div>
         <div className={styles.hint}>Hold det kort og konkret.</div>
@@ -72,6 +80,8 @@ export function ReplyComposer({ postId }: { postId: string }) {
         <button className={styles.btn} type="submit" disabled={loading}>
           {loading ? "Poster…" : "Post svar"}
         </button>
+
+        {ok ? <div className={styles.ok}>Svar postet ✓</div> : null}
         {err ? <div className={styles.err}>{err}</div> : null}
       </div>
     </form>
