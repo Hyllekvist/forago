@@ -1,10 +1,10 @@
-// src/app/[locale]/today/page.tsx 
+// src/app/[locale]/today/page.tsx
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
 import styles from "./Today.module.css";
-
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 type Locale = "dk" | "en" | "se" | "de";
 function safeLocale(v: unknown): Locale {
@@ -17,9 +17,28 @@ function monthUTC() {
 
 function inSeasonForMonth(a: number, b: number, m: number) {
   if (a <= b) return m >= a && m <= b;
-  // wrap-around (fx Nov->Feb)
-  return m >= a || m <= b;
+  return m >= a || m <= b; // wrap-around
 }
+
+type SeasonalityRow = {
+  species_id: string;
+  month_from: number;
+  month_to: number;
+  confidence: number | null;
+};
+
+type SpeciesRow = {
+  id: string;
+  slug: string;
+  primary_group: string | null;
+  scientific_name: string | null;
+};
+
+type SpeciesTrRow = {
+  species_id: string;
+  common_name: string | null;
+  short_description: string | null;
+};
 
 type SeasonCard = {
   slug: string;
@@ -30,38 +49,46 @@ type SeasonCard = {
   short_description: string;
 };
 
-export default async function TodayPage({ params }: { params: { locale: string } }) {
+export default async function TodayPage({
+  params,
+}: {
+  params: { locale: string };
+}) {
   const locale = safeLocale(params?.locale);
   const supabase = await supabaseServer();
 
-  const [{ data: auth }, { data: topSpecies }] = await Promise.all([
+  const [{ data: auth }, feedRes] = await Promise.all([
     supabase.auth.getUser(),
-    supabase
-      .rpc("feed_top_species", {
-        p_country: "DK",
-        p_locale: locale,
-        p_days: 14,
-        p_limit: 6,
-      })
-      .then((r) => ({ data: (r.data ?? []) as any[] })),
+    supabase.rpc("feed_top_species", {
+      p_country: "DK",
+      p_locale: locale,
+      p_days: 14,
+      p_limit: 6,
+    }),
   ]);
 
+  const topSpecies = (feedRes.data ?? []) as any[];
   const uid = auth?.user?.id ?? null;
 
   // -------- In season now (privacy-first, national) --------
   const month = monthUTC();
-  const { data: seasonRows } = await supabase
+
+  const { data: seasonRowsRaw } = await supabase
     .from("seasonality")
     .select("species_id, month_from, month_to, confidence")
-    .eq("country", locale) // (matcher jeres nuværende data-model)
+    // behold din eksisterende logik – men TS-safe
+    .eq("country", locale)
     .eq("region", "");
 
-  const inSeason = (seasonRows ?? []).filter((r: any) =>
+  const seasonRows = (seasonRowsRaw ?? []) as SeasonalityRow[];
+
+  const inSeason = seasonRows.filter((r) =>
     inSeasonForMonth(Number(r.month_from), Number(r.month_to), month)
   );
-  const seasonIds = inSeason.map((r: any) => String(r.species_id));
 
-  const [{ data: species }, { data: tr }] = await Promise.all([
+  const seasonIds = inSeason.map((r) => String(r.species_id));
+
+  const [{ data: speciesRaw }, { data: trRaw }] = await Promise.all([
     seasonIds.length
       ? supabase
           .from("species")
@@ -77,18 +104,28 @@ export default async function TodayPage({ params }: { params: { locale: string }
       : Promise.resolve({ data: [] as any[] }),
   ]);
 
-  const trMap = new Map((tr ?? []).map((t: any) => [String(t.species_id), t]));
-  const seasonCards: SeasonCard[] = (species ?? [])
-    .map((s: any) => {
-      const t = trMap.get(String(s.id)) || {};
-      const season = inSeason.find((x: any) => String(x.species_id) === String(s.id)) || {};
+  const species = (speciesRaw ?? []) as SpeciesRow[];
+  const tr = (trRaw ?? []) as SpeciesTrRow[];
+
+  // O(1) lookups
+  const seasonMap = new Map<string, SeasonalityRow>();
+  for (const r of inSeason) seasonMap.set(String(r.species_id), r);
+
+  const trMap = new Map<string, SpeciesTrRow>();
+  for (const t of tr) trMap.set(String(t.species_id), t);
+
+  const seasonCards: SeasonCard[] = species
+    .map((s) => {
+      const t = trMap.get(String(s.id));
+      const season = seasonMap.get(String(s.id));
+
       return {
         slug: String(s.slug ?? ""),
         primary_group: String(s.primary_group ?? "plant"),
         scientific_name: String(s.scientific_name ?? ""),
-        common_name: String(t.common_name ?? s.slug ?? ""),
-        short_description: String(t.short_description ?? ""),
-        confidence: Number(season.confidence ?? 0),
+        common_name: String(t?.common_name ?? s.slug ?? ""),
+        short_description: String(t?.short_description ?? ""),
+        confidence: Number(season?.confidence ?? 0), // ✅ TS-safe
       };
     })
     .sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0))
@@ -97,6 +134,7 @@ export default async function TodayPage({ params }: { params: { locale: string }
   // -------- My activity (optional) --------
   let myTotal = 0;
   let myLast30d = 0;
+
   if (uid) {
     const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -116,7 +154,8 @@ export default async function TodayPage({ params }: { params: { locale: string }
     myLast30d = last30 ?? 0;
   }
 
-  const title = locale === "dk" ? "Naturen omkring dig i dag" : "Nature around you today";
+  const title =
+    locale === "dk" ? "Naturen omkring dig i dag" : "Nature around you today";
   const sub = locale === "dk" ? "Opdateret · Sæsonbaseret" : "Updated · Season-based";
 
   return (
@@ -137,23 +176,34 @@ export default async function TodayPage({ params }: { params: { locale: string }
 
         <div className={styles.chips}>
           <div className={styles.chip}>
-            <div className={styles.chipTop}>🍄 {locale === "dk" ? "I sæson nu" : "In season"}</div>
+            <div className={styles.chipTop}>
+              🍄 {locale === "dk" ? "I sæson nu" : "In season"}
+            </div>
             <div className={styles.chipValue}>
               {inSeason.length} {locale === "dk" ? "arter" : "species"}
             </div>
           </div>
 
-          <Link href={`/${locale}/map`} className={`${styles.chip} ${styles.chipLink} hoverable pressable`}>
+          <Link
+            href={`/${locale}/map`}
+            className={`${styles.chip} ${styles.chipLink} hoverable pressable`}
+          >
             <div className={styles.chipTop}>🗺️ {locale === "dk" ? "Kort" : "Map"}</div>
             <div className={styles.chipValue}>{locale === "dk" ? "Udforsk" : "Explore"} →</div>
           </Link>
 
-          <Link href={`/${locale}/ask`} className={`${styles.chip} ${styles.chipLink} hoverable pressable`}>
+          <Link
+            href={`/${locale}/ask`}
+            className={`${styles.chip} ${styles.chipLink} hoverable pressable`}
+          >
             <div className={styles.chipTop}>❓ {locale === "dk" ? "Spørg" : "Ask"}</div>
             <div className={styles.chipValue}>{locale === "dk" ? "Få svar" : "Get answers"} →</div>
           </Link>
 
-          <Link href={`/${locale}/log`} className={`${styles.chip} ${styles.chipLink} hoverable pressable`}>
+          <Link
+            href={`/${locale}/log`}
+            className={`${styles.chip} ${styles.chipLink} hoverable pressable`}
+          >
             <div className={styles.chipTop}>📓 {locale === "dk" ? "Mine fund" : "My finds"}</div>
             <div className={styles.chipValue}>
               {uid ? `${myTotal}` : (locale === "dk" ? "Log ind" : "Sign in")} →
@@ -265,7 +315,9 @@ export default async function TodayPage({ params }: { params: { locale: string }
 
           <div className={styles.activity}>
             <div className={styles.activityCard}>
-              <div className={styles.activityLabel}>{locale === "dk" ? "Seneste 30 dage" : "Last 30 days"}</div>
+              <div className={styles.activityLabel}>
+                {locale === "dk" ? "Seneste 30 dage" : "Last 30 days"}
+              </div>
               <div className={styles.activityValue}>{myLast30d}</div>
             </div>
             <div className={styles.activityCard}>
