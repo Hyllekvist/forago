@@ -1,3 +1,4 @@
+// src/app/[locale]/map/ui/MapTopbar.tsx
 "use client";
 
 import styles from "./MapTopbar.module.css";
@@ -8,18 +9,23 @@ type Props = {
 };
 
 export function MapTopbar({ mode, onToggleMode }: Props) {
+  const isForage = mode === "forage";
+
   return (
     <div className={styles.bar}>
       <div className={styles.left}>
-        <div className={styles.title}>Naturen omkring dig i dag</div>
-        <div className={styles.sub}>Opdateret · Sæsonbaseret</div>
+        <div className={styles.title}>
+          {isForage ? "Sanketur i nærheden" : "Naturen omkring dig i dag"}
+        </div>
+        <div className={styles.sub}>
+          {isForage ? "Opdateret · Fokus på fund" : "Opdateret · Sæsonbaseret"}
+        </div>
       </div>
 
-      <button className={styles.modeBtn} onClick={onToggleMode}>
+      <button className={styles.modeBtn} onClick={onToggleMode} type="button">
         <span className={styles.modeDot} data-mode={mode} />
-        {mode === "daily" ? "Foraging mode" : "Daily mode"}
+        {isForage ? "I dag" : "Sankemode"}
       </button>
     </div>
   );
 }
- 
