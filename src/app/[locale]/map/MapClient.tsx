@@ -78,7 +78,7 @@ export default function MapClient({ spots }: Props) {
   // selected spot counts
   const [spotCounts, setSpotCounts] = useState<SpotCounts | null>(null);
 
-  // batch counts for visible list (used for sorting)
+  // batch counts for visible list (used for sorting + targets)
   const [countsMap, setCountsMap] = useState<
     Record<string, { total: number; qtr: number }>
   >({});
@@ -267,7 +267,7 @@ export default function MapClient({ spots }: Props) {
     return () => ac.abort();
   }, [selectedSpot?.id]);
 
-  // batch counts for visible list (used for sorting)
+  // batch counts for visible list (used for sorting + targets)
   useEffect(() => {
     if (!visibleIds?.length) return;
 
@@ -315,10 +315,11 @@ export default function MapClient({ spots }: Props) {
   }, [visibleSpots, countsMap, userPos]);
 
   // ✅ Targets for “rail” (small cards) based on visible spots + qtr
+  // IMPORTANT: TargetItem["kind"] må ikke bruge "mystery" (TypeScript-fejlen du fik).
   const topTargets: TargetItem[] = useMemo(() => {
     if (!visibleSpots.length) return [];
 
-    const items = visibleSpots
+    return visibleSpots
       .slice()
       .sort((a, b) => (countsMap[b.id]?.qtr ?? 0) - (countsMap[a.id]?.qtr ?? 0))
       .slice(0, 8)
@@ -329,9 +330,8 @@ export default function MapClient({ spots }: Props) {
         const species = s.species_slug ?? "unknown";
         const label = s.title || (species !== "unknown" ? species : "Spot");
 
-        // simple badge logic (kan blive smartere)
-        const kind: TargetItem["kind"] =
-          qtr >= 4 ? "stable" : qtr >= 2 ? "easy" : "mystery";
+        // ✅ kun values der findes i TargetKind (typisk: "stable" | "easy")
+        const kind: TargetItem["kind"] = qtr >= 4 ? "stable" : "easy";
 
         return {
           kind,
@@ -342,8 +342,6 @@ export default function MapClient({ spots }: Props) {
           hint: total ? `${total} total` : "Nyt spot",
         };
       });
-
-    return items;
   }, [visibleSpots, countsMap]);
 
   const onQuickLog = useCallback(
@@ -548,7 +546,9 @@ export default function MapClient({ spots }: Props) {
           </div>
 
           {logError ? <div className={styles.toastError}>{logError}</div> : null}
-          {isLogging ? <div className={styles.toastInfo}>Logger fund…</div> : null}
+          {isLogging ? (
+            <div className={styles.toastInfo}>Logger fund…</div>
+          ) : null}
         </div>
       </div>
     </div>
