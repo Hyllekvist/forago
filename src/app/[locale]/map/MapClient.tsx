@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { useSearchParams, usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import styles from "./MapClient.module.css";
 
 import LeafletMap, { type Spot, type LeafletLikeMap } from "./LeafletMap";
@@ -10,7 +10,7 @@ import { MapTopbar } from "./ui/MapTopbar";
 import { InsightStrip, type InsightKey } from "./ui/InsightStrip";
 import { MapSheet } from "./ui/MapSheet";
 import { SpotPeekCard } from "./ui/SpotPeekCard";
-import { TargetsBar, type TargetItem } from "./ui/TargetsBar"; // ✅ TARGETS
+import { TargetsBar, type TargetItem } from "./ui/TargetsBar";
 
 type Mode = "daily" | "forage";
 type Props = { spots: Spot[] };
@@ -23,12 +23,10 @@ type SpotCounts = {
   last_seen: string | null;
 };
 
-function safeLocale(v: string) {
-  const s = (v || "").toLowerCase();
-  return s === "dk" || s === "en" || s === "se" || s === "de" ? s : "dk";
-}
-
-function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+function haversineKm(
+  a: { lat: number; lng: number },
+  b: { lat: number; lng: number }
+) {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
   const dLng = ((b.lng - a.lng) * Math.PI) / 180;
@@ -38,7 +36,8 @@ function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
     s1 * s1 +
     Math.cos((a.lat * Math.PI) / 180) *
       Math.cos((b.lat * Math.PI) / 180) *
-      s2 * s2;
+      s2 *
+      s2;
   return 2 * R * Math.asin(Math.sqrt(q));
 }
 
@@ -48,16 +47,21 @@ function isDesktop() {
 }
 
 export default function MapClient({ spots }: Props) {
+  const pathname = usePathname();
   const search = useSearchParams();
-  const pathname = usePathname() || "/dk/map";
-  const locale = safeLocale((pathname.split("/")[1] || "dk") as string);
-
   const deepLinkHandledRef = useRef(false);
+
+  const locale = useMemo(() => {
+    const seg = (pathname ?? "").split("/")[1] || "dk";
+    return seg;
+  }, [pathname]);
 
   const [mode, setMode] = useState<Mode>("daily");
   const [activeInsight, setActiveInsight] = useState<InsightKey | null>(null);
 
-  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
+  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(
+    null
+  );
   const [mapApi, setMapApi] = useState<LeafletLikeMap | null>(null);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -71,19 +75,20 @@ export default function MapClient({ spots }: Props) {
   const [logError, setLogError] = useState<string | null>(null);
   const [logOk, setLogOk] = useState(false);
 
-  // ✅ selected spot counts (now includes last30 + first/last seen)
+  // selected spot counts
   const [spotCounts, setSpotCounts] = useState<SpotCounts | null>(null);
 
   // batch counts for visible list (used for sorting)
-  const [countsMap, setCountsMap] = useState<Record<string, { total: number; qtr: number }>>(
-    {}
-  );
+  const [countsMap, setCountsMap] = useState<
+    Record<string, { total: number; qtr: number }>
+  >({});
 
   // --- geolocation
   useEffect(() => {
     if (!("geolocation" in navigator)) return;
     navigator.geolocation.getCurrentPosition(
-      (pos) => setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (pos) =>
+        setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
       () => {},
       { enableHighAccuracy: true, timeout: 7000, maximumAge: 60_000 }
     );
@@ -93,9 +98,11 @@ export default function MapClient({ spots }: Props) {
     const total = spots.length;
 
     const nearbyCount = userPos
-      ? spots.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2).length
+      ? spots.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2)
+          .length
       : 0;
 
+    // placeholders (kan senere blive “rigtige”)
     const seasonNowCount = Math.min(total, Math.max(0, Math.round(total * 0.35)));
     const peakCount = Math.min(total, Math.max(0, Math.round(total * 0.12)));
 
@@ -174,7 +181,7 @@ export default function MapClient({ spots }: Props) {
     [mapApi, spotsById]
   );
 
-  // ✅ Deep-links
+  // Deep-links:
   useEffect(() => {
     if (deepLinkHandledRef.current) return;
     if (!mapApi) return;
@@ -225,7 +232,7 @@ export default function MapClient({ spots }: Props) {
     }
   }, [search, mapApi, spotsById, onSelectSpot]);
 
-  // ✅ fetch counts whenever selected spot changes
+  // fetch counts when selected spot changes
   useEffect(() => {
     if (!selectedSpot?.id) {
       setSpotCounts(null);
@@ -237,7 +244,9 @@ export default function MapClient({ spots }: Props) {
     (async () => {
       try {
         const res = await fetch(
-          `/api/spots/counts?spot_id=${encodeURIComponent(selectedSpot.id)}&fresh=1`,
+          `/api/spots/counts?spot_id=${encodeURIComponent(
+            selectedSpot.id
+          )}&fresh=1`,
           { signal: ac.signal }
         );
         const json = await res.json();
@@ -305,126 +314,37 @@ export default function MapClient({ spots }: Props) {
     return arr;
   }, [visibleSpots, countsMap, userPos]);
 
-  // ✅ TARGETS: Top 3 arter i view (peak / stabil / nem)
-  const topTargets = useMemo((): TargetItem[] => {
+  // ✅ Targets for “rail” (small cards) based on visible spots + qtr
+  const topTargets: TargetItem[] = useMemo(() => {
     if (!visibleSpots.length) return [];
 
-    type Agg = {
-      species_slug: string;
-      label: string;
-      qtrSum: number;
-      totalSum: number;
-      nearestKm: number;
-      bestQtrSpotId: string;
-      bestTotalSpotId: string;
-      nearestSpotId: string;
-    };
+    const items = visibleSpots
+      .slice()
+      .sort((a, b) => (countsMap[b.id]?.qtr ?? 0) - (countsMap[a.id]?.qtr ?? 0))
+      .slice(0, 8)
+      .map((s) => {
+        const qtr = countsMap[s.id]?.qtr ?? 0;
+        const total = countsMap[s.id]?.total ?? 0;
 
-    const m = new Map<string, Agg>();
+        const species = s.species_slug ?? "unknown";
+        const label = s.title || (species !== "unknown" ? species : "Spot");
 
-    for (const s of visibleSpots) {
-      const slug = (s.species_slug || "").trim();
-      if (!slug) continue;
+        // simple badge logic (kan blive smartere)
+        const kind: TargetItem["kind"] =
+          qtr >= 4 ? "stable" : qtr >= 2 ? "easy" : "mystery";
 
-      const qtr = countsMap[s.id]?.qtr ?? 0;
-      const total = countsMap[s.id]?.total ?? 0;
-
-      const d = userPos ? haversineKm(userPos, { lat: s.lat, lng: s.lng }) : Number.POSITIVE_INFINITY;
-
-      const label = (s.title || slug).trim();
-
-      const prev = m.get(slug);
-      if (!prev) {
-        m.set(slug, {
-          species_slug: slug,
+        return {
+          kind,
           label,
-          qtrSum: qtr,
-          totalSum: total,
-          nearestKm: d,
-          bestQtrSpotId: s.id,
-          bestTotalSpotId: s.id,
-          nearestSpotId: s.id,
-        });
-      } else {
-        prev.qtrSum += qtr;
-        prev.totalSum += total;
-
-        // best qtr spot
-        const prevBestQtr = countsMap[prev.bestQtrSpotId]?.qtr ?? 0;
-        if (qtr > prevBestQtr) prev.bestQtrSpotId = s.id;
-
-        // best total spot
-        const prevBestTotal = countsMap[prev.bestTotalSpotId]?.total ?? 0;
-        if (total > prevBestTotal) prev.bestTotalSpotId = s.id;
-
-        // nearest spot
-        if (d < prev.nearestKm) {
-          prev.nearestKm = d;
-          prev.nearestSpotId = s.id;
-        }
-      }
-    }
-
-    const arr = Array.from(m.values());
-    if (!arr.length) return [];
-
-    const used = new Set<string>();
-
-    // Peak: højeste qtrSum
-    const peak = arr.slice().sort((a, b) => b.qtrSum - a.qtrSum)[0];
-    if (peak) used.add(peak.species_slug);
-
-    // Stabil: højeste totalSum (men ikke peak)
-    const stable = arr
-      .filter((x) => !used.has(x.species_slug))
-      .slice()
-      .sort((a, b) => b.totalSum - a.totalSum)[0];
-    if (stable) used.add(stable.species_slug);
-
-    // Nem: nærmeste (men ikke de andre)
-    const easy = arr
-      .filter((x) => !used.has(x.species_slug))
-      .slice()
-      .sort((a, b) => a.nearestKm - b.nearestKm)[0];
-
-    const out: TargetItem[] = [];
-
-    if (peak) {
-      out.push({
-        kind: "peak",
-        species_slug: peak.species_slug,
-        label: peak.label,
-        metric: `${peak.qtrSum} fund (90d)`,
-        hint: "Peak i view",
-        jumpSpotId: peak.bestQtrSpotId,
+          species_slug: species,
+          jumpSpotId: s.id,
+          metric: `${qtr} fund (90d)`,
+          hint: total ? `${total} total` : "Nyt spot",
+        };
       });
-    }
 
-    if (stable) {
-      out.push({
-        kind: "stable",
-        species_slug: stable.species_slug,
-        label: stable.label,
-        metric: `${stable.totalSum} fund (total)`,
-        hint: "Stabilt signal",
-        jumpSpotId: stable.bestTotalSpotId,
-      });
-    }
-
-    if (easy) {
-      const km = Number.isFinite(easy.nearestKm) ? `${easy.nearestKm.toFixed(1)} km` : "Tæt på";
-      out.push({
-        kind: "easy",
-        species_slug: easy.species_slug,
-        label: easy.label,
-        metric: km,
-        hint: "Nem at nå",
-        jumpSpotId: easy.nearestSpotId,
-      });
-    }
-
-    return out;
-  }, [visibleSpots, countsMap, userPos]);
+    return items;
+  }, [visibleSpots, countsMap]);
 
   const onQuickLog = useCallback(
     async (spot: Spot) => {
@@ -457,13 +377,18 @@ export default function MapClient({ spots }: Props) {
 
         setLogOk(true);
 
-        // ✅ optimistic update for selected spot counts
+        // optimistic update for selected spot counts
         setSpotCounts((prev) => {
-          if (!prev) {
-            const nowIso = new Date().toISOString();
-            return { total: 1, qtr: 1, last30: 1, first_seen: nowIso, last_seen: nowIso };
-          }
           const nowIso = new Date().toISOString();
+          if (!prev) {
+            return {
+              total: 1,
+              qtr: 1,
+              last30: 1,
+              first_seen: nowIso,
+              last_seen: nowIso,
+            };
+          }
           return {
             ...prev,
             total: prev.total + 1,
@@ -474,7 +399,7 @@ export default function MapClient({ spots }: Props) {
           };
         });
 
-        // ✅ optimistic update for list sorting map (qtr/total)
+        // optimistic update for list sorting map
         setCountsMap((prev) => ({
           ...prev,
           [spot.id]: {
@@ -500,12 +425,8 @@ export default function MapClient({ spots }: Props) {
   const sheetTitle = isPanning
     ? "Finder spots…"
     : visibleIds?.length
-      ? `${visibleIds.length} relevante spots i view`
-      : "Flyt kortet for at finde spots";
-
-  const targetsTitle = visibleIds?.length
-    ? "Top targets i view"
-    : "Top targets";
+    ? `${visibleIds.length} relevante spots i view`
+    : "Flyt kortet for at finde spots";
 
   return (
     <div className={styles.page}>
@@ -535,16 +456,6 @@ export default function MapClient({ spots }: Props) {
                 Nulstil
               </button>
             </div>
-
-            {/* ✅ TARGETS (desktop panel) */}
-            {!selectedSpot ? (
-              <TargetsBar
-                locale={locale}
-                title={targetsTitle}
-                items={topTargets}
-                onJumpSpot={(spotId) => onSelectSpot(spotId)}
-              />
-            ) : null}
 
             {selectedSpot ? (
               <SpotPeekCard
@@ -589,6 +500,19 @@ export default function MapClient({ spots }: Props) {
             onPanningChange={setIsPanning}
           />
 
+          {/* ✅ små “targets” som rail – IKKE overlay-kort */}
+          {!selectedSpot && topTargets.length ? (
+            <div className={styles.targetsRailWrap}>
+              <TargetsBar
+                locale={locale}
+                title="Top targets i view"
+                items={topTargets}
+                onJumpSpot={(spotId) => onSelectSpot(spotId)}
+                variant="rail"
+              />
+            </div>
+          ) : null}
+
           <div className={styles.mobileDock}>
             {selectedSpot ? (
               <div className={styles.peekWrap}>
@@ -606,14 +530,6 @@ export default function MapClient({ spots }: Props) {
               </div>
             ) : (
               <div className={styles.sheetWrap}>
-                {/* ✅ TARGETS (mobile sheet) */}
-                <TargetsBar
-                  locale={locale}
-                  title={targetsTitle}
-                  items={topTargets}
-                  onJumpSpot={(spotId) => onSelectSpot(spotId)}
-                />
-
                 <MapSheet
                   mode={mode}
                   expanded={sheetExpanded}
