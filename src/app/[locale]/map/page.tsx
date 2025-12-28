@@ -25,8 +25,9 @@ export default async function MapPage({
   try {
     const supabase = await supabaseServer();
 
+    // ✅ NOTE: spots_map er en VIEW vi laver i Supabase
     const { data, error } = await supabase
-      .from("spots")
+      .from("spots_map")
       .select("id, lat, lng, title, species_slug, created_at")
       .order("created_at", { ascending: false })
       .limit(500);
