@@ -1,24 +1,25 @@
+/* src/app/[locale]/map/ui/TargetsBar.module.css */
+
 .wrap{
   border-radius: var(--r-xl);
   border: 1px solid var(--glassLine);
   background: color-mix(in srgb, var(--panel) 65%, transparent);
   box-shadow: var(--shadow-1);
-  padding: 12px;
-  margin: 10px 0 12px;
+  padding: 10px;
 }
 
 .head{
   display:flex;
-  align-items:flex-end;
+  align-items:center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .title{
   font-weight: 950;
-  letter-spacing: -0.01em;
-  font-size: 13px;
+  font-size: 12px;
+  letter-spacing: 0.02em;
 }
 
 .sub{
@@ -32,12 +33,35 @@
   gap: 10px;
 }
 
+/* desktop grid */
+@media (min-width: 860px){
+  .wrap[data-variant="grid"] .grid{
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* ✅ rail variant = small horizontal cards */
+.wrap[data-variant="rail"] .grid{
+  display:flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+}
+.wrap[data-variant="rail"] .card{
+  min-width: 220px;
+  max-width: 260px;
+  scroll-snap-align: start;
+}
+
+/* card */
 .card{
   border-radius: var(--r-xl);
   border: 1px solid var(--glassLine);
   background: color-mix(in srgb, var(--panel) 72%, transparent);
   box-shadow: var(--shadow-1);
-  padding: 12px;
+  padding: 10px;
 }
 
 .cardTop{
@@ -45,14 +69,14 @@
   align-items:center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .badge{
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
   background: color-mix(in srgb, var(--accent) 14%, transparent);
-  padding: 6px 10px;
+  padding: 5px 8px;
   font-size: 11px;
   font-weight: 950;
   white-space: nowrap;
@@ -62,12 +86,11 @@
   border-radius: 999px;
   border: 1px solid var(--line);
   background: color-mix(in srgb, var(--panel) 75%, transparent);
-  padding: 6px 10px;
+  padding: 5px 8px;
   font-size: 12px;
   font-weight: 900;
   cursor: pointer;
 }
-
 .jump:active{ transform: translateY(1px); }
 
 .name{
@@ -80,33 +103,21 @@
   color: var(--muted);
   font-size: 12px;
   display:flex;
-  align-items:center;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.metric{ color: color-mix(in srgb, var(--ink) 78%, var(--muted)); font-weight: 800; }
-.hint{ color: var(--muted); }
-.dot{ opacity: .6; }
-
-.actions{
-  margin-top: 10px;
-  display:flex;
-  justify-content: flex-end;
-}
+.metric{ font-weight: 800; }
+.dot{ opacity: 0.6; }
+.hint{ opacity: 0.95; }
 
 .link{
+  display:inline-block;
+  margin-top: 8px;
   border-radius: 999px;
   border: 1px solid rgba(255,153,102,.35);
   background: linear-gradient(90deg, rgba(255,153,102,.16), rgba(255,94,98,.12));
-  padding: 8px 10px;
+  padding: 7px 9px;
   font-size: 12px;
   font-weight: 900;
-}
-
-@media (min-width: 860px){
-  .grid{
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .actions{ justify-content: flex-start; }
 }
