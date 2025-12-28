@@ -20,10 +20,11 @@ export default async function PostPage({
 }: {
   params: { locale: string; id: string };
 }) {
-  const supabase = await supabaseServer(); // ✅ vigtigt
+  const supabase = await supabaseServer();
   const locale = params.locale;
   const postId = params.id;
 
+  // --- Post ---
   const { data: post, error: postErr } = await supabase
     .from("posts")
     .select("id, locale, type, title, body, created_at, user_id")
@@ -42,6 +43,7 @@ export default async function PostPage({
     );
   }
 
+  // --- Votes ---
   const [{ data: votes }, { data: auth }] = await Promise.all([
     supabase.from("post_votes").select("user_id, vote").eq("post_id", postId),
     supabase.auth.getUser(),
@@ -54,23 +56,21 @@ export default async function PostPage({
       ? (votes ?? []).find((v) => v.user_id === auth.user.id)?.vote ?? 0
       : 0;
 
+  // --- Comments (schema-safe: ingen profiles join) ---
+  // Jeres tabel har author_id i schema — vi undgår join indtil vi kender FK-navnet 100%.
   const { data: commentsRaw } = await supabase
     .from("post_comments")
-    .select("id, body, created_at, profiles(handle, display_name)")
+    .select("id, body, created_at")
     .eq("post_id", postId)
     .order("created_at", { ascending: true });
 
   const comments: CommentItem[] =
-    (commentsRaw ?? []).map((c: any) => {
-      const p = c.profiles || {};
-      const author = p.display_name || p.handle || "User";
-      return {
-        id: c.id,
-        body: c.body,
-        created_at: c.created_at,
-        author,
-      };
-    }) ?? [];
+    (commentsRaw ?? []).map((c: any) => ({
+      id: c.id,
+      body: c.body,
+      created_at: c.created_at,
+      author: "User",
+    })) ?? [];
 
   return (
     <div className={styles.wrap}>
@@ -82,13 +82,17 @@ export default async function PostPage({
             <p className={styles.sub}>{post.created_at ?? ""}</p>
           </div>
 
-          <VoteButton postId={postId} initialScore={score} initialMyVote={myVote} />
+          <VoteButton
+            postId={postId}
+            initialScore={score}
+            initialMyVote={myVote}
+          />
         </div>
 
         <div className={styles.body}>{post.body}</div>
       </div>
 
-      {/* ✅ composer før listen, så refresh giver “aha” */}
+      {/* composer før listen, så refresh giver “aha” */}
       <ReplyComposer postId={postId} />
 
       <CommentList comments={comments} />
