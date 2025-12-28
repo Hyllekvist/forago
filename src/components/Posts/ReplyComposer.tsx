@@ -8,16 +8,27 @@ type ApiOk = { ok: true; id: string };
 type ApiErr = { ok: false; error: string };
 type ApiResp = ApiOk | ApiErr;
 
+function safeLocale(v: string) {
+  const s = (v || "").toLowerCase();
+  return s === "dk" || s === "en" || s === "se" || s === "de" ? s : "dk";
+}
+
+function safeReturnTo(pathname: string | null, fallback: string) {
+  const p = pathname || fallback;
+  if (!p.startsWith("/")) return fallback;
+  if (p.startsWith("//")) return fallback;
+  return p;
+}
+
 export function ReplyComposer({ postId }: { postId: string }) {
   const router = useRouter();
   const pathname = usePathname();
+  const locale = safeLocale((pathname?.split("/")[1] || "dk") as string);
 
   const [body, setBody] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  const locale = (pathname?.split("/")[1] || "dk") as string;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -35,7 +46,8 @@ export function ReplyComposer({ postId }: { postId: string }) {
       const json = (await res.json()) as ApiResp;
 
       if (res.status === 401) {
-        const returnTo = encodeURIComponent(pathname || `/${locale}/ask`);
+        const rt = safeReturnTo(pathname, `/${locale}/ask`);
+        const returnTo = encodeURIComponent(rt);
         router.push(`/${locale}/login?returnTo=${returnTo}`);
         return;
       }
@@ -45,14 +57,13 @@ export function ReplyComposer({ postId }: { postId: string }) {
         return;
       }
 
-      // ✅ Success feedback
       setOk(true);
       setBody("");
 
-      // lille pause → så refresh giver mening
+      // refresh så ny kommentar vises
       setTimeout(() => {
         router.refresh();
-      }, 600);
+      }, 350);
     } catch (e: any) {
       setErr(e?.message ?? "Noget gik galt");
     } finally {
