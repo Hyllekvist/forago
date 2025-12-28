@@ -135,16 +135,30 @@ export default function MapClient({ spots }: Props) {
     return base;
   }, [spots, activeInsight, userPos, mode, selectedSpot?.species_slug]);
 
-  const onToggleMode = useCallback(() => {
-    setMode((m) => (m === "daily" ? "forage" : "daily"));
+const onToggleMode = useCallback(() => {
+  setMode((m) => {
+    const next = m === "daily" ? "forage" : "daily";
 
-    // reset for klar UI
-    setSheetExpanded(false);
-    setSelectedId(null);
-    setSpotCounts(null);
-    setLogOk(false);
-    setLogError(null);
-  }, []);
+    // Sankemode = praktisk fokus
+    if (next === "forage") {
+      if (userPos) setActiveInsight("nearby");
+      else setActiveInsight(null);
+    } else {
+      // Daily = bredt overblik
+      setActiveInsight(null);
+    }
+
+    return next;
+  });
+
+  // reset for klar UI
+  setSheetExpanded(false);
+  setSelectedId(null);
+  setSpotCounts(null);
+  setLogOk(false);
+  setLogError(null);
+}, [userPos]);
+
 
   const onPickInsight = useCallback(
     (k: InsightKey) => {
