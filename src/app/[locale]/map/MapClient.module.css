@@ -262,3 +262,84 @@
   bottom: 110px;
   z-index: 5;
 }
+
+/* --- Targets rail: gør den lille, fast og “chip”-agtig --- */
+.targetsRailSlot{
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 118px;                 /* under topbar + insight strip (tweak) */
+  z-index: 30;
+
+  /* hård begrænsning så den aldrig kan blive stor */
+  max-height: 84px;
+  pointer-events: none;       /* så man stadig kan pan/zoome kortet */
+}
+
+/* TargetsBar skal stadig kunne klikkes */
+.targetsRailSlot :global(*) {
+  pointer-events: auto;
+}
+
+/* Tving TargetsBar til at opføre sig som en lille rail */
+.targetsRailSlot :global(.wrap),
+.targetsRailSlot :global(.bar),
+.targetsRailSlot :global(.rail){
+  height: 84px;
+  max-height: 84px;
+}
+
+/* Hvis TargetsBar har en title/header – gør den tiny eller skjul */
+.targetsRailSlot :global(.title),
+.targetsRailSlot :global(h3){
+  font-size: 12px;
+  opacity: 0.75;
+  margin: 0 0 6px;
+}
+
+/* Tving cards/chips ned i størrelse */
+.targetsRailSlot :global(.item),
+.targetsRailSlot :global(.card){
+  border-radius: 14px;
+  padding: 10px 12px !important;
+  min-height: 0 !important;
+  height: 66px !important;     /* selve chip-højden */
+  backdrop-filter: blur(10px);
+}
+
+/* tekst ned i størrelse */
+.targetsRailSlot :global(.label){
+  font-size: 13px !important;
+  line-height: 1.05 !important;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.targetsRailSlot :global(.metric),
+.targetsRailSlot :global(.hint){
+  font-size: 12px !important;
+  opacity: 0.75;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* For mobile: giv lidt mere top så den ikke konflikter med chips/insights */
+@media (max-width: 640px){
+  .targetsRailSlot{
+    top: 110px;
+    max-height: 78px;
+  }
+
+  .targetsRailSlot :global(.item),
+  .targetsRailSlot :global(.card){
+    height: 60px !important;
+    padding: 9px 11px !important;
+  }
+
+  .targetsRailSlot :global(.label){
+    font-size: 12.5px !important;
+  }
+}
