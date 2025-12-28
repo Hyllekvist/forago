@@ -237,3 +237,28 @@
     touch-action: pan-y;
   }
 }
+
+/* src/app/[locale]/map/MapClient.module.css */
+
+/* ... behold dine eksisterende styles ... */
+
+.mapShell{
+  position: relative;
+}
+
+/* ✅ rail under insights, over map, men ikke som stort overlay */
+.targetsRailWrap{
+  position: relative;
+  margin: 10px 12px 0;
+  z-index: 2;
+}
+
+/* hvis dine toasts ligger under, så hold dem over */
+.toastError,
+.toastInfo{
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 110px;
+  z-index: 5;
+}
