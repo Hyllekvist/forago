@@ -52,9 +52,7 @@ export default function MapClient({ spots }: Props) {
   const [mode, setMode] = useState<Mode>("daily");
   const [activeInsight, setActiveInsight] = useState<InsightKey | null>(null);
 
-  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(
-    null
-  );
+  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [mapApi, setMapApi] = useState<LeafletLikeMap | null>(null);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -68,20 +66,17 @@ export default function MapClient({ spots }: Props) {
   const [logError, setLogError] = useState<string | null>(null);
   const [logOk, setLogOk] = useState(false);
 
-  // ✅ selected spot counts (includes last30 + first/last seen)
+  // selected spot counts
   const [spotCounts, setSpotCounts] = useState<SpotCounts | null>(null);
 
   // batch counts for visible list (used for sorting)
-  const [countsMap, setCountsMap] = useState<
-    Record<string, { total: number; qtr: number }>
-  >({});
+  const [countsMap, setCountsMap] = useState<Record<string, { total: number; qtr: number }>>({});
 
   // --- geolocation
   useEffect(() => {
     if (!("geolocation" in navigator)) return;
     navigator.geolocation.getCurrentPosition(
-      (pos) =>
-        setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (pos) => setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
       () => {},
       { enableHighAccuracy: true, timeout: 7000, maximumAge: 60_000 }
     );
@@ -91,8 +86,7 @@ export default function MapClient({ spots }: Props) {
     const total = spots.length;
 
     const nearbyCount = userPos
-      ? spots.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2)
-          .length
+      ? spots.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2).length
       : 0;
 
     // placeholders (kan senere blive “rigtige”)
@@ -121,21 +115,30 @@ export default function MapClient({ spots }: Props) {
     return visibleIds.map((id) => spotsById.get(id)).filter(Boolean) as Spot[];
   }, [visibleIds, spotsById]);
 
+  // ✅ filteredSpots: insight-filter + sankemode-focus (samme art som valgt spot)
   const filteredSpots = useMemo(() => {
-    if (!activeInsight) return spots;
+    let base = spots;
 
     if (activeInsight === "nearby" && userPos) {
-      return spots
+      base = base
         .map((s) => ({ s, d: haversineKm(userPos, { lat: s.lat, lng: s.lng }) }))
         .filter((x) => x.d <= 2)
         .sort((a, b) => a.d - b.d)
         .map((x) => x.s);
     }
-    return spots;
-  }, [spots, activeInsight, userPos]);
+
+    // ✅ Sankemode: hvis du har valgt et spot med art, så fokusér på samme art
+    if (mode === "forage" && selectedSpot?.species_slug) {
+      base = base.filter((s) => s.species_slug === selectedSpot.species_slug);
+    }
+
+    return base;
+  }, [spots, activeInsight, userPos, mode, selectedSpot?.species_slug]);
 
   const onToggleMode = useCallback(() => {
     setMode((m) => (m === "daily" ? "forage" : "daily"));
+
+    // reset for klar UI
     setSheetExpanded(false);
     setSelectedId(null);
     setSpotCounts(null);
@@ -175,7 +178,7 @@ export default function MapClient({ spots }: Props) {
   );
 
   // ✅ Deep-links:
-  // /map?spot=d7 -> select spot
+  // /map?spot=<id> -> select spot
   // /map?find=<uuid> -> fetch spot_id, then select spot
   useEffect(() => {
     if (deepLinkHandledRef.current) return;
@@ -288,14 +291,28 @@ export default function MapClient({ spots }: Props) {
     return () => ac.abort();
   }, [visibleIds]);
 
+  // ✅ mode påvirker sortering:
+  // Daily: qtr først (popularitet/stabilitet), så distance.
+  // Sankemode: distance først (praktisk), så qtr.
   const sortedVisibleSpots = useMemo(() => {
     const arr = visibleSpots.slice();
 
     arr.sort((a, b) => {
       const aq = countsMap[a.id]?.qtr ?? 0;
       const bq = countsMap[b.id]?.qtr ?? 0;
-      if (bq !== aq) return bq - aq;
 
+      if (mode === "forage") {
+        if (userPos) {
+          const ad = haversineKm(userPos, { lat: a.lat, lng: a.lng });
+          const bd = haversineKm(userPos, { lat: b.lat, lng: b.lng });
+          if (ad !== bd) return ad - bd;
+        }
+        if (bq !== aq) return bq - aq;
+        return 0;
+      }
+
+      // daily
+      if (bq !== aq) return bq - aq;
       if (userPos) {
         const ad = haversineKm(userPos, { lat: a.lat, lng: a.lng });
         const bd = haversineKm(userPos, { lat: b.lat, lng: b.lng });
@@ -305,7 +322,7 @@ export default function MapClient({ spots }: Props) {
     });
 
     return arr;
-  }, [visibleSpots, countsMap, userPos]);
+  }, [visibleSpots, countsMap, userPos, mode]);
 
   const onQuickLog = useCallback(
     async (spot: Spot) => {
@@ -377,11 +394,8 @@ export default function MapClient({ spots }: Props) {
     [isLogging]
   );
 
-  const sheetTitle = isPanning
-    ? "Finder spots…"
-    : visibleIds?.length
-    ? `${visibleIds.length} relevante spots i view`
-    : "Flyt kortet for at finde spots";
+  const sheetTitle =
+    isPanning ? "Finder spots…" : visibleIds?.length ? `${visibleIds.length} relevante spots i view` : "Flyt kortet for at finde spots";
 
   return (
     <div className={styles.page}>
