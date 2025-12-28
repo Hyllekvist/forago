@@ -1,4 +1,4 @@
-// src/app/[locale]/today/page.tsx
+// src/app/[locale]/today/page.tsx 
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
 import styles from "./Today.module.css";
