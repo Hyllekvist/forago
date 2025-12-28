@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import styles from "./MapClient.module.css";
 
 import LeafletMap, { type Spot, type LeafletLikeMap } from "./LeafletMap";
@@ -10,7 +10,6 @@ import { MapTopbar } from "./ui/MapTopbar";
 import { InsightStrip, type InsightKey } from "./ui/InsightStrip";
 import { MapSheet } from "./ui/MapSheet";
 import { SpotPeekCard } from "./ui/SpotPeekCard";
-import { TargetsBar, type TargetItem } from "./ui/TargetsBar";
 
 type Mode = "daily" | "forage";
 type Props = { spots: Spot[] };
@@ -47,14 +46,8 @@ function isDesktop() {
 }
 
 export default function MapClient({ spots }: Props) {
-  const pathname = usePathname();
   const search = useSearchParams();
   const deepLinkHandledRef = useRef(false);
-
-  const locale = useMemo(() => {
-    const seg = (pathname ?? "").split("/")[1] || "dk";
-    return seg;
-  }, [pathname]);
 
   const [mode, setMode] = useState<Mode>("daily");
   const [activeInsight, setActiveInsight] = useState<InsightKey | null>(null);
@@ -75,10 +68,10 @@ export default function MapClient({ spots }: Props) {
   const [logError, setLogError] = useState<string | null>(null);
   const [logOk, setLogOk] = useState(false);
 
-  // selected spot counts
+  // ✅ selected spot counts (includes last30 + first/last seen)
   const [spotCounts, setSpotCounts] = useState<SpotCounts | null>(null);
 
-  // batch counts for visible list (used for sorting + targets)
+  // batch counts for visible list (used for sorting)
   const [countsMap, setCountsMap] = useState<
     Record<string, { total: number; qtr: number }>
   >({});
@@ -181,7 +174,9 @@ export default function MapClient({ spots }: Props) {
     [mapApi, spotsById]
   );
 
-  // Deep-links:
+  // ✅ Deep-links:
+  // /map?spot=d7 -> select spot
+  // /map?find=<uuid> -> fetch spot_id, then select spot
   useEffect(() => {
     if (deepLinkHandledRef.current) return;
     if (!mapApi) return;
@@ -232,7 +227,7 @@ export default function MapClient({ spots }: Props) {
     }
   }, [search, mapApi, spotsById, onSelectSpot]);
 
-  // fetch counts when selected spot changes
+  // ✅ fetch counts whenever selected spot changes
   useEffect(() => {
     if (!selectedSpot?.id) {
       setSpotCounts(null);
@@ -244,9 +239,7 @@ export default function MapClient({ spots }: Props) {
     (async () => {
       try {
         const res = await fetch(
-          `/api/spots/counts?spot_id=${encodeURIComponent(
-            selectedSpot.id
-          )}&fresh=1`,
+          `/api/spots/counts?spot_id=${encodeURIComponent(selectedSpot.id)}&fresh=1`,
           { signal: ac.signal }
         );
         const json = await res.json();
@@ -267,7 +260,7 @@ export default function MapClient({ spots }: Props) {
     return () => ac.abort();
   }, [selectedSpot?.id]);
 
-  // batch counts for visible list (used for sorting + targets)
+  // batch counts for visible list (used for sorting)
   useEffect(() => {
     if (!visibleIds?.length) return;
 
@@ -314,36 +307,6 @@ export default function MapClient({ spots }: Props) {
     return arr;
   }, [visibleSpots, countsMap, userPos]);
 
-  // ✅ Targets for “rail” (small cards) based on visible spots + qtr
-  // IMPORTANT: TargetItem["kind"] må ikke bruge "mystery" (TypeScript-fejlen du fik).
-  const topTargets: TargetItem[] = useMemo(() => {
-    if (!visibleSpots.length) return [];
-
-    return visibleSpots
-      .slice()
-      .sort((a, b) => (countsMap[b.id]?.qtr ?? 0) - (countsMap[a.id]?.qtr ?? 0))
-      .slice(0, 8)
-      .map((s) => {
-        const qtr = countsMap[s.id]?.qtr ?? 0;
-        const total = countsMap[s.id]?.total ?? 0;
-
-        const species = s.species_slug ?? "unknown";
-        const label = s.title || (species !== "unknown" ? species : "Spot");
-
-        // ✅ kun values der findes i TargetKind (typisk: "stable" | "easy")
-        const kind: TargetItem["kind"] = qtr >= 4 ? "stable" : "easy";
-
-        return {
-          kind,
-          label,
-          species_slug: species,
-          jumpSpotId: s.id,
-          metric: `${qtr} fund (90d)`,
-          hint: total ? `${total} total` : "Nyt spot",
-        };
-      });
-  }, [visibleSpots, countsMap]);
-
   const onQuickLog = useCallback(
     async (spot: Spot) => {
       if (isLogging) return;
@@ -375,17 +338,11 @@ export default function MapClient({ spots }: Props) {
 
         setLogOk(true);
 
-        // optimistic update for selected spot counts
+        // ✅ optimistic update for selected spot counts
         setSpotCounts((prev) => {
           const nowIso = new Date().toISOString();
           if (!prev) {
-            return {
-              total: 1,
-              qtr: 1,
-              last30: 1,
-              first_seen: nowIso,
-              last_seen: nowIso,
-            };
+            return { total: 1, qtr: 1, last30: 1, first_seen: nowIso, last_seen: nowIso };
           }
           return {
             ...prev,
@@ -397,7 +354,7 @@ export default function MapClient({ spots }: Props) {
           };
         });
 
-        // optimistic update for list sorting map
+        // ✅ optimistic update for list sorting map (qtr/total)
         setCountsMap((prev) => ({
           ...prev,
           [spot.id]: {
@@ -498,19 +455,6 @@ export default function MapClient({ spots }: Props) {
             onPanningChange={setIsPanning}
           />
 
-{/* ✅ små “targets” som rail – IKKE overlay-kort */}
-{!selectedSpot && topTargets.length ? (
-  <div className={styles.targetsRailSlot} aria-label="Top targets">
-    <TargetsBar
-      locale={locale}
-      title="Top targets i view"
-      items={topTargets}
-      onJumpSpot={(spotId) => onSelectSpot(spotId)}
-      variant="rail"
-    />
-  </div>
-) : null}
-
           <div className={styles.mobileDock}>
             {selectedSpot ? (
               <div className={styles.peekWrap}>
@@ -546,9 +490,7 @@ export default function MapClient({ spots }: Props) {
           </div>
 
           {logError ? <div className={styles.toastError}>{logError}</div> : null}
-          {isLogging ? (
-            <div className={styles.toastInfo}>Logger fund…</div>
-          ) : null}
+          {isLogging ? <div className={styles.toastInfo}>Logger fund…</div> : null}
         </div>
       </div>
     </div>
