@@ -1,8 +1,8 @@
 // src/app/[locale]/map/MapClient.tsx
-"use client"; 
+"use client";
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, usePathname } from "next/navigation";
 import styles from "./MapClient.module.css";
 
 import LeafletMap, { type Spot, type LeafletLikeMap } from "./LeafletMap";
@@ -10,6 +10,7 @@ import { MapTopbar } from "./ui/MapTopbar";
 import { InsightStrip, type InsightKey } from "./ui/InsightStrip";
 import { MapSheet } from "./ui/MapSheet";
 import { SpotPeekCard } from "./ui/SpotPeekCard";
+import { TargetsBar, type TargetItem } from "./ui/TargetsBar"; // ✅ TARGETS
 
 type Mode = "daily" | "forage";
 type Props = { spots: Spot[] };
@@ -22,10 +23,12 @@ type SpotCounts = {
   last_seen: string | null;
 };
 
-function haversineKm(
-  a: { lat: number; lng: number },
-  b: { lat: number; lng: number }
-) {
+function safeLocale(v: string) {
+  const s = (v || "").toLowerCase();
+  return s === "dk" || s === "en" || s === "se" || s === "de" ? s : "dk";
+}
+
+function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
   const dLng = ((b.lng - a.lng) * Math.PI) / 180;
@@ -35,8 +38,7 @@ function haversineKm(
     s1 * s1 +
     Math.cos((a.lat * Math.PI) / 180) *
       Math.cos((b.lat * Math.PI) / 180) *
-      s2 *
-      s2;
+      s2 * s2;
   return 2 * R * Math.asin(Math.sqrt(q));
 }
 
@@ -47,6 +49,9 @@ function isDesktop() {
 
 export default function MapClient({ spots }: Props) {
   const search = useSearchParams();
+  const pathname = usePathname() || "/dk/map";
+  const locale = safeLocale((pathname.split("/")[1] || "dk") as string);
+
   const deepLinkHandledRef = useRef(false);
 
   const [mode, setMode] = useState<Mode>("daily");
@@ -70,7 +75,9 @@ export default function MapClient({ spots }: Props) {
   const [spotCounts, setSpotCounts] = useState<SpotCounts | null>(null);
 
   // batch counts for visible list (used for sorting)
-  const [countsMap, setCountsMap] = useState<Record<string, { total: number; qtr: number }>>({});
+  const [countsMap, setCountsMap] = useState<Record<string, { total: number; qtr: number }>>(
+    {}
+  );
 
   // --- geolocation
   useEffect(() => {
@@ -167,9 +174,7 @@ export default function MapClient({ spots }: Props) {
     [mapApi, spotsById]
   );
 
-  // ✅ Deep-links:
-  // /map?spot=d7 -> select spot
-  // /map?find=<uuid> -> fetch spot_id, then select spot
+  // ✅ Deep-links
   useEffect(() => {
     if (deepLinkHandledRef.current) return;
     if (!mapApi) return;
@@ -300,6 +305,127 @@ export default function MapClient({ spots }: Props) {
     return arr;
   }, [visibleSpots, countsMap, userPos]);
 
+  // ✅ TARGETS: Top 3 arter i view (peak / stabil / nem)
+  const topTargets = useMemo((): TargetItem[] => {
+    if (!visibleSpots.length) return [];
+
+    type Agg = {
+      species_slug: string;
+      label: string;
+      qtrSum: number;
+      totalSum: number;
+      nearestKm: number;
+      bestQtrSpotId: string;
+      bestTotalSpotId: string;
+      nearestSpotId: string;
+    };
+
+    const m = new Map<string, Agg>();
+
+    for (const s of visibleSpots) {
+      const slug = (s.species_slug || "").trim();
+      if (!slug) continue;
+
+      const qtr = countsMap[s.id]?.qtr ?? 0;
+      const total = countsMap[s.id]?.total ?? 0;
+
+      const d = userPos ? haversineKm(userPos, { lat: s.lat, lng: s.lng }) : Number.POSITIVE_INFINITY;
+
+      const label = (s.title || slug).trim();
+
+      const prev = m.get(slug);
+      if (!prev) {
+        m.set(slug, {
+          species_slug: slug,
+          label,
+          qtrSum: qtr,
+          totalSum: total,
+          nearestKm: d,
+          bestQtrSpotId: s.id,
+          bestTotalSpotId: s.id,
+          nearestSpotId: s.id,
+        });
+      } else {
+        prev.qtrSum += qtr;
+        prev.totalSum += total;
+
+        // best qtr spot
+        const prevBestQtr = countsMap[prev.bestQtrSpotId]?.qtr ?? 0;
+        if (qtr > prevBestQtr) prev.bestQtrSpotId = s.id;
+
+        // best total spot
+        const prevBestTotal = countsMap[prev.bestTotalSpotId]?.total ?? 0;
+        if (total > prevBestTotal) prev.bestTotalSpotId = s.id;
+
+        // nearest spot
+        if (d < prev.nearestKm) {
+          prev.nearestKm = d;
+          prev.nearestSpotId = s.id;
+        }
+      }
+    }
+
+    const arr = Array.from(m.values());
+    if (!arr.length) return [];
+
+    const used = new Set<string>();
+
+    // Peak: højeste qtrSum
+    const peak = arr.slice().sort((a, b) => b.qtrSum - a.qtrSum)[0];
+    if (peak) used.add(peak.species_slug);
+
+    // Stabil: højeste totalSum (men ikke peak)
+    const stable = arr
+      .filter((x) => !used.has(x.species_slug))
+      .slice()
+      .sort((a, b) => b.totalSum - a.totalSum)[0];
+    if (stable) used.add(stable.species_slug);
+
+    // Nem: nærmeste (men ikke de andre)
+    const easy = arr
+      .filter((x) => !used.has(x.species_slug))
+      .slice()
+      .sort((a, b) => a.nearestKm - b.nearestKm)[0];
+
+    const out: TargetItem[] = [];
+
+    if (peak) {
+      out.push({
+        kind: "peak",
+        species_slug: peak.species_slug,
+        label: peak.label,
+        metric: `${peak.qtrSum} fund (90d)`,
+        hint: "Peak i view",
+        jumpSpotId: peak.bestQtrSpotId,
+      });
+    }
+
+    if (stable) {
+      out.push({
+        kind: "stable",
+        species_slug: stable.species_slug,
+        label: stable.label,
+        metric: `${stable.totalSum} fund (total)`,
+        hint: "Stabilt signal",
+        jumpSpotId: stable.bestTotalSpotId,
+      });
+    }
+
+    if (easy) {
+      const km = Number.isFinite(easy.nearestKm) ? `${easy.nearestKm.toFixed(1)} km` : "Tæt på";
+      out.push({
+        kind: "easy",
+        species_slug: easy.species_slug,
+        label: easy.label,
+        metric: km,
+        hint: "Nem at nå",
+        jumpSpotId: easy.nearestSpotId,
+      });
+    }
+
+    return out;
+  }, [visibleSpots, countsMap, userPos]);
+
   const onQuickLog = useCallback(
     async (spot: Spot) => {
       if (isLogging) return;
@@ -377,6 +503,10 @@ export default function MapClient({ spots }: Props) {
       ? `${visibleIds.length} relevante spots i view`
       : "Flyt kortet for at finde spots";
 
+  const targetsTitle = visibleIds?.length
+    ? "Top targets i view"
+    : "Top targets";
+
   return (
     <div className={styles.page}>
       <MapTopbar mode={mode} onToggleMode={onToggleMode} />
@@ -405,6 +535,16 @@ export default function MapClient({ spots }: Props) {
                 Nulstil
               </button>
             </div>
+
+            {/* ✅ TARGETS (desktop panel) */}
+            {!selectedSpot ? (
+              <TargetsBar
+                locale={locale}
+                title={targetsTitle}
+                items={topTargets}
+                onJumpSpot={(spotId) => onSelectSpot(spotId)}
+              />
+            ) : null}
 
             {selectedSpot ? (
               <SpotPeekCard
@@ -466,6 +606,14 @@ export default function MapClient({ spots }: Props) {
               </div>
             ) : (
               <div className={styles.sheetWrap}>
+                {/* ✅ TARGETS (mobile sheet) */}
+                <TargetsBar
+                  locale={locale}
+                  title={targetsTitle}
+                  items={topTargets}
+                  onJumpSpot={(spotId) => onSelectSpot(spotId)}
+                />
+
                 <MapSheet
                   mode={mode}
                   expanded={sheetExpanded}
