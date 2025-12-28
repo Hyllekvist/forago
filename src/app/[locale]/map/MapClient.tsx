@@ -415,6 +415,26 @@ const onToggleMode = useCallback(() => {
     <div className={styles.page}>
       <MapTopbar mode={mode} onToggleMode={onToggleMode} />
 
+      {mode === "forage" && selectedSpot?.species_slug ? (
+  <div className={styles.forageBar}>
+    <button
+      type="button"
+      className={styles.forageChip}
+      onClick={() => {
+        setSelectedId(null);
+        setSpotCounts(null);
+        setSheetExpanded(true);
+      }}
+      title="Ryd art-fokus"
+      aria-label="Ryd art-fokus"
+    >
+      <span className={styles.forageLabel}>Fokus:</span>
+      <span className={styles.forageValue}>{selectedSpot.species_slug}</span>
+      <span className={styles.forageX}>✕</span>
+    </button>
+  </div>
+) : null}
+
       <InsightStrip
         mode={mode}
         active={activeInsight}
