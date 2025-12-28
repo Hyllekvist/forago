@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import styles from "./MapClient.module.css";
 
 import LeafletMap, { type Spot, type LeafletLikeMap } from "./LeafletMap";
@@ -21,10 +21,7 @@ type SpotCounts = {
   last_seen: string | null;
 };
 
-function haversineKm(
-  a: { lat: number; lng: number },
-  b: { lat: number; lng: number }
-) {
+function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
   const dLng = ((b.lng - a.lng) * Math.PI) / 180;
@@ -45,16 +42,19 @@ function isDesktop() {
 }
 
 export default function MapClient({ spots }: Props) {
+  const router = useRouter();
+  const pathname = usePathname();
   const search = useSearchParams();
+
   const deepLinkHandledRef = useRef(false);
   const didAutoFocusRef = useRef(false);
+
+  const locale = useMemo(() => (pathname?.split("/")[1] || "dk") as string, [pathname]);
 
   const [mode, setMode] = useState<Mode>("daily");
   const [activeInsight, setActiveInsight] = useState<InsightKey | null>(null);
 
-  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(
-    null
-  );
+  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [mapApi, setMapApi] = useState<LeafletLikeMap | null>(null);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -69,16 +69,13 @@ export default function MapClient({ spots }: Props) {
   const [logOk, setLogOk] = useState(false);
 
   const [spotCounts, setSpotCounts] = useState<SpotCounts | null>(null);
-  const [countsMap, setCountsMap] = useState<
-    Record<string, { total: number; qtr: number }>
-  >({});
+  const [countsMap, setCountsMap] = useState<Record<string, { total: number; qtr: number }>>({});
 
   // geolocation
   useEffect(() => {
     if (!("geolocation" in navigator)) return;
     navigator.geolocation.getCurrentPosition(
-      (pos) =>
-        setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (pos) => setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
       () => {},
       { enableHighAccuracy: true, timeout: 7000, maximumAge: 60_000 }
     );
@@ -113,17 +110,14 @@ export default function MapClient({ spots }: Props) {
 
   const visibleSpots = useMemo(() => {
     if (!visibleIds.length) return [];
-    return visibleIds
-      .map((id) => spotsById.get(String(id)))
-      .filter(Boolean) as Spot[];
+    return visibleIds.map((id) => spotsById.get(String(id))).filter(Boolean) as Spot[];
   }, [visibleIds, spotsById]);
 
   const insights = useMemo(() => {
     const total = spots.length;
 
     const nearbyCount = userPos
-      ? spots.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2)
-          .length
+      ? spots.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2).length
       : 0;
 
     const seasonNowCount = Math.min(total, Math.max(0, Math.round(total * 0.35)));
@@ -147,7 +141,7 @@ export default function MapClient({ spots }: Props) {
         .map((x) => x.s);
     }
 
-    // Sankemode: hvis du har valgt en art, kan du filtrere til samme art
+    // Sankemode: hvis du har valgt en art, så filtrér til samme art
     if (mode === "forage" && selectedSpot?.species_slug) {
       base = base.filter((s) => s.species_slug === selectedSpot.species_slug);
     }
@@ -160,7 +154,6 @@ export default function MapClient({ spots }: Props) {
 
     setMode((m) => {
       const next = m === "daily" ? "forage" : "daily";
-      // Sankemode = default nearby fokus
       if (next === "forage" && userPos) setActiveInsight("nearby");
       else setActiveInsight(null);
       return next;
@@ -202,6 +195,59 @@ export default function MapClient({ spots }: Props) {
     [mapApi, spotsById]
   );
 
+  // ✅ Deep-links (spot=... / find=...) – behold din gamle logik hvis du bruger det
+  useEffect(() => {
+    if (deepLinkHandledRef.current) return;
+    if (!mapApi) return;
+    if (!spotsById.size) return;
+
+    const spot = search.get("spot");
+    const trySelectSpot = (spotId: string | null | undefined) => {
+      if (!spotId) return false;
+      if (!spotsById.has(String(spotId))) return false;
+      onSelectSpot(String(spotId));
+      return true;
+    };
+
+    if (spot && trySelectSpot(spot)) {
+      deepLinkHandledRef.current = true;
+      return;
+    }
+  }, [search, mapApi, spotsById, onSelectSpot]);
+
+  // fetch counts when selected spot changes
+  useEffect(() => {
+    if (!selectedSpot?.id) {
+      setSpotCounts(null);
+      return;
+    }
+
+    const ac = new AbortController();
+
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/spots/counts?spot_id=${encodeURIComponent(String(selectedSpot.id))}&fresh=1`,
+          { signal: ac.signal }
+        );
+        const json = await res.json();
+        if (!res.ok || !json?.ok) return;
+
+        setSpotCounts({
+          total: Number(json.total ?? 0),
+          qtr: Number(json.qtr ?? 0),
+          last30: Number(json.last30 ?? 0),
+          first_seen: (json.first_seen ?? null) as string | null,
+          last_seen: (json.last_seen ?? null) as string | null,
+        });
+      } catch {
+        // ignore
+      }
+    })();
+
+    return () => ac.abort();
+  }, [selectedSpot?.id]);
+
   // quick log (kun meningsfuld i Sankemode)
   const onQuickLog = useCallback(
     async (spot: Spot) => {
@@ -210,12 +256,13 @@ export default function MapClient({ spots }: Props) {
       try {
         setIsLogging(true);
         setLogError(null);
+        setLogOk(false);
 
         const res = await fetch("/api/finds/create", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            spot_id: spot.id,
+            spot_id: String(spot.id),
             species_slug: spot.species_slug ?? null,
             observed_at: new Date().toISOString(),
             visibility: "public_aggregate",
@@ -226,8 +273,7 @@ export default function MapClient({ spots }: Props) {
         });
 
         const json = await res.json();
-        if (!res.ok || !json?.ok)
-          throw new Error(json?.error ?? "Kunne ikke logge fund");
+        if (!res.ok || !json?.ok) throw new Error(json?.error ?? "Kunne ikke logge fund");
 
         setLogOk(true);
 
@@ -258,9 +304,7 @@ export default function MapClient({ spots }: Props) {
     (async () => {
       try {
         const res = await fetch(
-          `/api/spots/counts-batch?spot_ids=${encodeURIComponent(
-            debouncedVisibleIds.join(",")
-          )}`,
+          `/api/spots/counts-batch?spot_ids=${encodeURIComponent(debouncedVisibleIds.join(","))}`,
           { signal: ac.signal }
         );
         const json = await res.json();
@@ -280,7 +324,6 @@ export default function MapClient({ spots }: Props) {
       const aq = countsMap[String(a.id)]?.qtr ?? 0;
       const bq = countsMap[String(b.id)]?.qtr ?? 0;
 
-      // Sankemode: nærmest først (giver mening i praksis)
       if (mode === "forage" && userPos) {
         const ad = haversineKm(userPos, { lat: a.lat, lng: a.lng });
         const bd = haversineKm(userPos, { lat: b.lat, lng: b.lng });
@@ -302,12 +345,7 @@ export default function MapClient({ spots }: Props) {
     <div className={styles.page}>
       <MapTopbar mode={mode} onToggleMode={onToggleMode} />
 
-      <InsightStrip
-        mode={mode}
-        active={activeInsight}
-        insights={insights}
-        onPick={onPickInsight}
-      />
+      <InsightStrip mode={mode} active={activeInsight} insights={insights} onPick={onPickInsight} />
 
       <div className={styles.desktopBody}>
         {/* DESKTOP PANEL */}
@@ -336,7 +374,7 @@ export default function MapClient({ spots }: Props) {
               logOk={logOk}
               onClose={() => setSelectedId(null)}
               onLog={() => void onQuickLog(selectedSpot)}
-              onLearn={() => setSelectedId(null)}
+              onLearn={() => router.push(`/${locale}/spot/${encodeURIComponent(String(selectedSpot.id))}`)}
             />
           ) : (
             <MapSheet
@@ -367,7 +405,7 @@ export default function MapClient({ spots }: Props) {
             onPanningChange={setIsPanning}
           />
 
-          {/* MOBILE: her var din bug — du manglede en dock der viser SpotPeekCard */}
+          {/* MOBILE: peek + sheet */}
           <div className={styles.mobileDock}>
             {selectedSpot ? (
               <div className={styles.peekWrap}>
@@ -380,7 +418,7 @@ export default function MapClient({ spots }: Props) {
                   logOk={logOk}
                   onClose={() => setSelectedId(null)}
                   onLog={() => void onQuickLog(selectedSpot)}
-                  onLearn={() => setSelectedId(null)}
+                  onLearn={() => router.push(`/${locale}/spot/${encodeURIComponent(String(selectedSpot.id))}`)}
                 />
               </div>
             ) : (
