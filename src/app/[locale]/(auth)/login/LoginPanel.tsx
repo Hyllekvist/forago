@@ -4,6 +4,7 @@ import { useMemo, useState, useCallback } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
+
 function inferLocaleFromPath(pathname: string) {
   const seg = (pathname.split("/")[1] || "").toLowerCase();
   return seg === "dk" || seg === "en" || seg === "se" || seg === "de" ? seg : "dk";
