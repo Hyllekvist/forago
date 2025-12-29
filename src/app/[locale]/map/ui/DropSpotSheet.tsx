@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import styles from "./DropSpotSheet.module.css";
 
 type Props = {
   locale: "dk" | "en";
@@ -8,6 +9,10 @@ type Props = {
   lng: number;
   isBusy?: boolean;
   error?: string | null;
+
+  isAuthed: boolean;
+  onRequireAuth: (payload: { lat: number; lng: number; name: string; speciesSlug: string | null }) => void;
+
   onClose: () => void;
   onCreateAndLog: (args: { name: string; speciesSlug: string | null }) => void;
 };
@@ -16,7 +21,17 @@ function fmt(n: number) {
   return Number(n).toFixed(5);
 }
 
-export function DropSpotSheet({ locale, lat, lng, isBusy, error, onClose, onCreateAndLog }: Props) {
+export function DropSpotSheet({
+  locale,
+  lat,
+  lng,
+  isBusy,
+  error,
+  isAuthed,
+  onRequireAuth,
+  onClose,
+  onCreateAndLog,
+}: Props) {
   const [name, setName] = useState("");
   const [speciesSlug, setSpeciesSlug] = useState("");
 
@@ -29,106 +44,70 @@ export function DropSpotSheet({ locale, lat, lng, isBusy, error, onClose, onCrea
     [locale, lat, lng]
   );
 
+  const payload = useMemo(() => {
+    const cleanName = name.trim() || (locale === "dk" ? "Nyt spot" : "New spot");
+    const cleanSpecies = speciesSlug.trim() ? speciesSlug.trim().toLowerCase() : null;
+    return { lat, lng, name: cleanName, speciesSlug: cleanSpecies };
+  }, [name, speciesSlug, lat, lng, locale]);
+
+  const cta = !isAuthed
+    ? locale === "dk"
+      ? "Log ind for at logge fund"
+      : "Log in to log a find"
+    : locale === "dk"
+    ? isBusy
+      ? "Logger…"
+      : "Opret spot + log fund"
+    : isBusy
+    ? "Logging…"
+    : "Create spot + log";
+
   return (
-    <div
-      style={{
-        position: "absolute",
-        left: 12,
-        right: 12,
-        bottom: 12,
-        zIndex: 50,
-        borderRadius: 18,
-        border: "1px solid var(--glassLine)",
-        background: "var(--glassBg)",
-        boxShadow: "var(--shadow-1)",
-        backdropFilter: "blur(14px)",
-        WebkitBackdropFilter: "blur(14px)",
-        padding: 12,
-      }}
-      role="dialog"
-      aria-label="Drop spot sheet"
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+    <div className={styles.sheet} role="dialog" aria-label="Drop spot sheet">
+      <div className={styles.head}>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontWeight: 950 }}>{title}</div>
-          <div style={{ fontSize: 12, opacity: 0.8, marginTop: 2 }}>{sub}</div>
+          <div className={styles.title}>{title}</div>
+          <div className={styles.sub}>{sub}</div>
         </div>
 
-        <button
-          onClick={onClose}
-          type="button"
-          style={{
-            borderRadius: 12,
-            border: "1px solid var(--glassLine)",
-            background: "transparent",
-            padding: "8px 10px",
-            fontWeight: 900,
-            cursor: "pointer",
-          }}
-        >
+        <button onClick={onClose} type="button" className={styles.close}>
           ✕
         </button>
       </div>
 
-      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+      <div className={styles.form}>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder={locale === "dk" ? "Navn (valgfrit) fx 'Bøgeskov ved stien'" : "Name (optional)"}
-          style={{
-            width: "100%",
-            borderRadius: 14,
-            border: "1px solid var(--glassLine)",
-            background: "rgba(255,255,255,0.03)",
-            padding: "10px 12px",
-            outline: "none",
-          }}
+          className={styles.input}
         />
 
         <input
           value={speciesSlug}
           onChange={(e) => setSpeciesSlug(e.target.value)}
           placeholder={locale === "dk" ? "Art slug (valgfrit) fx 'kantarel'" : "Species slug (optional)"}
-          style={{
-            width: "100%",
-            borderRadius: 14,
-            border: "1px solid var(--glassLine)",
-            background: "rgba(255,255,255,0.03)",
-            padding: "10px 12px",
-            outline: "none",
-          }}
+          className={styles.input}
         />
 
         <button
           disabled={!!isBusy}
-          onClick={() =>
-            onCreateAndLog({
-              name: name.trim() || "Nyt spot",
-              speciesSlug: speciesSlug.trim() ? speciesSlug.trim().toLowerCase() : null,
-            })
-          }
-          type="button"
-          style={{
-            width: "100%",
-            borderRadius: 14,
-            border: "1px solid rgba(255,255,255,0.16)",
-            background: "rgba(16,185,129,0.92)",
-            color: "rgba(255,255,255,0.96)",
-            padding: "11px 12px",
-            fontWeight: 950,
-            cursor: isBusy ? "default" : "pointer",
-            opacity: isBusy ? 0.75 : 1,
+          onClick={() => {
+            if (!isAuthed) return onRequireAuth(payload);
+            return onCreateAndLog({ name: payload.name, speciesSlug: payload.speciesSlug });
           }}
+          type="button"
+          className={styles.primary}
         >
-          {locale === "dk" ? (isBusy ? "Logger…" : "Opret spot + log fund") : isBusy ? "Logging…" : "Create spot + log"}
+          {cta}
         </button>
 
         {error ? (
-          <div style={{ fontSize: 12, opacity: 0.9, padding: "6px 2px" }}>{error}</div>
+          <div className={styles.error}>{error}</div>
         ) : (
-          <div style={{ fontSize: 12, opacity: 0.65, padding: "6px 2px" }}>
+          <div className={styles.note}>
             {locale === "dk"
-              ? "Tip: Klik på kortet igen for at flytte markøren."
+              ? "Tip: Klik på kortet igen for at flytte punktet."
               : "Tip: Click the map again to move the drop point."}
           </div>
         )}
