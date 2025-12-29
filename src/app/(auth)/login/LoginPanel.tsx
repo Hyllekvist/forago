@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { usePathname, useSearchParams } from "next/navigation";
 
@@ -14,6 +14,13 @@ function safeLocalReturnTo(value: string | null) {
   if (!value.startsWith("/")) return null;
   if (value.startsWith("//")) return null;
   return value;
+}
+
+function safeLocalUrlWithQuery(path: string, query: string) {
+  // path must be internal + query is already "a=b&c=d"
+  if (!path.startsWith("/")) return path;
+  if (!query) return path;
+  return path.includes("?") ? `${path}&${query}` : `${path}?${query}`;
 }
 
 export function LoginPanel() {
@@ -32,28 +39,37 @@ export function LoginPanel() {
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function sendMagicLink() {
+  const locale = useMemo(() => inferLocaleFromPath(pathname), [pathname]);
+
+  const returnTo = useMemo(() => {
+    const fromQuery =
+      safeLocalReturnTo(searchParams?.get("returnTo")) ||
+      safeLocalReturnTo(searchParams?.get("next"));
+
+    return fromQuery ?? `/${locale}/today`;
+  }, [searchParams, locale]);
+
+  const sendMagicLink = useCallback(async () => {
     setErr(null);
 
-    const trimmed = email.trim();
+    const trimmed = email.trim().toLowerCase();
     if (!trimmed) return;
 
     setLoading(true);
     try {
       const origin = window.location.origin;
 
-      const locale = inferLocaleFromPath(pathname);
+      // Hvis login flowet kom fra map drop-gate, så ligger drop payload i login url'en.
+      // Vi skal sende den med tilbage til returnTo, så MapClient kan restore drop.
+      const dropRaw = searchParams?.get("drop");
+      const dropParam = typeof dropRaw === "string" && dropRaw.length > 0 ? dropRaw : null;
 
-      // 👇 hvis du kommer fra en beskyttet side, bør den sende ?returnTo=/dk/post/123
-      // fallback: send tilbage til /[locale]/today
-      const returnToFromQuery =
-        safeLocalReturnTo(searchParams?.get("returnTo")) ||
-        safeLocalReturnTo(searchParams?.get("next"));
+      const returnToWithDrop = dropParam
+        ? safeLocalUrlWithQuery(returnTo, `drop=${encodeURIComponent(dropParam)}`)
+        : returnTo;
 
-      const returnTo = returnToFromQuery ?? `/${locale}/today`;
-
-      // ✅ callback med locale + returnTo
-      const redirectTo = `${origin}/${locale}/callback?returnTo=${encodeURIComponent(returnTo)}`;
+      // ✅ callback route skal være /[locale]/callback
+      const redirectTo = `${origin}/${locale}/callback?returnTo=${encodeURIComponent(returnToWithDrop)}`;
 
       const { error } = await supabase.auth.signInWithOtp({
         email: trimmed,
@@ -62,15 +78,10 @@ export function LoginPanel() {
         },
       });
 
-      if (error) {
-        console.log("signInWithOtp error:", error);
-        throw error;
-      }
+      if (error) throw error;
 
       setSent(true);
     } catch (e: any) {
-      console.log("magic link error raw:", e);
-
       const msg =
         e?.message ||
         e?.error_description ||
@@ -82,63 +93,96 @@ export function LoginPanel() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [email, locale, returnTo, searchParams, supabase]);
 
   return (
     <div style={{ maxWidth: 420, margin: "40px auto", padding: 16 }}>
       <h1>Login</h1>
 
+      <p style={{ opacity: 0.75, marginTop: 6 }}>
+        {locale === "dk" ? "Vi sender et magic link til din email." : "We’ll send a magic link to your email."}
+      </p>
+
       {sent ? (
-        <p>Tjek din email for login-linket.</p>
+        <div
+          style={{
+            marginTop: 14,
+            padding: "12px 12px",
+            borderRadius: 12,
+            border: "1px solid rgba(61,220,151,0.35)",
+            background: "rgba(61,220,151,0.10)",
+          }}
+        >
+          {locale === "dk"
+            ? "Tjek din inbox. Du kan lukke fanen efter login."
+            : "Check your inbox. You can close this tab after logging in."}
+        </div>
       ) : (
         <>
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
-            inputMode="email"
-            autoComplete="email"
-            style={{
-              width: "100%",
-              padding: 12,
-              borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: "rgba(255,255,255,0.04)",
-              color: "inherit",
-            }}
-          />
-
-          <button
-            onClick={sendMagicLink}
-            disabled={loading || !email.trim()}
-            style={{
-              width: "100%",
-              marginTop: 12,
-              padding: 12,
-              borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.14)",
-              background: "rgba(255,255,255,0.06)",
-              color: "inherit",
-              cursor: loading ? "default" : "pointer",
-              opacity: loading ? 0.75 : 1,
-            }}
-          >
-            {loading ? "Sender…" : "Send login-link"}
-          </button>
-
-          {err ? (
-            <div
+          <div style={{ marginTop: 14 }}>
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={locale === "dk" ? "Email" : "Email"}
+              inputMode="email"
+              autoComplete="email"
               style={{
-                marginTop: 10,
-                padding: "10px 12px",
+                width: "100%",
+                padding: 12,
                 borderRadius: 12,
-                border: "1px solid rgba(255, 80, 80, 0.35)",
-                background: "rgba(255, 80, 80, 0.10)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                background: "rgba(255,255,255,0.04)",
+                color: "inherit",
+                outline: "none",
+              }}
+            />
+
+            <button
+              onClick={sendMagicLink}
+              disabled={loading || !email.trim()}
+              type="button"
+              style={{
+                width: "100%",
+                marginTop: 12,
+                padding: 12,
+                borderRadius: 12,
+                border: "1px solid rgba(255,255,255,0.14)",
+                background: "rgba(255,255,255,0.06)",
+                color: "inherit",
+                cursor: loading ? "default" : "pointer",
+                opacity: loading ? 0.75 : 1,
+                fontWeight: 800,
               }}
             >
-              {err}
+              {locale === "dk" ? (loading ? "Sender…" : "Send login-link") : loading ? "Sending…" : "Send login link"}
+            </button>
+
+            <div style={{ marginTop: 10, fontSize: 12, opacity: 0.7 }}>
+              {locale === "dk" ? (
+                <>
+                  Efter login sendes du tilbage til: <code>{returnTo}</code>
+                </>
+              ) : (
+                <>
+                  After login you’ll return to: <code>{returnTo}</code>
+                </>
+              )}
             </div>
-          ) : null}
+
+            {err ? (
+              <div
+                style={{
+                  marginTop: 10,
+                  padding: "10px 12px",
+                  borderRadius: 12,
+                  border: "1px solid rgba(255, 80, 80, 0.35)",
+                  background: "rgba(255, 80, 80, 0.10)",
+                }}
+              >
+                {err}
+              </div>
+            ) : null}
+          </div>
         </>
       )}
     </div>
