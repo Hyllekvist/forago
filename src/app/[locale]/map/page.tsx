@@ -1,4 +1,3 @@
-// src/app/[locale]/map/page.tsx
 import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import MapClient from "./MapClient";
@@ -19,30 +18,23 @@ export default async function MapPage({ params }: { params: { locale: string } }
   const locParam = params?.locale;
   if (!locParam || !isLocale(locParam)) return notFound();
 
-  try {
-    const supabase = await supabaseServer();
+  const supabase = await supabaseServer();
 
-    const { data, error } = await supabase
-      .from("spots_map_with_finds") // ✅ VIEW
-      .select("id, lat, lng, title, species_slug, created_at")
-      .order("created_at", { ascending: false })
-      .limit(500);
+  const { data, error } = await supabase
+    .from("spots_map")
+    .select("id, lat, lng, title, species_slug, created_at")
+    .order("created_at", { ascending: false })
+    .limit(800);
 
-    if (error) {
-      return <MapClient spots={DUMMY_SPOTS} />;
-    }
+  const realSpots = (data ?? []) as Spot[];
 
-    const realSpots = (Array.isArray(data) ? data : []).map((r: any) => ({
-      id: String(r.id), // uuid-string
-      lat: Number(r.lat),
-      lng: Number(r.lng),
-      title: r.title ?? null,
-      species_slug: r.species_slug ?? null,
-    })) as Spot[];
+  const isProd = process.env.NODE_ENV === "production";
+  const spots =
+    !error && realSpots.length > 0
+      ? realSpots
+      : isProd
+        ? [] // ✅ prod: ingen dummy
+        : DUMMY_SPOTS; // ✅ dev: ok at have dummy
 
-    const spots = realSpots.length > 0 ? realSpots : DUMMY_SPOTS;
-    return <MapClient spots={spots} />;
-  } catch {
-    return <MapClient spots={DUMMY_SPOTS} />;
-  }
+  return <MapClient spots={spots} />;
 }
