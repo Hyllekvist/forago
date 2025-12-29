@@ -1,4 +1,4 @@
-"use client"; 
+"use client";
 
 import { useMemo } from "react";
 import Link from "next/link";
@@ -18,12 +18,9 @@ type Props = {
   spot: Spot;
   mode: "daily" | "forage";
   userPos: { lat: number; lng: number } | null;
-
   counts?: Counts | null;
-
   onClose: () => void;
   onLog: () => void;
-
   isLogging?: boolean;
   logOk?: boolean;
 };
@@ -31,8 +28,10 @@ type Props = {
 function emojiForSlug(slug?: string | null) {
   const s = (slug ?? "").toLowerCase();
   if (!s) return "📍";
-  if (s.includes("svamp") || s.includes("mush") || s.includes("chanter") || s.includes("kantarel")) return "🍄";
-  if (s.includes("bær") || s.includes("berry") || s.includes("blåb") || s.includes("hindb")) return "🫐";
+  if (s.includes("svamp") || s.includes("mush") || s.includes("chanter") || s.includes("kantarel"))
+    return "🍄";
+  if (s.includes("bær") || s.includes("berry") || s.includes("blåb") || s.includes("hindb"))
+    return "🫐";
   if (s.includes("urt") || s.includes("herb")) return "🌿";
   if (s.includes("nød") || s.includes("nut")) return "🌰";
   return "📍";
@@ -85,7 +84,6 @@ function computeStability(counts?: Counts | null) {
   const qtr = counts.qtr ?? 0;
 
   if (total >= 10 && last30 >= 3) return { key: "stable" as const, label: "Stabil", hint: "aktiv spot" };
-
   if (total >= 3 || qtr >= 2 || last30 >= 2)
     return { key: "returning" as const, label: "Tilbagevendende", hint: "dukker op igen" };
 
@@ -99,23 +97,20 @@ function isIOS() {
 
 export function SpotPeekCard({ spot, mode, userPos, counts, onClose, onLog, isLogging, logOk }: Props) {
   const params = useParams<{ locale?: string }>();
-  const locale = (params?.locale as string) || "dk";
+  const rawLocale = (params?.locale as string) || "dk";
+  const locale = rawLocale === "dk" || rawLocale === "en" ? rawLocale : "dk";
 
   const emoji = emojiForSlug(spot.species_slug);
   const label = mode === "forage" ? "SPOT" : spot.species_slug ? "SPOT" : "LOKATION";
 
-  const distance = useMemo(
-    () => formatDistance(userPos, spot),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [userPos, spot.lat, spot.lng]
-  );
+  const distance = useMemo(() => formatDistance(userPos, spot), [userPos, spot.lat, spot.lng]);
 
   const lastSeenIso = counts?.last_seen ?? null;
   const freshness = useMemo(() => formatFreshness(lastSeenIso), [lastSeenIso]);
 
   const mapsHref = useMemo(() => {
     const q = encodeURIComponent(`${spot.lat},${spot.lng}`);
-    if (isIOS()) return `http://maps.apple.com/?q=${q}`;
+    if (isIOS()) return `https://maps.apple.com/?q=${q}`;
     return `https://www.google.com/maps/search/?api=1&query=${q}`;
   }, [spot.lat, spot.lng]);
 
@@ -127,7 +122,7 @@ export function SpotPeekCard({ spot, mode, userPos, counts, onClose, onLog, isLo
     return `${counts.total} fund · ${counts.qtr} i kvartalet · ${last30} sidste 30d`;
   }, [counts]);
 
-  const learnHref = `/${encodeURIComponent(locale)}/spot/${encodeURIComponent(String(spot.id))}`;
+  const learnHref = `/${locale}/spot/${encodeURIComponent(String(spot.id))}`;
 
   return (
     <section className={styles.card} role="dialog" aria-label="Selected spot">
@@ -145,7 +140,6 @@ export function SpotPeekCard({ spot, mode, userPos, counts, onClose, onLog, isLo
         <div className={styles.headMain}>
           <div className={styles.kickerRow}>
             <span className={styles.kicker}>{label}</span>
-
             <span className={styles.dot} aria-hidden />
             <span className={styles.meta}>{distance}</span>
 
@@ -196,7 +190,6 @@ export function SpotPeekCard({ spot, mode, userPos, counts, onClose, onLog, isLo
           {logOk ? "✅ Logget" : isLogging ? "Logger…" : "Log fund"}
         </button>
 
-        {/* ✅ Lær mere → spot-siden */}
         <Link className={styles.ghost} href={learnHref}>
           Lær mere
         </Link>
