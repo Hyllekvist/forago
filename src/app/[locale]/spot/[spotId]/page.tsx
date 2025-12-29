@@ -12,27 +12,35 @@ function isLocale(x: string): x is Locale {
   return (SUPPORTED_LOCALES as readonly string[]).includes(x);
 }
 
+function isUuid(s: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s);
+}
+
 function fmtDate(iso?: string | null) {
   if (!iso) return "—";
   const t = Date.parse(iso);
   if (Number.isNaN(t)) return "—";
-  return new Date(t).toLocaleDateString("da-DK", { year: "numeric", month: "short", day: "2-digit" });
+  return new Date(t).toLocaleDateString("da-DK", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+  });
 }
 
 export default async function SpotPage({
   params,
 }: {
-  params: { locale: string; spotId: string };
+  params: { locale: string; id: string };
 }) {
   const loc = params?.locale;
-  const spotId = params?.spotId;
+  const spotId = params?.id; // ✅ IMPORTANT: [id] → params.id
 
   if (!loc || !isLocale(loc)) return notFound();
-  if (!spotId) return notFound();
+  if (!spotId || !isUuid(spotId)) return notFound();
 
   const supabase = await supabaseServer();
 
-  // ✅ Spot “master” kommer fra VIEW spots_map
+  // Spot “master” (VIEW)
   const { data: spot, error: spotErr } = await supabase
     .from("spots_map")
     .select("id, lat, lng, title, species_slug, created_at")
@@ -41,8 +49,10 @@ export default async function SpotPage({
 
   if (spotErr || !spot) return notFound();
 
-  // ✅ Counts kommer fra din spot_counts(text) function
-  const { data: countsData } = await supabase.rpc("spot_counts", { p_spot_id: spotId }).maybeSingle();
+  // counts (RPC)
+  const { data: countsData } = await supabase
+    .rpc("spot_counts", { p_spot_id: spotId })
+    .maybeSingle();
 
   const counts = countsData as
     | {
@@ -54,7 +64,7 @@ export default async function SpotPage({
       }
     | null;
 
-  // ✅ Seneste finds (public_aggregate) for den spot_id (text)
+  // latest finds
   const { data: finds } = await supabase
     .from("finds")
     .select(
@@ -94,7 +104,9 @@ export default async function SpotPage({
         </h1>
 
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", fontSize: 13, opacity: 0.9 }}>
-          <span>📍 {spot.lat.toFixed(5)}, {spot.lng.toFixed(5)}</span>
+          <span>
+            📍 {Number(spot.lat).toFixed(5)}, {Number(spot.lng).toFixed(5)}
+          </span>
           <span>·</span>
           <span>Oprettet {fmtDate(spot.created_at)}</span>
           {counts?.last_seen ? (
@@ -131,16 +143,15 @@ export default async function SpotPage({
       >
         <div style={{ fontWeight: 900, marginBottom: 10 }}>Seneste fund</div>
 
-        {(!finds || finds.length === 0) ? (
-          <div style={{ opacity: 0.8, fontSize: 13 }}>
-            Ingen offentlige fund endnu for dette spot.
-          </div>
+        {!finds?.length ? (
+          <div style={{ opacity: 0.8, fontSize: 13 }}>Ingen offentlige fund endnu for dette spot.</div>
         ) : (
           <div style={{ display: "grid", gap: 10 }}>
             {finds.map((f: any) => {
               const sp = f?.species;
               const slug = sp?.slug ?? null;
               const title = slug ? `#${slug}` : "Ukendt art";
+
               return (
                 <div
                   key={f.id}
@@ -165,7 +176,6 @@ export default async function SpotPage({
                     ) : null}
                   </div>
 
-                  {/* Hvis du vil: direkte link til find-siden */}
                   <Link
                     href={`/${loc}/find/${encodeURIComponent(String(f.id))}`}
                     style={{
