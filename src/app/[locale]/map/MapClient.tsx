@@ -386,16 +386,17 @@ export default function MapClient({ spots }: Props) {
               )}
             </div>
           ) : selectedSpot ? (
-            <SpotPeekCard
+        <SpotPeekCard
   spot={selectedSpot}
   mode={mode}
   userPos={userPos}
-  counts={spotCounts}
+  counts={countsForSelected}
   isLogging={isLogging}
   logOk={logOk}
   onClose={() => setSelectedId(null)}
   onLog={() => void onQuickLog(selectedSpot)}
 />
+
 
           ) : (
             <MapSheet
@@ -439,16 +440,17 @@ export default function MapClient({ spots }: Props) {
               </div>
             ) : selectedSpot ? (
               <div className={styles.peekWrap}>
-                <SpotPeekCard
+         <SpotPeekCard
   spot={selectedSpot}
   mode={mode}
   userPos={userPos}
-  counts={spotCounts}
+  counts={countsForSelected}
   isLogging={isLogging}
   logOk={logOk}
   onClose={() => setSelectedId(null)}
   onLog={() => void onQuickLog(selectedSpot)}
 />
+
 
               </div>
             ) : (
