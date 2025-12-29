@@ -5,7 +5,6 @@ export const dynamic = "force-dynamic";
 
 function safeLocalPath(p: string | null) {
   if (!p) return null;
-  // kun interne paths
   if (!p.startsWith("/")) return null;
   if (p.startsWith("//")) return null;
   return p;
@@ -20,12 +19,9 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
 
-  // Supabase sender nogle gange ?error=...
   const errorDesc =
     url.searchParams.get("error_description") || url.searchParams.get("error");
 
-  // hvor skal vi hen bagefter?
-  // prioritet: returnTo -> next -> redirectTo
   const returnTo =
     safeLocalPath(url.searchParams.get("returnTo")) ||
     safeLocalPath(url.searchParams.get("next")) ||
@@ -36,23 +32,34 @@ export async function GET(req: Request) {
   if (errorDesc) {
     return NextResponse.redirect(new URL(`/${locale}/login?e=callback_failed`, url.origin));
   }
-
   if (!code) {
     return NextResponse.redirect(new URL(`/${locale}/login?e=missing_code`, url.origin));
   }
 
   const supabase = await supabaseServer();
-
   const { error } = await supabase.auth.exchangeCodeForSession(code);
+
   if (error) {
     return NextResponse.redirect(new URL(`/${locale}/login?e=exchange_failed`, url.origin));
   }
 
-  // ✅ hvis du kom fra en beskyttet side, så tilbage dertil
-  if (returnTo) {
-    return NextResponse.redirect(new URL(returnTo, url.origin));
+  // ✅ check profile exists (sankeprofil)
+  const { data: auth } = await supabase.auth.getUser();
+  const user = auth?.user ?? null;
+
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("handle")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!profile?.handle) {
+      const onboarding = `/${locale}/onboarding${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`;
+      return NextResponse.redirect(new URL(onboarding, url.origin));
+    }
   }
 
-  // ✅ default efter login: Today
+  if (returnTo) return NextResponse.redirect(new URL(returnTo, url.origin));
   return NextResponse.redirect(new URL(`/${locale}/today`, url.origin));
 }
