@@ -37,7 +37,7 @@ function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
   return 2 * R * Math.asin(Math.sqrt(q));
 }
 
-function isDesktop() {
+function isDesktopNow() {
   if (typeof window === "undefined") return false;
   return window.matchMedia?.("(min-width: 1024px)")?.matches ?? false;
 }
@@ -60,7 +60,7 @@ export default function MapClient({ spots }: Props) {
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [mapApi, setMapApi] = useState<LeafletLikeMap | null>(null);
 
-  // ✅ local spots, så click-to-create kan dukke op med det samme
+  // local spots (for instant create)
   const [spotsLocal, setSpotsLocal] = useState<Spot[]>(spots);
   useEffect(() => setSpotsLocal(spots), [spots]);
 
@@ -78,14 +78,14 @@ export default function MapClient({ spots }: Props) {
   const [spotCounts, setSpotCounts] = useState<SpotCounts | null>(null);
   const [countsMap, setCountsMap] = useState<Record<string, { total: number; qtr: number }>>({});
 
-  // ✅ Drop point state
+  // drop state
   const [drop, setDrop] = useState<{ lat: number; lng: number } | null>(null);
   const [dropBusy, setDropBusy] = useState(false);
   const [dropErr, setDropErr] = useState<string | null>(null);
 
   const isEmptyProd = spotsLocal.length === 0;
 
-  // geolocation
+  // geo
   useEffect(() => {
     if (!("geolocation" in navigator)) return;
     navigator.geolocation.getCurrentPosition(
@@ -101,12 +101,11 @@ export default function MapClient({ spots }: Props) {
     return () => window.clearTimeout(t);
   }, [visibleIds]);
 
-  // auto focus when entering Sankemode
+  // auto focus forage
   useEffect(() => {
     if (mode !== "forage") return;
     if (!userPos || !mapApi) return;
     if (didAutoFocusRef.current) return;
-
     didAutoFocusRef.current = true;
     mapApi.flyTo(userPos.lat, userPos.lng, 13);
   }, [mode, userPos, mapApi]);
@@ -129,7 +128,6 @@ export default function MapClient({ spots }: Props) {
 
   const insights = useMemo(() => {
     const total = spotsLocal.length;
-
     const nearbyCount = userPos
       ? spotsLocal.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2).length
       : 0;
@@ -178,7 +176,6 @@ export default function MapClient({ spots }: Props) {
     setLogOk(false);
     setLogError(null);
 
-    // drop state reset
     setDrop(null);
     setDropErr(null);
     setDropBusy(false);
@@ -188,8 +185,12 @@ export default function MapClient({ spots }: Props) {
     (k: InsightKey) => {
       setActiveInsight((prev) => (prev === k ? null : k));
       setSheetExpanded(true);
+
+      // mobile: close peek
       setSelectedId(null);
       setSpotCounts(null);
+      setDrop(null);
+      setDropErr(null);
 
       if (k === "nearby" && userPos && mapApi) {
         mapApi.flyTo(userPos.lat, userPos.lng, 13);
@@ -202,7 +203,11 @@ export default function MapClient({ spots }: Props) {
     (id: string) => {
       const sid = String(id);
       setSelectedId(sid);
-      setSheetExpanded(false);
+
+      // desktop: keep list visible, show details on right
+      // mobile: close sheet so peek becomes primary
+      if (!isDesktopNow()) setSheetExpanded(false);
+
       setDrop(null);
       setDropErr(null);
 
@@ -210,12 +215,12 @@ export default function MapClient({ spots }: Props) {
       if (!s || !mapApi) return;
 
       mapApi.flyTo(s.lat, s.lng, Math.max(mapApi.getZoom(), 14));
-      mapApi.panBy?.(0, isDesktop() ? -80 : -140);
+      mapApi.panBy?.(0, isDesktopNow() ? -60 : -140);
     },
     [mapApi, spotsById]
   );
 
-  // Deep-link: ?spot=...
+  // deep link ?spot=
   useEffect(() => {
     if (deepLinkHandledRef.current) return;
     if (!mapApi) return;
@@ -228,7 +233,7 @@ export default function MapClient({ spots }: Props) {
     }
   }, [search, mapApi, spotsById, onSelectSpot]);
 
-  // fetch counts when selected spot changes
+  // selected counts
   useEffect(() => {
     if (!selectedSpot?.id) {
       setSpotCounts(null);
@@ -236,7 +241,6 @@ export default function MapClient({ spots }: Props) {
     }
 
     const ac = new AbortController();
-
     (async () => {
       try {
         const res = await fetch(
@@ -253,15 +257,13 @@ export default function MapClient({ spots }: Props) {
           first_seen: (json.first_seen ?? null) as string | null,
           last_seen: (json.last_seen ?? null) as string | null,
         });
-      } catch {
-        // ignore
-      }
+      } catch {}
     })();
 
     return () => ac.abort();
   }, [selectedSpot?.id]);
 
-  // quick log (på eksisterende spot)
+  // quick log existing spot
   const onQuickLog = useCallback(
     async (spot: Spot) => {
       if (isLogging) return;
@@ -275,7 +277,7 @@ export default function MapClient({ spots }: Props) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            spot_id: String(spot.id), // ✅ slug
+            spot_id: String(spot.id), // slug
             species_slug: spot.species_slug ?? null,
             observed_at: new Date().toISOString(),
             visibility: "public_aggregate",
@@ -290,7 +292,6 @@ export default function MapClient({ spots }: Props) {
 
         setLogOk(true);
 
-        // optimistic: bump batch counts
         setCountsMap((prev) => ({
           ...prev,
           [String(spot.id)]: {
@@ -299,7 +300,6 @@ export default function MapClient({ spots }: Props) {
           },
         }));
 
-        // optimistic: bump selected counts if visible
         setSpotCounts((prev) =>
           prev ? { ...prev, total: prev.total + 1, qtr: prev.qtr + 1, last30: prev.last30 + 1 } : prev
         );
@@ -342,9 +342,7 @@ export default function MapClient({ spots }: Props) {
           }
           return next;
         });
-      } catch {
-        // ignore
-      }
+      } catch {}
     })();
 
     return () => ac.abort();
@@ -389,7 +387,7 @@ export default function MapClient({ spots }: Props) {
     } satisfies SpotCounts;
   }, [selectedSpot?.id, spotCounts, countsMap]);
 
-  // Kort-polish: skjul “0 public” i daily (men aldrig før vi har counts)
+  // hide 0-public in daily (after we have counts)
   const spotsForMap = useMemo(() => {
     const hasCounts = Object.keys(countsMap).length > 0;
     if (!hasCounts) return filteredSpots;
@@ -410,17 +408,21 @@ export default function MapClient({ spots }: Props) {
     });
   }, [filteredSpots, countsMap, mode, selectedId]);
 
-  // ✅ click-to-drop
-  const onMapClick = useCallback((p: { lat: number; lng: number }) => {
-    setDrop(p);
-    setDropErr(null);
-    setSelectedId(null);
-    setSpotCounts(null);
-    setSheetExpanded(false);
-  }, []);
+  // click-to-drop (ONLY in forage to keep daily clean)
+  const onMapClick = useCallback(
+    (p: { lat: number; lng: number }) => {
+      if (mode !== "forage") return;
+      setDrop(p);
+      setDropErr(null);
+      setSelectedId(null);
+      setSpotCounts(null);
+      setSheetExpanded(false);
+    },
+    [mode]
+  );
 
   const onCreateAndLogFromDrop = useCallback(
-    async ({ name, speciesSlug }: { name: string; speciesSlug: string | null }) => {
+    async ({ name, speciesSlug }: { name: string; speciesSlug: string; }) => {
       if (!drop) return;
       if (dropBusy) return;
 
@@ -428,7 +430,6 @@ export default function MapClient({ spots }: Props) {
         setDropBusy(true);
         setDropErr(null);
 
-        // 1) create place
         const resPlace = await fetch("/api/places/create", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -452,7 +453,6 @@ export default function MapClient({ spots }: Props) {
 
         const place = jPlace.place as { slug: string; name: string; lat: number; lng: number };
 
-        // 2) create find (spot_id = slug)
         const resFind = await fetch("/api/finds/create", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -472,7 +472,6 @@ export default function MapClient({ spots }: Props) {
           throw new Error(jFind?.error ?? "Kunne ikke logge fund");
         }
 
-        // 3) optimistic: add spot to local list (spots_map shape)
         const newSpot: Spot = {
           id: place.slug,
           lat: Number(place.lat),
@@ -486,7 +485,6 @@ export default function MapClient({ spots }: Props) {
           return [newSpot, ...prev];
         });
 
-        // 4) optimistic counts so it won't be filtered out
         setCountsMap((prev) => ({
           ...prev,
           [String(newSpot.id)]: {
@@ -495,7 +493,6 @@ export default function MapClient({ spots }: Props) {
           },
         }));
 
-        // 5) select it + close drop
         setSelectedId(String(newSpot.id));
         setDrop(null);
 
@@ -510,63 +507,52 @@ export default function MapClient({ spots }: Props) {
     [drop, dropBusy]
   );
 
+  const mobileDockMode: "peek" | "sheet" | "none" = useMemo(() => {
+    if (drop) return "none";           // drop sheet is its own overlay
+    if (selectedSpot) return "peek";
+    return "sheet";
+  }, [drop, selectedSpot]);
+
   return (
-    <div className={styles.page}>
+    <div
+      className={styles.page}
+      data-sheet-open={sheetExpanded ? "1" : "0"}
+      data-mobile-dock={mobileDockMode}
+    >
       <MapTopbar mode={mode} onToggleMode={onToggleMode} />
       <InsightStrip mode={mode} active={activeInsight} insights={insights} onPick={onPickInsight} />
 
       <div className={styles.desktopBody}>
-        <aside className={styles.desktopPanel}>
-          {isEmptyProd ? (
-            <div className={styles.emptyHint}>
-              <p>
-                <strong>Ingen spots endnu.</strong>
-                <br />
-                Klik på kortet for at oprette et spot og logge første fund.
-              </p>
-            </div>
-          ) : mode === "forage" && sortedVisibleSpots.length === 0 ? (
-            <div className={styles.emptyHint}>
-              {!userPos ? (
+        {/* LEFT: list (desktop only) */}
+        <aside className={styles.desktopLeft}>
+          <div className={styles.panelInner}>
+            {isEmptyProd ? (
+              <div className={styles.emptyHint}>
                 <p>
-                  <strong>Aktivér lokation</strong> for at bruge Sankemode.
-                </p>
-              ) : (
-                <p>
-                  <strong>Ingen sikre fund &lt; 2 km.</strong>
+                  <strong>Ingen spots endnu.</strong>
                   <br />
-                  Zoom ud eller flyt kortet.
+                  Skift til <strong>Sankemode</strong> og klik på kortet for at oprette første spot.
                 </p>
-              )}
-            </div>
-          ) : selectedSpot ? (
-            <SpotPeekCard
-              spot={selectedSpot}
-              mode={mode}
-              userPos={userPos}
-              counts={countsForSelected}
-              isLogging={isLogging}
-              logOk={logOk}
-              onClose={() => setSelectedId(null)}
-              onLog={() => void onQuickLog(selectedSpot)}
-            />
-          ) : (
-            <MapSheet
-              mode={mode}
-              expanded
-              onToggle={() => {}}
-              title={sheetTitle}
-              items={sortedVisibleSpots}
-              selectedId={selectedId}
-              onSelect={onSelectSpot}
-              onLog={(id) => {
-                const s = spotsById.get(String(id));
-                if (s && mode === "forage") void onQuickLog(s);
-              }}
-            />
-          )}
+              </div>
+            ) : (
+              <MapSheet
+                mode={mode}
+                expanded
+                onToggle={() => {}}
+                title={sheetTitle}
+                items={sortedVisibleSpots}
+                selectedId={selectedId}
+                onSelect={onSelectSpot}
+                onLog={(id) => {
+                  const s = spotsById.get(String(id));
+                  if (s && mode === "forage") void onQuickLog(s);
+                }}
+              />
+            )}
+          </div>
         </aside>
 
+        {/* CENTER: map */}
         <div className={styles.mapShell}>
           <LeafletMap
             spots={spotsForMap}
@@ -579,6 +565,7 @@ export default function MapClient({ spots }: Props) {
             onMapClick={onMapClick}
           />
 
+          {/* MOBILE dock */}
           <div className={styles.mobileDock}>
             {isEmptyProd ? (
               <div className={styles.sheetWrap}>
@@ -586,11 +573,11 @@ export default function MapClient({ spots }: Props) {
                   <p>
                     <strong>Ingen spots endnu.</strong>
                     <br />
-                    Klik på kortet for at oprette et spot og logge første fund.
+                    Skift til <strong>Sankemode</strong> og klik på kortet for at oprette første spot.
                   </p>
                 </div>
               </div>
-            ) : selectedSpot ? (
+            ) : mobileDockMode === "peek" && selectedSpot ? (
               <div className={styles.peekWrap}>
                 <SpotPeekCard
                   spot={selectedSpot}
@@ -603,7 +590,7 @@ export default function MapClient({ spots }: Props) {
                   onLog={() => void onQuickLog(selectedSpot)}
                 />
               </div>
-            ) : (
+            ) : mobileDockMode === "sheet" ? (
               <div className={styles.sheetWrap}>
                 <MapSheet
                   mode={mode}
@@ -619,10 +606,10 @@ export default function MapClient({ spots }: Props) {
                   }}
                 />
               </div>
-            )}
+            ) : null}
           </div>
 
-          {/* ✅ Drop sheet overlay */}
+          {/* DROP overlay (desktop + mobile) */}
           {drop ? (
             <DropSpotSheet
               locale={locale}
@@ -635,6 +622,40 @@ export default function MapClient({ spots }: Props) {
             />
           ) : null}
         </div>
+
+        {/* RIGHT: details (desktop only) */}
+        <aside className={styles.desktopRight}>
+          <div className={styles.panelInner}>
+            {drop ? (
+              <div className={styles.emptyHint}>
+                <p>
+                  <strong>Opret nyt spot</strong>
+                  <br />
+                  Udfyld panelet der ligger ovenpå kortet.
+                </p>
+              </div>
+            ) : selectedSpot ? (
+              <SpotPeekCard
+                spot={selectedSpot}
+                mode={mode}
+                userPos={userPos}
+                counts={countsForSelected}
+                isLogging={isLogging}
+                logOk={logOk}
+                onClose={() => setSelectedId(null)}
+                onLog={() => void onQuickLog(selectedSpot)}
+              />
+            ) : (
+              <div className={styles.emptyHint}>
+                <p>
+                  <strong>Vælg et spot</strong>
+                  <br />
+                  Klik på pins eller vælg fra listen.
+                </p>
+              </div>
+            )}
+          </div>
+        </aside>
       </div>
 
       {logError ? <div className={styles.toastError}>{logError}</div> : null}
