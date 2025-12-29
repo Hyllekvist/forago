@@ -1,17 +1,17 @@
-"use client"; 
+"use client";
 
 import { useMemo, useState } from "react";
-import styles from "./DropSpotSheet.module.css";
 
 type Props = {
   locale: "dk" | "en";
   lat: number;
   lng: number;
+
   isBusy?: boolean;
   error?: string | null;
 
-  isAuthed: boolean;
-  onRequireAuth: (payload: { lat: number; lng: number; name: string; speciesSlug: string | null }) => void;
+  isAuthed: boolean;                 // ✅
+  onRequireAuth: () => void;         // ✅
 
   onClose: () => void;
   onCreateAndLog: (args: { name: string; speciesSlug: string | null }) => void;
@@ -44,16 +44,10 @@ export function DropSpotSheet({
     [locale, lat, lng]
   );
 
-  const payload = useMemo(() => {
-    const cleanName = name.trim() || (locale === "dk" ? "Nyt spot" : "New spot");
-    const cleanSpecies = speciesSlug.trim() ? speciesSlug.trim().toLowerCase() : null;
-    return { lat, lng, name: cleanName, speciesSlug: cleanSpecies };
-  }, [name, speciesSlug, lat, lng, locale]);
-
-  const cta = !isAuthed
+  const ctaLabel = !isAuthed
     ? locale === "dk"
-      ? "Log ind for at logge fund"
-      : "Log in to log a find"
+      ? "Login for at oprette"
+      : "Login to create"
     : locale === "dk"
     ? isBusy
       ? "Logger…"
@@ -63,51 +57,114 @@ export function DropSpotSheet({
     : "Create spot + log";
 
   return (
-    <div className={styles.sheet} role="dialog" aria-label="Drop spot sheet">
-      <div className={styles.head}>
+    <div
+      style={{
+        position: "absolute",
+        left: 12,
+        right: 12,
+        bottom: `calc(var(--bottom-nav-h, 92px) + 14px + env(safe-area-inset-bottom))`, // ✅ over bundnav
+        zIndex: 60,
+        borderRadius: 18,
+        border: "1px solid var(--glassLine)",
+        background: "var(--glassBg)",
+        boxShadow: "var(--shadow-1)",
+        backdropFilter: "blur(14px)",
+        WebkitBackdropFilter: "blur(14px)",
+        padding: 12,
+      }}
+      role="dialog"
+      aria-label="Drop spot sheet"
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
         <div style={{ minWidth: 0 }}>
-          <div className={styles.title}>{title}</div>
-          <div className={styles.sub}>{sub}</div>
+          <div style={{ fontWeight: 950 }}>{title}</div>
+          <div style={{ fontSize: 12, opacity: 0.8, marginTop: 2 }}>{sub}</div>
         </div>
 
-        <button onClick={onClose} type="button" className={styles.close}>
+        <button
+          onClick={onClose}
+          type="button"
+          style={{
+            borderRadius: 12,
+            border: "1px solid var(--glassLine)",
+            background: "transparent",
+            padding: "8px 10px",
+            fontWeight: 900,
+            cursor: "pointer",
+          }}
+        >
           ✕
         </button>
       </div>
 
-      <div className={styles.form}>
+      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder={locale === "dk" ? "Navn (valgfrit) fx 'Bøgeskov ved stien'" : "Name (optional)"}
-          className={styles.input}
+          style={{
+            width: "100%",
+            borderRadius: 14,
+            border: "1px solid var(--glassLine)",
+            background: "rgba(255,255,255,0.03)",
+            padding: "10px 12px",
+            outline: "none",
+          }}
+          disabled={!isAuthed} // ✅ lock inputs
         />
 
         <input
           value={speciesSlug}
           onChange={(e) => setSpeciesSlug(e.target.value)}
           placeholder={locale === "dk" ? "Art slug (valgfrit) fx 'kantarel'" : "Species slug (optional)"}
-          className={styles.input}
+          style={{
+            width: "100%",
+            borderRadius: 14,
+            border: "1px solid var(--glassLine)",
+            background: "rgba(255,255,255,0.03)",
+            padding: "10px 12px",
+            outline: "none",
+          }}
+          disabled={!isAuthed} // ✅ lock inputs
         />
 
         <button
           disabled={!!isBusy}
           onClick={() => {
-            if (!isAuthed) return onRequireAuth(payload);
-            return onCreateAndLog({ name: payload.name, speciesSlug: payload.speciesSlug });
+            if (!isAuthed) return onRequireAuth(); // ✅ go login
+            onCreateAndLog({
+              name: name.trim() || "Nyt spot",
+              speciesSlug: speciesSlug.trim() ? speciesSlug.trim().toLowerCase() : null,
+            });
           }}
           type="button"
-          className={styles.primary}
+          style={{
+            width: "100%",
+            borderRadius: 14,
+            border: "1px solid rgba(255,255,255,0.16)",
+            background: !isAuthed ? "rgba(255,255,255,0.08)" : "rgba(16,185,129,0.92)",
+            color: "rgba(255,255,255,0.96)",
+            padding: "11px 12px",
+            fontWeight: 950,
+            cursor: isBusy ? "default" : "pointer",
+            opacity: isBusy ? 0.75 : 1,
+          }}
         >
-          {cta}
+          {ctaLabel}
         </button>
 
-        {error ? (
-          <div className={styles.error}>{error}</div>
-        ) : (
-          <div className={styles.note}>
+        {!isAuthed ? (
+          <div style={{ fontSize: 12, opacity: 0.75, padding: "6px 2px" }}>
             {locale === "dk"
-              ? "Tip: Klik på kortet igen for at flytte punktet."
+              ? "Login kræves for at oprette spots og logge fund."
+              : "Login is required to create spots and log finds."}
+          </div>
+        ) : error ? (
+          <div style={{ fontSize: 12, opacity: 0.9, padding: "6px 2px" }}>{error}</div>
+        ) : (
+          <div style={{ fontSize: 12, opacity: 0.65, padding: "6px 2px" }}>
+            {locale === "dk"
+              ? "Tip: Klik på kortet igen for at flytte markøren."
               : "Tip: Click the map again to move the drop point."}
           </div>
         )}
