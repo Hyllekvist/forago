@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState, useCallback } from "react";
-import { createClient } from "@supabase/supabase-js";
 import { usePathname, useSearchParams } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 function inferLocaleFromPath(pathname: string) {
   const seg = (pathname.split("/")[1] || "").toLowerCase();
@@ -17,19 +17,14 @@ function safeLocalReturnTo(value: string | null) {
 }
 
 function safeLocalUrlWithQuery(path: string, query: string) {
-  // path must be internal + query is already "a=b&c=d"
-  if (!path.startsWith("/")) return path;
+  // fail closed: kun interne paths
+  if (!path.startsWith("/")) return "/";
   if (!query) return path;
   return path.includes("?") ? `${path}&${query}` : `${path}?${query}`;
 }
 
 export function LoginPanel() {
-  const supabase = useMemo(() => {
-    return createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-  }, []);
+  const supabase = useMemo(() => createClient(), []);
 
   const pathname = usePathname() || "/dk/login";
   const searchParams = useSearchParams();
@@ -68,14 +63,12 @@ export function LoginPanel() {
         ? safeLocalUrlWithQuery(returnTo, `drop=${encodeURIComponent(dropParam)}`)
         : returnTo;
 
-      // ✅ callback route skal være /[locale]/callback
+      // ✅ callback route: /[locale]/callback (din route ligger under src/app/[locale]/(auth)/callback/route.ts)
       const redirectTo = `${origin}/${locale}/callback?returnTo=${encodeURIComponent(returnToWithDrop)}`;
 
       const { error } = await supabase.auth.signInWithOtp({
         email: trimmed,
-        options: {
-          emailRedirectTo: redirectTo,
-        },
+        options: { emailRedirectTo: redirectTo },
       });
 
       if (error) throw error;
@@ -118,72 +111,70 @@ export function LoginPanel() {
             : "Check your inbox. You can close this tab after logging in."}
         </div>
       ) : (
-        <>
-          <div style={{ marginTop: 14 }}>
-            <input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder={locale === "dk" ? "Email" : "Email"}
-              inputMode="email"
-              autoComplete="email"
-              style={{
-                width: "100%",
-                padding: 12,
-                borderRadius: 12,
-                border: "1px solid rgba(255,255,255,0.12)",
-                background: "rgba(255,255,255,0.04)",
-                color: "inherit",
-                outline: "none",
-              }}
-            />
+        <div style={{ marginTop: 14 }}>
+          <input
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={locale === "dk" ? "Email" : "Email"}
+            inputMode="email"
+            autoComplete="email"
+            style={{
+              width: "100%",
+              padding: 12,
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(255,255,255,0.04)",
+              color: "inherit",
+              outline: "none",
+            }}
+          />
 
-            <button
-              onClick={sendMagicLink}
-              disabled={loading || !email.trim()}
-              type="button"
+          <button
+            onClick={sendMagicLink}
+            disabled={loading || !email.trim()}
+            type="button"
+            style={{
+              width: "100%",
+              marginTop: 12,
+              padding: 12,
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.14)",
+              background: "rgba(255,255,255,0.06)",
+              color: "inherit",
+              cursor: loading ? "default" : "pointer",
+              opacity: loading ? 0.75 : 1,
+              fontWeight: 800,
+            }}
+          >
+            {locale === "dk" ? (loading ? "Sender…" : "Send login-link") : loading ? "Sending…" : "Send login link"}
+          </button>
+
+          <div style={{ marginTop: 10, fontSize: 12, opacity: 0.7 }}>
+            {locale === "dk" ? (
+              <>
+                Efter login sendes du tilbage til: <code>{returnTo}</code>
+              </>
+            ) : (
+              <>
+                After login you’ll return to: <code>{returnTo}</code>
+              </>
+            )}
+          </div>
+
+          {err ? (
+            <div
               style={{
-                width: "100%",
-                marginTop: 12,
-                padding: 12,
+                marginTop: 10,
+                padding: "10px 12px",
                 borderRadius: 12,
-                border: "1px solid rgba(255,255,255,0.14)",
-                background: "rgba(255,255,255,0.06)",
-                color: "inherit",
-                cursor: loading ? "default" : "pointer",
-                opacity: loading ? 0.75 : 1,
-                fontWeight: 800,
+                border: "1px solid rgba(255, 80, 80, 0.35)",
+                background: "rgba(255, 80, 80, 0.10)",
               }}
             >
-              {locale === "dk" ? (loading ? "Sender…" : "Send login-link") : loading ? "Sending…" : "Send login link"}
-            </button>
-
-            <div style={{ marginTop: 10, fontSize: 12, opacity: 0.7 }}>
-              {locale === "dk" ? (
-                <>
-                  Efter login sendes du tilbage til: <code>{returnTo}</code>
-                </>
-              ) : (
-                <>
-                  After login you’ll return to: <code>{returnTo}</code>
-                </>
-              )}
+              {err}
             </div>
-
-            {err ? (
-              <div
-                style={{
-                  marginTop: 10,
-                  padding: "10px 12px",
-                  borderRadius: 12,
-                  border: "1px solid rgba(255, 80, 80, 0.35)",
-                  background: "rgba(255, 80, 80, 0.10)",
-                }}
-              >
-                {err}
-              </div>
-            ) : null}
-          </div>
-        </>
+          ) : null}
+        </div>
       )}
     </div>
   );
