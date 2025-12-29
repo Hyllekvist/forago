@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -10,12 +10,12 @@ import type { Map as LeafletMapType } from "leaflet";
 import styles from "./MapPage.module.css";
 
 export type Spot = {
-  id: string;
+  id: string; // ✅ spots_map.id = places.slug
   lat: number;
   lng: number;
   title?: string | null;
   species_slug?: string | null;
-  species_id?: string | null;   // ✅ ADD
+  species_id?: string | null;
   last_seen_at?: string | null;
 };
 
@@ -23,7 +23,7 @@ export type LeafletLikeMap = {
   zoomIn: () => void;
   zoomOut: () => void;
   flyTo: (lat: number, lng: number, zoom?: number) => void;
-  panBy: (x: number, y: number) => void; // ✅ add
+  panBy: (x: number, y: number) => void;
   getZoom: () => number;
   getBoundsBbox: () => [number, number, number, number];
 };
@@ -102,6 +102,7 @@ function ClusterLayer({
   onSelectSpot,
   onVisibleChange,
   onPanningChange,
+  onMapClick,
 }: {
   points: Spot[];
   selectedId: string | null;
@@ -109,10 +110,17 @@ function ClusterLayer({
   onSelectSpot: (id: string) => void;
   onVisibleChange?: (visibleIds: string[]) => void;
   onPanningChange?: (isPanning: boolean) => void;
+  onMapClick?: (p: { lat: number; lng: number }) => void;
 }) {
-  // NOTE: vi bruger "tick" kun til at recalculere clusters på moveend/zoomend
   const [tick, setTick] = useState(0);
   const panningRef = useRef(false);
+
+  // 🔒 Forhindr at map-click trigger når man klikker på marker/cluster
+  const suppressMapClickUntilRef = useRef<number>(0);
+  const suppressMapClick = () => {
+    suppressMapClickUntilRef.current = Date.now() + 450;
+  };
+  const canMapClick = () => Date.now() > suppressMapClickUntilRef.current;
 
   const map = useMapEvents({
     movestart: () => {
@@ -123,20 +131,17 @@ function ClusterLayer({
     },
 
     moveend: () => {
-      // 1) signal: færdig med at pan'e
       if (panningRef.current) {
         panningRef.current = false;
         onPanningChange?.(false);
       }
 
-      // 2) opdater visible én gang, ikke på hvert move
       if (onVisibleChange) {
         const bbox = bboxFromLeaflet(map);
         const visible = points.filter((s) => inBbox(s, bbox)).map((s) => s.id);
         onVisibleChange(visible);
       }
 
-      // 3) trig clusters re-render
       setTick((t) => t + 1);
     },
 
@@ -161,6 +166,12 @@ function ClusterLayer({
 
       setTick((t) => t + 1);
     },
+
+    click: (e) => {
+      if (!onMapClick) return;
+      if (!canMapClick()) return;
+      onMapClick({ lat: e.latlng.lat, lng: e.latlng.lng });
+    },
   });
 
   const index = useMemo(() => {
@@ -175,35 +186,32 @@ function ClusterLayer({
     return sc;
   }, [points]);
 
-  // expose map api once
-useEffect(() => {
-  onMapReady?.({
-    zoomIn: () => map.zoomIn(),
-    zoomOut: () => map.zoomOut(),
+  useEffect(() => {
+    onMapReady?.({
+      zoomIn: () => map.zoomIn(),
+      zoomOut: () => map.zoomOut(),
 
-    flyTo: (lat, lng, zoom = 12) => {
-      map.flyTo([lat, lng], zoom, {
-        animate: true,
-        duration: 0.5,
-      });
-    },
+      flyTo: (lat, lng, zoom = 12) => {
+        map.flyTo([lat, lng], zoom, {
+          animate: true,
+          duration: 0.5,
+        });
+      },
 
-    panBy: (x, y) => {
-      map.panBy([x, y], {
-        animate: true,
-        duration: 0.35,
-      });
-    },
+      panBy: (x, y) => {
+        map.panBy([x, y], {
+          animate: true,
+          duration: 0.35,
+        });
+      },
 
-    getZoom: () => map.getZoom(),
+      getZoom: () => map.getZoom(),
+      getBoundsBbox: () => bboxFromLeaflet(map),
+    });
 
-    getBoundsBbox: () => bboxFromLeaflet(map),
-  });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, []);
-
-  // initial visible list (once)
   useEffect(() => {
     if (!onVisibleChange) return;
     const bbox = bboxFromLeaflet(map);
@@ -235,6 +243,7 @@ useEffect(() => {
               icon={clusterIcon(count)}
               eventHandlers={{
                 click: () => {
+                  suppressMapClick();
                   const nextZoom = Math.min(index.getClusterExpansionZoom(clusterId), 17);
                   map.flyTo([lat, lng], nextZoom, { animate: true, duration: 0.5 });
                 },
@@ -253,6 +262,7 @@ useEffect(() => {
             icon={spotIcon(selected)}
             eventHandlers={{
               click: () => {
+                suppressMapClick();
                 const targetZoom = Math.max(map.getZoom(), 14);
                 map.flyTo([lat, lng], targetZoom, { animate: true, duration: 0.5 });
                 onSelectSpot(spotId);
@@ -273,6 +283,7 @@ export default function LeafletMap({
   onMapReady,
   onVisibleChange,
   onPanningChange,
+  onMapClick,
 }: {
   spots: Spot[];
   userPos: { lat: number; lng: number } | null;
@@ -281,6 +292,7 @@ export default function LeafletMap({
   onMapReady?: (m: LeafletLikeMap) => void;
   onVisibleChange?: (visibleIds: string[]) => void;
   onPanningChange?: (isPanning: boolean) => void;
+  onMapClick?: (p: { lat: number; lng: number }) => void;
 }) {
   useEffect(() => {
     ensureLeafletIcons();
@@ -291,7 +303,6 @@ export default function LeafletMap({
     return [56.1, 10.2];
   }, [userPos]);
 
-  // (valgfrit) hvis du skifter spots drastisk, så vil vi gerne “stop panning”
   useEffect(() => {
     onPanningChange?.(false);
   }, [spots, onPanningChange]);
@@ -307,6 +318,7 @@ export default function LeafletMap({
           onSelectSpot={onSelect}
           onVisibleChange={onVisibleChange}
           onPanningChange={onPanningChange}
+          onMapClick={onMapClick}
         />
       </MapContainer>
     </div>
