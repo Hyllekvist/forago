@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabase/server";
+// src/app/[locale]/callback/route.ts
+import { NextResponse, type NextRequest } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,7 @@ function inferLocaleFromPath(pathname: string) {
   return seg === "dk" || seg === "en" || seg === "se" || seg === "de" ? seg : "dk";
 }
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
 
@@ -27,39 +28,42 @@ export async function GET(req: Request) {
     safeLocalPath(url.searchParams.get("next")) ||
     safeLocalPath(url.searchParams.get("redirectTo"));
 
-  const locale = inferLocaleFromPath(returnTo ?? "/dk");
+  const locale = inferLocaleFromPath(returnTo ?? `/${inferLocaleFromPath(url.pathname)}`);
 
   if (errorDesc) {
     return NextResponse.redirect(new URL(`/${locale}/login?e=callback_failed`, url.origin));
   }
+
   if (!code) {
     return NextResponse.redirect(new URL(`/${locale}/login?e=missing_code`, url.origin));
   }
 
-  const supabase = await supabaseServer();
+  // ✅ VIGTIGT: cookies skal sættes på DET response vi returnerer
+  const redirectTarget = returnTo ?? `/${locale}/today`;
+  const res = NextResponse.redirect(new URL(redirectTarget, url.origin));
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+  const supabase = createServerClient(supabaseUrl, supabaseAnon, {
+    cookies: {
+      get(name: string) {
+        return req.cookies.get(name)?.value;
+      },
+      set(name: string, value: string, options: any) {
+        res.cookies.set({ name, value, ...options });
+      },
+      remove(name: string, options: any) {
+        res.cookies.set({ name, value: "", ...options });
+      },
+    },
+  });
+
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
     return NextResponse.redirect(new URL(`/${locale}/login?e=exchange_failed`, url.origin));
   }
 
-  // ✅ check profile exists (sankeprofil)
-  const { data: auth } = await supabase.auth.getUser();
-  const user = auth?.user ?? null;
-
-  if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("handle")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (!profile?.handle) {
-      const onboarding = `/${locale}/onboarding${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`;
-      return NextResponse.redirect(new URL(onboarding, url.origin));
-    }
-  }
-
-  if (returnTo) return NextResponse.redirect(new URL(returnTo, url.origin));
-  return NextResponse.redirect(new URL(`/${locale}/today`, url.origin));
+  return res;
 }
