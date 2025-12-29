@@ -1,90 +1,92 @@
 /* PublicHome.module.css */
 
+/* -----------------------------
+   Page shell
+----------------------------- */
+
 .page {
-  min-height: 100vh;
-  background: var(--bg, #0b0f14);
-  color: var(--ink, #e9eef7);
+  min-height: 100svh;
+  background: var(--bg);
+  color: var(--ink);
+  padding: 18px 14px 120px;
 }
 
-/* ---------- HERO (2-col) ---------- */
+/* -----------------------------
+   Hero (split)
+----------------------------- */
+
 .hero {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 56px 16px 28px;
-
   display: grid;
-  grid-template-columns: 1.05fr 0.95fr;
-  gap: 28px;
-  align-items: start;
+  gap: 14px;
+  grid-template-columns: 1fr;
+  padding-top: 6px;
 }
 
-@media (max-width: 980px) {
-  .hero {
-    grid-template-columns: 1fr;
-    padding-top: 36px;
-  }
-}
-
-/* ---------- BRAND ---------- */
 .brand {
-  min-width: 0;
+  border: 1px solid var(--glassLine);
+  background: color-mix(in srgb, var(--glassBg) 88%, transparent);
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: var(--shadow-1);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .brandTop {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
 .brandIconWrap {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  border: 1px solid var(--glassLine);
+  background: color-mix(in srgb, var(--glassBg) 78%, transparent);
+  display: grid;
+  place-items: center;
+  box-shadow: var(--shadow-1);
 }
 
 .brandIcon {
-  display: block;
+  opacity: 0.95;
 }
 
 .h1 {
   margin: 0;
-  font-size: 56px;
-  line-height: 1.02;
-  letter-spacing: -0.03em;
-}
-
-@media (max-width: 640px) {
-  .h1 {
-    font-size: 44px;
-  }
+  font-size: 22px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-weight: 950;
 }
 
 .tagline {
-  margin: 14px 0 10px;
-  font-size: 20px;
-  opacity: 0.92;
+  margin: 6px 0 8px;
+  font-size: 16px;
+  line-height: 1.25;
+  font-weight: 900;
+  letter-spacing: -0.01em;
 }
 
 .sub {
-  margin: 0 0 18px;
+  margin: 0 0 14px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  opacity: 0.88;
   max-width: 60ch;
-  font-size: 16px;
-  line-height: 1.6;
-  opacity: 0.78;
 }
 
-/* ---------- CTAs ---------- */
+/* CTA row */
 .ctaRow {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
+  margin-top: 12px;
 }
 
 .primaryCta,
@@ -93,281 +95,421 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-
-  height: 44px;
-  padding: 0 14px;
-  border-radius: 14px;
-
-  font-weight: 700;
   text-decoration: none;
+  font-weight: 900;
+  font-size: 13px;
+  border-radius: 14px;
+  padding: 10px 12px;
   user-select: none;
-
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--ink, #e9eef7);
+  -webkit-tap-highlight-color: transparent;
 }
 
 .primaryCta {
-  background: var(--accent, #ff9966);
-  color: #0b0f14;
-  border-color: transparent;
+  background: var(--accent);
+  color: var(--accentInk, #0b1220);
+  box-shadow: var(--shadow-2);
+  border: 1px solid color-mix(in srgb, var(--accent) 70%, #000 30%);
+}
+
+.primaryCta:hover {
+  transform: translateY(-1px);
 }
 
 .secondaryCta {
-  background: rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, var(--glassBg) 85%, transparent);
+  color: var(--ink);
+  border: 1px solid var(--glassLine);
+  box-shadow: var(--shadow-1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.secondaryCta:hover {
+  transform: translateY(-1px);
 }
 
 .ghostCta {
   background: transparent;
-  opacity: 0.9;
+  color: color-mix(in srgb, var(--ink) 78%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--glassLine) 85%, transparent);
 }
 
-/* ---------- PROOF ---------- */
+.ghostCta:hover {
+  border-style: solid;
+}
+
+/* Proof pills */
 .proofRow {
-  margin-top: 14px;
   display: flex;
-  gap: 10px;
   flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
 }
 
 .proofPill {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-
-  font-size: 13px;
   padding: 8px 10px;
   border-radius: 999px;
-
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  border: 1px solid var(--glassLine);
+  background: color-mix(in srgb, var(--glassBg) 80%, transparent);
+  box-shadow: var(--shadow-1);
+  font-size: 12px;
+  font-weight: 850;
   opacity: 0.92;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
-/* ---------- HERO CARD ---------- */
+/* -----------------------------
+   Hero preview card
+----------------------------- */
+
 .heroCard {
+  border: 1px solid var(--glassLine);
+  background: color-mix(in srgb, var(--glassBg) 88%, transparent);
   border-radius: 20px;
   padding: 16px;
-
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-2);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  position: relative;
+  overflow: hidden;
 }
 
 .cardTop {
-  min-width: 0;
+  border: 1px solid color-mix(in srgb, var(--glassLine) 82%, transparent);
+  background: color-mix(in srgb, var(--glassBg) 78%, transparent);
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: var(--shadow-1);
 }
 
 .cardBadge {
   display: inline-flex;
-  font-size: 12px;
-  padding: 6px 10px;
-  border-radius: 999px;
-
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  opacity: 0.92;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  opacity: 0.85;
+  margin-bottom: 8px;
 }
 
 .cardTitle {
-  margin-top: 10px;
-  font-size: 16px;
-  font-weight: 800;
+  font-weight: 950;
+  font-size: 14px;
+  line-height: 1.25;
+  margin-bottom: 6px;
 }
 
 .cardMeta {
-  margin-top: 6px;
-  font-size: 13px;
-  opacity: 0.7;
+  font-size: 12px;
+  opacity: 0.75;
 }
 
 .answer {
-  margin-top: 14px;
-  padding: 12px;
+  margin-top: 12px;
+  border: 1px solid color-mix(in srgb, var(--glassLine) 82%, transparent);
+  background: color-mix(in srgb, var(--glassBg) 72%, transparent);
   border-radius: 16px;
-
-  background: rgba(0, 0, 0, 0.22);
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  padding: 12px;
+  box-shadow: var(--shadow-1);
 }
 
 .answerHeader {
   display: flex;
-  gap: 10px;
   align-items: center;
-  margin-bottom: 8px;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
 .avatar {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 999px;
-
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--glassLine);
+  background: radial-gradient(
+    circle at 30% 20%,
+    color-mix(in srgb, var(--accent) 40%, transparent),
+    color-mix(in srgb, var(--glassBg) 78%, transparent) 60%
+  );
+  box-shadow: var(--shadow-1);
 }
 
 .answerName {
-  font-size: 13px;
-  font-weight: 800;
+  font-size: 12.5px;
+  font-weight: 950;
+  line-height: 1.1;
 }
 
 .answerSmall {
-  font-size: 12px;
-  opacity: 0.65;
+  font-size: 11.5px;
+  opacity: 0.75;
 }
 
 .answerText {
   margin: 0;
   font-size: 13px;
-  line-height: 1.55;
-  opacity: 0.92;
+  line-height: 1.45;
+  opacity: 0.88;
 }
 
 .cardActions {
-  margin-top: 14px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
+  margin-top: 12px;
 }
 
 .cardActionPrimary,
 .cardActionSecondary {
-  flex: 1;
-  height: 42px;
-  border-radius: 14px;
-
   display: inline-flex;
   align-items: center;
   justify-content: center;
-
-  font-weight: 750;
   text-decoration: none;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-weight: 900;
+  font-size: 12.5px;
+  border-radius: 14px;
+  padding: 10px 12px;
+  user-select: none;
 }
 
 .cardActionPrimary {
-  background: var(--accent, #ff9966);
-  color: #0b0f14;
-  border-color: transparent;
+  background: var(--accent);
+  color: var(--accentInk, #0b1220);
+  border: 1px solid color-mix(in srgb, var(--accent) 70%, #000 30%);
+  box-shadow: var(--shadow-2);
 }
 
 .cardActionSecondary {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--ink, #e9eef7);
+  background: color-mix(in srgb, var(--glassBg) 85%, transparent);
+  color: var(--ink);
+  border: 1px solid var(--glassLine);
+  box-shadow: var(--shadow-1);
 }
 
-/* ---------- SECTIONS ---------- */
+.cardActionPrimary:hover,
+.cardActionSecondary:hover {
+  transform: translateY(-1px);
+}
+
+/* -----------------------------
+   Sections
+----------------------------- */
+
 .section {
   max-width: 1120px;
-  margin: 0 auto;
-  padding: 26px 16px;
+  margin: 14px auto 0;
+  border: 1px solid color-mix(in srgb, var(--glassLine) 88%, transparent);
+  background: color-mix(in srgb, var(--glassBg) 70%, transparent);
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: var(--shadow-1);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .sectionHead {
-  max-width: 72ch;
   margin-bottom: 12px;
 }
 
-.sectionGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+.h2Large {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 950;
+  letter-spacing: -0.01em;
 }
 
-@media (max-width: 980px) {
-  .sectionGrid {
-    grid-template-columns: 1fr;
-  }
+.h2 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 950;
+  letter-spacing: -0.01em;
+}
+
+.p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  opacity: 0.84;
+}
+
+/* -----------------------------
+   Cards grid (features + use cases)
+----------------------------- */
+
+.examplesGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.exampleCard {
+  border: 1px solid var(--glassLine);
+  background: color-mix(in srgb, var(--glassBg) 78%, transparent);
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: var(--shadow-1);
+  text-decoration: none;
+  color: inherit;
+  display: grid;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.exampleCard:hover {
+  transform: translateY(-1px);
+}
+
+.exampleTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  width: fit-content;
+  border: 1px solid color-mix(in srgb, var(--glassLine) 90%, transparent);
+  background: color-mix(in srgb, var(--glassBg) 86%, transparent);
+  font-size: 11.5px;
+  font-weight: 900;
+  opacity: 0.88;
+}
+
+.exampleTitle {
+  font-size: 13.5px;
+  font-weight: 950;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.exampleCta {
+  font-size: 12px;
+  font-weight: 900;
+  opacity: 0.82;
+}
+
+/* -----------------------------
+   How it works (steps)
+----------------------------- */
+
+.sectionGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
 }
 
 .step {
-  display: flex;
-  gap: 12px;
-  padding: 14px;
-  border-radius: 18px;
-
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 10px;
+  border: 1px solid var(--glassLine);
+  background: color-mix(in srgb, var(--glassBg) 78%, transparent);
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: var(--shadow-1);
 }
 
 .stepNo {
   width: 34px;
   height: 34px;
   border-radius: 12px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  font-weight: 900;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.h2 {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 850;
-}
-
-.h2Large {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 900;
-}
-
-.p {
-  margin: 6px 0 0;
-  font-size: 13px;
-  opacity: 0.72;
-  line-height: 1.55;
-}
-
-/* ---------- EXAMPLES ---------- */
-.examplesGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  place-items: center;
+  font-weight: 950;
+  border: 1px solid color-mix(in srgb, var(--glassLine) 80%, transparent);
+  background: radial-gradient(
+    circle at 30% 20%,
+    color-mix(in srgb, var(--accent) 40%, transparent),
+    color-mix(in srgb, var(--glassBg) 78%, transparent) 70%
+  );
+  box-shadow: var(--shadow-1);
 }
 
-@media (max-width: 980px) {
-  .examplesGrid {
+/* -----------------------------
+   Bottom CTA
+----------------------------- */
+
+.bottomCta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+/* -----------------------------
+   Responsive
+----------------------------- */
+
+@media (min-width: 760px) {
+  .page {
+    padding: 22px 18px 130px;
+  }
+
+  .hero {
     grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .examplesGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .sectionGrid {
+    grid-template-columns: 1fr 1fr 1fr;
   }
 }
 
-.exampleCard {
-  display: block;
-  text-decoration: none;
-  color: var(--ink, #e9eef7);
+@media (min-width: 1024px) {
+  .hero {
+    grid-template-columns: 1.05fr 0.95fr;
+    align-items: start;
+    gap: 16px;
+  }
 
-  padding: 14px;
-  border-radius: 18px;
+  .h1 {
+    font-size: 24px;
+  }
 
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  .tagline {
+    font-size: 18px;
+  }
+
+  .sub {
+    font-size: 14px;
+  }
+
+  .examplesGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
-.exampleTag {
-  font-size: 12px;
-  opacity: 0.75;
+@media (max-width: 420px) {
+  .cardActions {
+    grid-template-columns: 1fr;
+  }
+
+  .primaryCta,
+  .secondaryCta,
+  .ghostCta {
+    width: 100%;
+  }
 }
 
-.exampleTitle {
-  margin-top: 8px;
-  font-size: 15px;
-  font-weight: 850;
-  line-height: 1.25;
-}
+/* -----------------------------
+   Reduced motion
+----------------------------- */
 
-.exampleCta {
-  margin-top: 10px;
-  font-size: 13px;
-  opacity: 0.82;
-}
-
-.bottomCta {
-  margin-top: 14px;
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+@media (prefers-reduced-motion: reduce) {
+  .primaryCta:hover,
+  .secondaryCta:hover,
+  .ghostCta:hover,
+  .exampleCard:hover,
+  .cardActionPrimary:hover,
+  .cardActionSecondary:hover {
+    transform: none;
+  }
 }
