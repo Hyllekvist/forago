@@ -180,3 +180,14 @@
     overscroll-behavior: none;
   }
 }
+/* Sørg for at overlays ikke kan ligge under bottom nav */
+.sheetWrap,
+.peekWrap {
+  bottom: calc(var(--bottom-nav-h, 92px) + 18px + env(safe-area-inset-bottom));
+}
+
+/* hvis DropSpotSheet bruger fixed bottom */
+.dropSheet {
+  bottom: calc(var(--bottom-nav-h, 92px) + 18px + env(safe-area-inset-bottom));
+}
+
