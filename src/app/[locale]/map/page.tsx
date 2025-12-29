@@ -23,7 +23,7 @@ export default async function MapPage({ params }: { params: { locale: string } }
     const supabase = await supabaseServer();
 
     const { data, error } = await supabase
-      .from("spots_map") // ✅ VIEW
+      .from("spots_map_with_finds") // ✅ VIEW
       .select("id, lat, lng, title, species_slug, created_at")
       .order("created_at", { ascending: false })
       .limit(500);
