@@ -3,10 +3,8 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 
 type Body = {
-  // vi bruger spot_id som "place id" (uuid-string). spot_uuid er alias.
-  spot_id?: string | null;
-  spot_uuid?: string | null;
-
+  spot_id?: string | null;    // ✅ slug (foretrukket)
+  spot_uuid?: string | null;  // hvis nogen stadig sender uuid
   species_id?: string | null;
   species_slug?: string | null;
   observed_at?: string | null;
@@ -22,9 +20,14 @@ function asText(v: unknown) {
 }
 
 function isUuid(s: string) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-    s
-  );
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s);
+}
+
+function isValidPlaceSlug(s: string) {
+  // stop “d6”/garbage, men allow jeres p-uuid style
+  if (!s) return false;
+  if (s.length < 10) return false;
+  return /^[a-z0-9-]+$/i.test(s);
 }
 
 function asIsoDateOrNow(v: unknown) {
@@ -40,17 +43,9 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Body;
 
-    // spot_id = places.id (uuid-string)
-    const spot_id_raw = asText(body?.spot_id) || asText(body?.spot_uuid);
-    if (!spot_id_raw) {
+    const spotRaw = asText(body?.spot_id) || asText(body?.spot_uuid);
+    if (!spotRaw) {
       return NextResponse.json({ ok: false, error: "Missing spot_id" }, { status: 400 });
-    }
-    if (!isUuid(spot_id_raw)) {
-      // stop gamle "d6" / korte ids – de ødelægger hele modellen
-      return NextResponse.json(
-        { ok: false, error: "spot_id must be a UUID (places.id)" },
-        { status: 400 }
-      );
     }
 
     const species_id_in = asText(body?.species_id);
@@ -66,7 +61,10 @@ export async function POST(req: Request) {
     const supabase = await supabaseServer();
 
     // auth user
-    const { data: auth, error: authErr } = await supabase.auth.getUser();
+    const { data: auth, error: authErr } = await supabase
+      .auth
+      .getUser();
+
     if (authErr) {
       return NextResponse.json({ ok: false, error: authErr.message }, { status: 401 });
     }
@@ -75,21 +73,41 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "Not authenticated" }, { status: 401 });
     }
 
-    // ✅ verify place exists (så du ikke logger på et random uuid)
-    const { data: place, error: placeErr } = await supabase
-      .from("places")
-      .select("id")
-      .eq("id", spot_id_raw)
-      .maybeSingle();
+    // ✅ Resolve place
+    // UI bruger slug (spots_map.id = places.slug)
+    let place_id: string | null = null;
+    let place_slug: string | null = null;
 
-    if (placeErr) {
-      return NextResponse.json({ ok: false, error: placeErr.message }, { status: 500 });
-    }
-    if (!place?.id) {
-      return NextResponse.json(
-        { ok: false, error: "Unknown spot_id (place not found)" },
-        { status: 400 }
-      );
+    if (isUuid(spotRaw)) {
+      const { data: p, error: pErr } = await supabase
+        .from("places")
+        .select("id, slug")
+        .eq("id", spotRaw)
+        .maybeSingle();
+
+      if (pErr) return NextResponse.json({ ok: false, error: pErr.message }, { status: 500 });
+      if (!p?.id || !p?.slug) {
+        return NextResponse.json({ ok: false, error: "Unknown spot_id (place not found)" }, { status: 400 });
+      }
+      place_id = p.id;
+      place_slug = p.slug;
+    } else {
+      if (!isValidPlaceSlug(spotRaw)) {
+        return NextResponse.json({ ok: false, error: "spot_id must be a valid place slug" }, { status: 400 });
+      }
+
+      const { data: p, error: pErr } = await supabase
+        .from("places")
+        .select("id, slug")
+        .eq("slug", spotRaw)
+        .maybeSingle();
+
+      if (pErr) return NextResponse.json({ ok: false, error: pErr.message }, { status: 500 });
+      if (!p?.id || !p?.slug) {
+        return NextResponse.json({ ok: false, error: "Unknown spot_id (place not found)" }, { status: 400 });
+      }
+      place_id = p.id;
+      place_slug = p.slug;
     }
 
     // resolve species_id
@@ -102,14 +120,9 @@ export async function POST(req: Request) {
         .eq("slug", species_slug_in)
         .maybeSingle();
 
-      if (spErr) {
-        return NextResponse.json({ ok: false, error: spErr.message }, { status: 500 });
-      }
+      if (spErr) return NextResponse.json({ ok: false, error: spErr.message }, { status: 500 });
       if (!sp?.id) {
-        return NextResponse.json(
-          { ok: false, error: `Unknown species_slug: ${species_slug_in}` },
-          { status: 400 }
-        );
+        return NextResponse.json({ ok: false, error: `Unknown species_slug: ${species_slug_in}` }, { status: 400 });
       }
       species_id = sp.id;
     }
@@ -138,12 +151,12 @@ export async function POST(req: Request) {
     // photo_urls er NOT NULL → default []
     const photo_urls = Array.isArray(body?.photo_urls) ? body.photo_urls : [];
 
-    // insert (spot_id = uuid-string)
+    // ✅ insert: finds.spot_id = place slug (match spots_map.id + counts + spot page)
     const { data, error } = await supabase
       .from("finds")
       .insert({
         user_id,
-        spot_id: spot_id_raw,
+        spot_id: place_slug,
         species_id,
         observed_at,
         notes,
@@ -157,6 +170,17 @@ export async function POST(req: Request) {
 
     if (error) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    }
+
+    // ✅ optional: hvis stedet ikke har en “best” species endnu, så giv det en (low risk MVP)
+    // (vi bruger place_id uuid til place_species)
+    if (place_id && species_id) {
+      await supabase.from("place_species").insert({
+        place_id,
+        species_id,
+        confidence: 60,
+        note: "",
+      });
     }
 
     return NextResponse.json({ ok: true, find: data });
