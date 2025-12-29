@@ -426,3 +426,7 @@
   }
 }
 
+@media (min-width: 1024px){
+  .hint{ display:none; }
+}
+
