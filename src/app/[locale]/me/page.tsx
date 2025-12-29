@@ -45,9 +45,10 @@ export default async function MePage({ params }: { params: { locale: string } })
               Du er ikke logget ind. Login kræves for at poste og logge fund.
             </p>
             <div className={styles.actions}>
-              <Link className={styles.primary} href="/login">
-                Login
-              </Link>
+             <Link className={styles.primary} href={`/${locale}/login`}>
+  Login
+</Link>
+
             </div>
           </>
         )}
