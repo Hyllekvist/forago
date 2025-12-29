@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import styles from "./SpotPeekCard.module.css";
 import type { Spot } from "../LeafletMap";
 
@@ -21,7 +23,6 @@ type Props = {
 
   onClose: () => void;
   onLog: () => void;
-  onLearn: () => void;
 
   isLogging?: boolean;
   logOk?: boolean;
@@ -30,29 +31,14 @@ type Props = {
 function emojiForSlug(slug?: string | null) {
   const s = (slug ?? "").toLowerCase();
   if (!s) return "📍";
-  if (
-    s.includes("svamp") ||
-    s.includes("mush") ||
-    s.includes("chanter") ||
-    s.includes("kantarel")
-  )
-    return "🍄";
-  if (
-    s.includes("bær") ||
-    s.includes("berry") ||
-    s.includes("blåb") ||
-    s.includes("hindb")
-  )
-    return "🫐";
+  if (s.includes("svamp") || s.includes("mush") || s.includes("chanter") || s.includes("kantarel")) return "🍄";
+  if (s.includes("bær") || s.includes("berry") || s.includes("blåb") || s.includes("hindb")) return "🫐";
   if (s.includes("urt") || s.includes("herb")) return "🌿";
   if (s.includes("nød") || s.includes("nut")) return "🌰";
   return "📍";
 }
 
-function haversineKm(
-  a: { lat: number; lng: number },
-  b: { lat: number; lng: number }
-) {
+function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
   const dLng = ((b.lng - a.lng) * Math.PI) / 180;
@@ -60,17 +46,11 @@ function haversineKm(
   const s2 = Math.sin(dLng / 2);
   const q =
     s1 * s1 +
-    Math.cos((a.lat * Math.PI) / 180) *
-      Math.cos((b.lat * Math.PI) / 180) *
-      s2 *
-      s2;
+    Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * s2 * s2;
   return 2 * R * Math.asin(Math.sqrt(q));
 }
 
-function formatDistance(
-  userPos: { lat: number; lng: number } | null,
-  spot: Spot
-) {
+function formatDistance(userPos: { lat: number; lng: number } | null, spot: Spot) {
   if (!userPos) return "—";
   const km = haversineKm(userPos, { lat: spot.lat, lng: spot.lng });
   if (km < 1) return `${Math.round(km * 1000)} m`;
@@ -104,15 +84,10 @@ function computeStability(counts?: Counts | null) {
   const last30 = counts.last30 ?? 0;
   const qtr = counts.qtr ?? 0;
 
-  if (total >= 10 && last30 >= 3)
-    return { key: "stable" as const, label: "Stabil", hint: "aktiv spot" };
+  if (total >= 10 && last30 >= 3) return { key: "stable" as const, label: "Stabil", hint: "aktiv spot" };
 
   if (total >= 3 || qtr >= 2 || last30 >= 2)
-    return {
-      key: "returning" as const,
-      label: "Tilbagevendende",
-      hint: "dukker op igen",
-    };
+    return { key: "returning" as const, label: "Tilbagevendende", hint: "dukker op igen" };
 
   return { key: "sporadic" as const, label: "Sporadisk", hint: "få fund" };
 }
@@ -122,20 +97,12 @@ function isIOS() {
   return /iPad|iPhone|iPod/.test(navigator.userAgent);
 }
 
-export function SpotPeekCard({
-  spot,
-  mode,
-  userPos,
-  counts,
-  onClose,
-  onLog,
-  onLearn,
-  isLogging,
-  logOk,
-}: Props) {
+export function SpotPeekCard({ spot, mode, userPos, counts, onClose, onLog, isLogging, logOk }: Props) {
+  const params = useParams<{ locale?: string }>();
+  const locale = (params?.locale as string) || "dk";
+
   const emoji = emojiForSlug(spot.species_slug);
-  const label =
-    mode === "forage" ? "SPOT" : spot.species_slug ? "SPOT" : "LOKATION";
+  const label = mode === "forage" ? "SPOT" : spot.species_slug ? "SPOT" : "LOKATION";
 
   const distance = useMemo(
     () => formatDistance(userPos, spot),
@@ -160,16 +127,13 @@ export function SpotPeekCard({
     return `${counts.total} fund · ${counts.qtr} i kvartalet · ${last30} sidste 30d`;
   }, [counts]);
 
+  const learnHref = `/${encodeURIComponent(locale)}/spot/${encodeURIComponent(String(spot.id))}`;
+
   return (
     <section className={styles.card} role="dialog" aria-label="Selected spot">
       <div className={styles.bg} aria-hidden />
 
-      <button
-        className={styles.close}
-        onClick={onClose}
-        aria-label="Close"
-        type="button"
-      >
+      <button className={styles.close} onClick={onClose} aria-label="Close" type="button">
         <span aria-hidden>✕</span>
       </button>
 
@@ -196,9 +160,7 @@ export function SpotPeekCard({
           <h3 className={styles.title}>{spot.title ?? "Ukendt spot"}</h3>
 
           <div className={styles.pills}>
-            <span className={styles.pill}>
-              {spot.species_slug ? `#${spot.species_slug}` : "#unclassified"}
-            </span>
+            <span className={styles.pill}>{spot.species_slug ? `#${spot.species_slug}` : "#unclassified"}</span>
 
             <span
               className={`${styles.pill} ${styles.pillStatus} ${
@@ -212,14 +174,10 @@ export function SpotPeekCard({
               }`}
               title={stability.hint}
             >
-              {stability.key === "returning"
-                ? "↺ Tilbagevendende"
-                : stability.label}
+              {stability.key === "returning" ? "↺ Tilbagevendende" : stability.label}
             </span>
 
-            <span className={styles.pillAccent}>
-              {mode === "forage" ? "Peak" : "I nærheden"}
-            </span>
+            <span className={styles.pillAccent}>{mode === "forage" ? "Peak" : "I nærheden"}</span>
           </div>
 
           <div className={styles.social}>{socialLine}</div>
@@ -227,35 +185,24 @@ export function SpotPeekCard({
       </header>
 
       <div className={styles.actions}>
-        <a
-          className={styles.primary}
-          href={mapsHref}
-          target="_blank"
-          rel="noreferrer"
-        >
+        <a className={styles.primary} href={mapsHref} target="_blank" rel="noreferrer">
           <span className={styles.primaryIcon} aria-hidden>
             ➜
           </span>
           Navigér
         </a>
 
-        <button
-          className={styles.secondary}
-          onClick={onLog}
-          type="button"
-          disabled={!!isLogging}
-        >
+        <button className={styles.secondary} onClick={onLog} type="button" disabled={!!isLogging}>
           {logOk ? "✅ Logget" : isLogging ? "Logger…" : "Log fund"}
         </button>
 
-        <button className={styles.ghost} onClick={onLearn} type="button">
+        {/* ✅ Lær mere → spot-siden */}
+        <Link className={styles.ghost} href={learnHref}>
           Lær mere
-        </button>
+        </Link>
       </div>
 
-      <div className={styles.hint}>
-        Tip: Tryk på flere pins for at browse. Zoom ind for flere detaljer.
-      </div>
+      <div className={styles.hint}>Tip: Tryk på flere pins for at browse. Zoom ind for flere detaljer.</div>
     </section>
   );
 }
