@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
+import SpotLogCTA from "./SpotLogCTA";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -20,11 +21,7 @@ function fmtDate(iso?: string | null) {
   if (!iso) return "—";
   const t = Date.parse(iso);
   if (Number.isNaN(t)) return "—";
-  return new Date(t).toLocaleDateString("da-DK", {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-  });
+  return new Date(t).toLocaleDateString("da-DK", { year: "numeric", month: "short", day: "2-digit" });
 }
 
 export default async function SpotPage({
@@ -33,14 +30,13 @@ export default async function SpotPage({
   params: { locale: string; id: string };
 }) {
   const loc = params?.locale;
-  const spotId = params?.id; // ✅ IMPORTANT: [id] → params.id
+  const spotId = params?.id;
 
   if (!loc || !isLocale(loc)) return notFound();
   if (!spotId || !isUuid(spotId)) return notFound();
 
   const supabase = await supabaseServer();
 
-  // Spot “master” (VIEW)
   const { data: spot, error: spotErr } = await supabase
     .from("spots_map")
     .select("id, lat, lng, title, species_slug, created_at")
@@ -49,27 +45,16 @@ export default async function SpotPage({
 
   if (spotErr || !spot) return notFound();
 
-  // counts (RPC)
-  const { data: countsData } = await supabase
-    .rpc("spot_counts", { p_spot_id: spotId })
-    .maybeSingle();
-
+  const { data: countsData } = await supabase.rpc("spot_counts", { p_spot_id: spotId }).maybeSingle();
   const counts = countsData as
-    | {
-        total?: number;
-        qtr?: number;
-        last30?: number;
-        first_seen?: string | null;
-        last_seen?: string | null;
-      }
+    | { total?: number; qtr?: number; last30?: number; first_seen?: string | null; last_seen?: string | null }
     | null;
 
-  // latest finds
+  const { data: top } = await supabase.rpc("spot_top_species", { p_spot_id: spotId, p_limit: 5 });
+
   const { data: finds } = await supabase
     .from("finds")
-    .select(
-      "id, observed_at, created_at, visibility, species:species_id(slug, primary_group, scientific_name)"
-    )
+    .select("id, observed_at, created_at, visibility, species:species_id(slug, primary_group, scientific_name)")
     .eq("spot_id", spotId)
     .eq("visibility", "public_aggregate")
     .order("created_at", { ascending: false })
@@ -82,6 +67,9 @@ export default async function SpotPage({
           ← Tilbage til kort
         </Link>
       </div>
+
+      {/* ✅ Log CTA */}
+      <SpotLogCTA locale={loc} spotId={spotId} defaultSpeciesSlug={spot.species_slug ?? null} />
 
       <header
         style={{
@@ -104,9 +92,7 @@ export default async function SpotPage({
         </h1>
 
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", fontSize: 13, opacity: 0.9 }}>
-          <span>
-            📍 {Number(spot.lat).toFixed(5)}, {Number(spot.lng).toFixed(5)}
-          </span>
+          <span>📍 {Number(spot.lat).toFixed(5)}, {Number(spot.lng).toFixed(5)}</span>
           <span>·</span>
           <span>Oprettet {fmtDate(spot.created_at)}</span>
           {counts?.last_seen ? (
@@ -130,6 +116,56 @@ export default async function SpotPage({
         </div>
       </header>
 
+      {/* ✅ Top arter */}
+      <section
+        style={{
+          border: "1px solid var(--glassLine)",
+          background: "var(--glassBg)",
+          borderRadius: 16,
+          padding: 14,
+          boxShadow: "var(--shadow-1)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+          marginBottom: 12,
+        }}
+      >
+        <div style={{ fontWeight: 900, marginBottom: 10 }}>Top arter her</div>
+
+        {!Array.isArray(top) || top.length === 0 ? (
+          <div style={{ opacity: 0.8, fontSize: 13 }}>Ingen data endnu (log et fund ovenfor).</div>
+        ) : (
+          <div style={{ display: "grid", gap: 10 }}>
+            {top.map((r: any) => (
+              <div
+                key={r.species_id}
+                style={{
+                  border: "1px solid var(--glassLine)",
+                  borderRadius: 14,
+                  padding: 12,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 12,
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 900, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    #{r.slug}
+                  </div>
+                  <div style={{ fontSize: 12, opacity: 0.75 }}>
+                    {r.primary_group}{r.scientific_name ? ` · ${r.scientific_name}` : ""} · senest {fmtDate(r.last_seen)}
+                  </div>
+                </div>
+
+                <div style={{ alignSelf: "center", fontWeight: 950, fontSize: 13, whiteSpace: "nowrap" }}>
+                  {Number(r.total ?? 0)} fund
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Seneste fund */}
       <section
         style={{
           border: "1px solid var(--glassLine)",
