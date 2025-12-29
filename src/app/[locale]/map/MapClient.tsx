@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import styles from "./MapClient.module.css";
 
 import LeafletMap, { type Spot, type LeafletLikeMap } from "./LeafletMap";
@@ -42,13 +42,13 @@ function isDesktop() {
 }
 
 export default function MapClient({ spots }: Props) {
-  const router = useRouter();
   const pathname = usePathname();
   const search = useSearchParams();
 
   const deepLinkHandledRef = useRef(false);
   const didAutoFocusRef = useRef(false);
 
+  // behold hvis du bruger locale andre steder (ikke nødvendig for SpotPeekCard længere)
   const locale = useMemo(() => (pathname?.split("/")[1] || "dk") as string, [pathname]);
 
   const [mode, setMode] = useState<Mode>("daily");
@@ -195,13 +195,14 @@ export default function MapClient({ spots }: Props) {
     [mapApi, spotsById]
   );
 
-  // ✅ Deep-links (spot=... / find=...) – behold din gamle logik hvis du bruger det
+  // Deep-links: ?spot=...
   useEffect(() => {
     if (deepLinkHandledRef.current) return;
     if (!mapApi) return;
     if (!spotsById.size) return;
 
     const spot = search.get("spot");
+
     const trySelectSpot = (spotId: string | null | undefined) => {
       if (!spotId) return false;
       if (!spotsById.has(String(spotId))) return false;
@@ -248,7 +249,7 @@ export default function MapClient({ spots }: Props) {
     return () => ac.abort();
   }, [selectedSpot?.id]);
 
-  // quick log (kun meningsfuld i Sankemode)
+  // quick log
   const onQuickLog = useCallback(
     async (spot: Spot) => {
       if (isLogging) return;
@@ -284,6 +285,13 @@ export default function MapClient({ spots }: Props) {
             qtr: (prev[String(spot.id)]?.qtr ?? 0) + 1,
           },
         }));
+
+        // også opdater den åbne card-counts, så UI føles instant
+        setSpotCounts((prev) =>
+          prev
+            ? { ...prev, total: prev.total + 1, qtr: prev.qtr + 1, last30: prev.last30 + 1 }
+            : prev
+        );
 
         window.setTimeout(() => setLogOk(false), 1200);
       } catch (e: any) {
@@ -374,7 +382,6 @@ export default function MapClient({ spots }: Props) {
               logOk={logOk}
               onClose={() => setSelectedId(null)}
               onLog={() => void onQuickLog(selectedSpot)}
-              onLearn={() => router.push(`/${locale}/spot/${encodeURIComponent(String(selectedSpot.id))}`)}
             />
           ) : (
             <MapSheet
@@ -418,7 +425,6 @@ export default function MapClient({ spots }: Props) {
                   logOk={logOk}
                   onClose={() => setSelectedId(null)}
                   onLog={() => void onQuickLog(selectedSpot)}
-                  onLearn={() => router.push(`/${locale}/spot/${encodeURIComponent(String(selectedSpot.id))}`)}
                 />
               </div>
             ) : (
@@ -444,6 +450,9 @@ export default function MapClient({ spots }: Props) {
 
       {logError ? <div className={styles.toastError}>{logError}</div> : null}
       {isLogging ? <div className={styles.toastInfo}>Logger fund…</div> : null}
+
+      {/* keep locale var referenced if lint complains in your setup */}
+      {locale ? null : null}
     </div>
   );
 }
