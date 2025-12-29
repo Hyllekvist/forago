@@ -24,6 +24,56 @@ function fmtDate(iso?: string | null) {
   });
 }
 
+type Counts = {
+  total?: number;
+  qtr?: number;
+  last30?: number;
+  first_seen?: string | null;
+  last_seen?: string | null;
+};
+
+type SpeciesLite = {
+  slug?: string | null;
+  scientific_name?: string | null;
+};
+
+type FindRow = {
+  id: string;
+  observed_at?: string | null;
+  created_at?: string | null;
+  visibility?: string | null;
+  species?: SpeciesLite | null;
+};
+
+type TopSpeciesRow = {
+  slug: string;
+  scientific_name?: string | null;
+  count: number;
+};
+
+function computeTopSpeciesFromFinds(finds: FindRow[], limit = 8): TopSpeciesRow[] {
+  const map = new Map<string, { count: number; scientific_name?: string | null }>();
+
+  for (const f of finds) {
+    const slug = (f?.species?.slug ?? "").trim();
+    if (!slug) continue;
+    const prev = map.get(slug);
+    if (!prev) {
+      map.set(slug, { count: 1, scientific_name: f?.species?.scientific_name ?? null });
+    } else {
+      prev.count += 1;
+      if (!prev.scientific_name && f?.species?.scientific_name) {
+        prev.scientific_name = f.species.scientific_name;
+      }
+    }
+  }
+
+  return Array.from(map.entries())
+    .map(([slug, v]) => ({ slug, scientific_name: v.scientific_name ?? null, count: v.count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
+}
+
 export default async function SpotPage({
   params,
 }: {
@@ -51,26 +101,60 @@ export default async function SpotPage({
     .rpc("spot_counts", { p_spot_id: spotId })
     .maybeSingle();
 
-  const counts = countsData as
-    | {
-        total?: number;
-        qtr?: number;
-        last30?: number;
-        first_seen?: string | null;
-        last_seen?: string | null;
-      }
-    | null;
+  const counts = (countsData as Counts | null) ?? null;
 
   // 🔹 Seneste public finds
-  const { data: finds } = await supabase
+  const { data: findsRaw } = await supabase
     .from("finds")
     .select(
-      "id, observed_at, created_at, visibility, species:species_id(slug, primary_group, scientific_name)"
+      "id, observed_at, created_at, visibility, species:species_id(slug, scientific_name)"
     )
     .eq("spot_id", spotId)
     .eq("visibility", "public_aggregate")
     .order("created_at", { ascending: false })
     .limit(30);
+
+  const finds: FindRow[] = (findsRaw as any[])?.map((r) => ({
+    id: String(r.id),
+    observed_at: r.observed_at ?? null,
+    created_at: r.created_at ?? null,
+    visibility: r.visibility ?? null,
+    species: r.species
+      ? {
+          slug: r.species.slug ?? null,
+          scientific_name: r.species.scientific_name ?? null,
+        }
+      : null,
+  })) ?? [];
+
+  // 🔹 Top species (prøv group-by; fallback til JS-beregning)
+  let topSpecies: TopSpeciesRow[] = [];
+  try {
+    const { data: topAgg, error: topErr } = await supabase
+      .from("finds")
+      .select("species:species_id(slug, scientific_name), count:id.count()")
+      .eq("spot_id", spotId)
+      .eq("visibility", "public_aggregate")
+      // Supabase kan være følsom; group/order kan fejle afhængigt af config
+      .group("species.slug, species.scientific_name")
+      .order("count", { ascending: false })
+      .limit(8);
+
+    if (topErr || !topAgg) throw topErr ?? new Error("top species query failed");
+
+    topSpecies = (topAgg as any[])
+      .map((row) => ({
+        slug: String(row?.species?.slug ?? "").trim(),
+        scientific_name: row?.species?.scientific_name ?? null,
+        count: Number(row?.count ?? 0),
+      }))
+      .filter((x) => x.slug && x.count > 0)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8);
+  } catch {
+    // Fallback: udregn top arter ud fra de 30 seneste finds
+    topSpecies = computeTopSpeciesFromFinds(finds, 8);
+  }
 
   return (
     <main style={{ maxWidth: 920, margin: "0 auto", padding: "18px 14px 120px" }}>
@@ -103,7 +187,7 @@ export default async function SpotPage({
 
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", fontSize: 13, opacity: 0.9 }}>
           <span>
-            📍 {spot.lat.toFixed(5)}, {spot.lng.toFixed(5)}
+            📍 {Number(spot.lat).toFixed(5)}, {Number(spot.lng).toFixed(5)}
           </span>
           <span>·</span>
           <span>Oprettet {fmtDate(spot.created_at)}</span>
@@ -116,22 +200,81 @@ export default async function SpotPage({
         </div>
 
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 10, fontSize: 13 }}>
-          <span style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid var(--glassLine)" }}>
+          <span
+            style={{
+              padding: "6px 10px",
+              borderRadius: 999,
+              border: "1px solid var(--glassLine)",
+            }}
+          >
             {Number(counts?.total ?? 0)} fund total
           </span>
-          <span style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid var(--glassLine)" }}>
+          <span
+            style={{
+              padding: "6px 10px",
+              borderRadius: 999,
+              border: "1px solid var(--glassLine)",
+            }}
+          >
             {Number(counts?.qtr ?? 0)} fund (90d)
           </span>
-          <span style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid var(--glassLine)" }}>
+          <span
+            style={{
+              padding: "6px 10px",
+              borderRadius: 999,
+              border: "1px solid var(--glassLine)",
+            }}
+          >
             {Number(counts?.last30 ?? 0)} fund (30d)
           </span>
         </div>
+
+        {/* LOG CTA — lagt ind i headeren så den føles "primary" */}
+        <div style={{ marginTop: 12 }}>
+          <SpotLogCTA spotId={spotId} speciesSlug={spot.species_slug ?? null} />
+        </div>
       </header>
 
-      {/* LOG CTA */}
-      <div style={{ marginBottom: 12 }}>
-        <SpotLogCTA spotId={spotId} speciesSlug={spot.species_slug ?? null} />
-      </div>
+      {/* TOP SPECIES */}
+      <section
+        style={{
+          border: "1px solid var(--glassLine)",
+          background: "var(--glassBg)",
+          borderRadius: 16,
+          padding: 14,
+          boxShadow: "var(--shadow-1)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+          marginBottom: 12,
+        }}
+      >
+        <div style={{ fontWeight: 900, marginBottom: 10 }}>Top arter her</div>
+
+        {!topSpecies || topSpecies.length === 0 ? (
+          <div style={{ opacity: 0.8, fontSize: 13 }}>
+            Ingen offentlige arter endnu for dette spot.
+          </div>
+        ) : (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {topSpecies.map((row) => (
+              <span
+                key={row.slug}
+                style={{
+                  padding: "6px 10px",
+                  borderRadius: 999,
+                  border: "1px solid var(--glassLine)",
+                  fontSize: 13,
+                  fontWeight: 850,
+                  opacity: 0.95,
+                }}
+                title={row.scientific_name ?? ""}
+              >
+                #{row.slug} · {row.count}
+              </span>
+            ))}
+          </div>
+        )}
+      </section>
 
       {/* FINDS */}
       <section
@@ -153,9 +296,10 @@ export default async function SpotPage({
           </div>
         ) : (
           <div style={{ display: "grid", gap: 10 }}>
-            {finds.map((f: any) => {
-              const sp = f?.species;
-              const slug = sp?.slug ?? null;
+            {finds.map((f) => {
+              const slug = f?.species?.slug ?? null;
+              const sci = f?.species?.scientific_name ?? null;
+
               return (
                 <div
                   key={f.id}
@@ -169,16 +313,12 @@ export default async function SpotPage({
                   }}
                 >
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 850 }}>
-                      {slug ? `#${slug}` : "Ukendt art"}
-                    </div>
+                    <div style={{ fontWeight: 850 }}>{slug ? `#${slug}` : "Ukendt art"}</div>
                     <div style={{ fontSize: 12, opacity: 0.75 }}>
                       Observeret: {fmtDate(f.observed_at)} · Logget: {fmtDate(f.created_at)}
                     </div>
-                    {sp?.scientific_name ? (
-                      <div style={{ fontSize: 12, opacity: 0.7 }}>
-                        {sp.scientific_name}
-                      </div>
+                    {sci ? (
+                      <div style={{ fontSize: 12, opacity: 0.7 }}>{sci}</div>
                     ) : null}
                   </div>
 
