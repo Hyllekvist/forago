@@ -67,7 +67,10 @@ export default function MapClient({ spots }: Props) {
   const [logError, setLogError] = useState<string | null>(null);
   const [logOk, setLogOk] = useState(false);
 
+  // single selected spot counts (rich)
   const [spotCounts, setSpotCounts] = useState<SpotCounts | null>(null);
+
+  // batch counts for visible pins (light)
   const [countsMap, setCountsMap] = useState<Record<string, { total: number; qtr: number }>>({});
 
   // ✅ PROD empty-state: hvis spots er tomt (MapPage sætter [] i production)
@@ -281,6 +284,7 @@ export default function MapClient({ spots }: Props) {
 
         setLogOk(true);
 
+        // optimistic: bump batch counts
         setCountsMap((prev) => ({
           ...prev,
           [String(spot.id)]: {
@@ -289,7 +293,7 @@ export default function MapClient({ spots }: Props) {
           },
         }));
 
-        // instant UI på åbent card
+        // optimistic: bump selected counts if visible
         setSpotCounts((prev) =>
           prev
             ? { ...prev, total: prev.total + 1, qtr: prev.qtr + 1, last30: prev.last30 + 1 }
@@ -352,6 +356,24 @@ export default function MapClient({ spots }: Props) {
     ? `${visibleIds.length} relevante spots i view`
     : "Flyt kortet for at finde spots";
 
+  // ✅ counts til SpotPeekCard: brug rich counts hvis loaded, ellers batch-light counts
+  const countsForSelected = useMemo(() => {
+    if (!selectedSpot?.id) return null;
+
+    if (spotCounts) return spotCounts;
+
+    const lite = countsMap[String(selectedSpot.id)];
+    if (!lite) return null;
+
+    return {
+      total: Number(lite.total ?? 0),
+      qtr: Number(lite.qtr ?? 0),
+      last30: 0,
+      first_seen: null,
+      last_seen: null,
+    } satisfies SpotCounts;
+  }, [selectedSpot?.id, spotCounts, countsMap]);
+
   return (
     <div className={styles.page}>
       <MapTopbar mode={mode} onToggleMode={onToggleMode} />
@@ -386,18 +408,16 @@ export default function MapClient({ spots }: Props) {
               )}
             </div>
           ) : selectedSpot ? (
-        <SpotPeekCard
-  spot={selectedSpot}
-  mode={mode}
-  userPos={userPos}
-  counts={countsForSelected}
-  isLogging={isLogging}
-  logOk={logOk}
-  onClose={() => setSelectedId(null)}
-  onLog={() => void onQuickLog(selectedSpot)}
-/>
-
-
+            <SpotPeekCard
+              spot={selectedSpot}
+              mode={mode}
+              userPos={userPos}
+              counts={countsForSelected}
+              isLogging={isLogging}
+              logOk={logOk}
+              onClose={() => setSelectedId(null)}
+              onLog={() => void onQuickLog(selectedSpot)}
+            />
           ) : (
             <MapSheet
               mode={mode}
@@ -440,18 +460,16 @@ export default function MapClient({ spots }: Props) {
               </div>
             ) : selectedSpot ? (
               <div className={styles.peekWrap}>
-         <SpotPeekCard
-  spot={selectedSpot}
-  mode={mode}
-  userPos={userPos}
-  counts={countsForSelected}
-  isLogging={isLogging}
-  logOk={logOk}
-  onClose={() => setSelectedId(null)}
-  onLog={() => void onQuickLog(selectedSpot)}
-/>
-
-
+                <SpotPeekCard
+                  spot={selectedSpot}
+                  mode={mode}
+                  userPos={userPos}
+                  counts={countsForSelected}
+                  isLogging={isLogging}
+                  logOk={logOk}
+                  onClose={() => setSelectedId(null)}
+                  onLog={() => void onQuickLog(selectedSpot)}
+                />
               </div>
             ) : (
               <div className={styles.sheetWrap}>
