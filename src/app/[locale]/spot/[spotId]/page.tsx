@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation"; 
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
 import SpotLogCTA from "./SpotLogCTA";
@@ -32,17 +32,11 @@ type Counts = {
   last_seen?: string | null;
 };
 
-type SpeciesLite = {
-  slug?: string | null;
-  scientific_name?: string | null;
-};
-
 type FindRow = {
   id: string;
   observed_at?: string | null;
   created_at?: string | null;
-  visibility?: string | null;
-  species?: SpeciesLite | null;
+  species?: { slug?: string | null; scientific_name?: string | null } | null;
 };
 
 type TopSpeciesRow = {
@@ -106,55 +100,24 @@ export default async function SpotPage({
   // 🔹 Seneste public finds
   const { data: findsRaw } = await supabase
     .from("finds")
-    .select(
-      "id, observed_at, created_at, visibility, species:species_id(slug, scientific_name)"
-    )
+    .select("id, observed_at, created_at, species:species_id(slug, scientific_name)")
     .eq("spot_id", spotId)
     .eq("visibility", "public_aggregate")
     .order("created_at", { ascending: false })
     .limit(30);
 
-  const finds: FindRow[] = (findsRaw as any[])?.map((r) => ({
-    id: String(r.id),
-    observed_at: r.observed_at ?? null,
-    created_at: r.created_at ?? null,
-    visibility: r.visibility ?? null,
-    species: r.species
-      ? {
-          slug: r.species.slug ?? null,
-          scientific_name: r.species.scientific_name ?? null,
-        }
-      : null,
-  })) ?? [];
+  const finds: FindRow[] =
+    (findsRaw as any[])?.map((r) => ({
+      id: String(r.id),
+      observed_at: r.observed_at ?? null,
+      created_at: r.created_at ?? null,
+      species: r.species
+        ? { slug: r.species.slug ?? null, scientific_name: r.species.scientific_name ?? null }
+        : null,
+    })) ?? [];
 
-  // 🔹 Top species (prøv group-by; fallback til JS-beregning)
-  let topSpecies: TopSpeciesRow[] = [];
-  try {
-    const { data: topAgg, error: topErr } = await supabase
-      .from("finds")
-      .select("species:species_id(slug, scientific_name), count:id.count()")
-      .eq("spot_id", spotId)
-      .eq("visibility", "public_aggregate")
-      // Supabase kan være følsom; group/order kan fejle afhængigt af config
-      .group("species.slug, species.scientific_name")
-      .order("count", { ascending: false })
-      .limit(8);
-
-    if (topErr || !topAgg) throw topErr ?? new Error("top species query failed");
-
-    topSpecies = (topAgg as any[])
-      .map((row) => ({
-        slug: String(row?.species?.slug ?? "").trim(),
-        scientific_name: row?.species?.scientific_name ?? null,
-        count: Number(row?.count ?? 0),
-      }))
-      .filter((x) => x.slug && x.count > 0)
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 8);
-  } catch {
-    // Fallback: udregn top arter ud fra de 30 seneste finds
-    topSpecies = computeTopSpeciesFromFinds(finds, 8);
-  }
+  // 🔹 Top arter (MVP: beregnet fra de seneste 30 public finds)
+  const topSpecies = computeTopSpeciesFromFinds(finds, 8);
 
   return (
     <main style={{ maxWidth: 920, margin: "0 auto", padding: "18px 14px 120px" }}>
@@ -200,42 +163,24 @@ export default async function SpotPage({
         </div>
 
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 10, fontSize: 13 }}>
-          <span
-            style={{
-              padding: "6px 10px",
-              borderRadius: 999,
-              border: "1px solid var(--glassLine)",
-            }}
-          >
+          <span style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid var(--glassLine)" }}>
             {Number(counts?.total ?? 0)} fund total
           </span>
-          <span
-            style={{
-              padding: "6px 10px",
-              borderRadius: 999,
-              border: "1px solid var(--glassLine)",
-            }}
-          >
+          <span style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid var(--glassLine)" }}>
             {Number(counts?.qtr ?? 0)} fund (90d)
           </span>
-          <span
-            style={{
-              padding: "6px 10px",
-              borderRadius: 999,
-              border: "1px solid var(--glassLine)",
-            }}
-          >
+          <span style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid var(--glassLine)" }}>
             {Number(counts?.last30 ?? 0)} fund (30d)
           </span>
         </div>
 
-        {/* LOG CTA — lagt ind i headeren så den føles "primary" */}
+        {/* LOG CTA — primary */}
         <div style={{ marginTop: 12 }}>
           <SpotLogCTA spotId={spotId} speciesSlug={spot.species_slug ?? null} />
         </div>
       </header>
 
-      {/* TOP SPECIES */}
+      {/* TOP ARTER */}
       <section
         style={{
           border: "1px solid var(--glassLine)",
@@ -250,10 +195,8 @@ export default async function SpotPage({
       >
         <div style={{ fontWeight: 900, marginBottom: 10 }}>Top arter her</div>
 
-        {!topSpecies || topSpecies.length === 0 ? (
-          <div style={{ opacity: 0.8, fontSize: 13 }}>
-            Ingen offentlige arter endnu for dette spot.
-          </div>
+        {topSpecies.length === 0 ? (
+          <div style={{ opacity: 0.8, fontSize: 13 }}>Ingen offentlige arter endnu for dette spot.</div>
         ) : (
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {topSpecies.map((row) => (
@@ -291,9 +234,7 @@ export default async function SpotPage({
         <div style={{ fontWeight: 900, marginBottom: 10 }}>Seneste fund</div>
 
         {!finds || finds.length === 0 ? (
-          <div style={{ opacity: 0.8, fontSize: 13 }}>
-            Ingen offentlige fund endnu for dette spot.
-          </div>
+          <div style={{ opacity: 0.8, fontSize: 13 }}>Ingen offentlige fund endnu for dette spot.</div>
         ) : (
           <div style={{ display: "grid", gap: 10 }}>
             {finds.map((f) => {
@@ -317,9 +258,7 @@ export default async function SpotPage({
                     <div style={{ fontSize: 12, opacity: 0.75 }}>
                       Observeret: {fmtDate(f.observed_at)} · Logget: {fmtDate(f.created_at)}
                     </div>
-                    {sci ? (
-                      <div style={{ fontSize: 12, opacity: 0.7 }}>{sci}</div>
-                    ) : null}
+                    {sci ? <div style={{ fontSize: 12, opacity: 0.7 }}>{sci}</div> : null}
                   </div>
 
                   <Link
