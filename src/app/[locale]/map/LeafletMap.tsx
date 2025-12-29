@@ -5,7 +5,7 @@ import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import Supercluster from "supercluster";
-import type { Map as LeafletMapType, LeafletMouseEvent } from "leaflet";
+import type { Map as LeafletMapType } from "leaflet";
 
 import styles from "./MapPage.module.css";
 
@@ -33,7 +33,6 @@ function bboxFromLeaflet(map: LeafletMapType): [number, number, number, number] 
   return [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()];
 }
 
-/** Fix Leaflet default marker icons (robust: CDN) */
 function ensureLeafletIcons() {
   // @ts-expect-error private
   delete L.Icon.Default.prototype._getIconUrl;
@@ -95,21 +94,6 @@ function clusterIcon(count: number) {
   });
 }
 
-/** Captures click on map background (NOT marker clicks). */
-function MapClickLayer({
-  onMapClick,
-}: {
-  onMapClick?: (p: { lat: number; lng: number }) => void;
-}) {
-  useMapEvents({
-    click: (e: LeafletMouseEvent) => {
-      if (!onMapClick) return;
-      onMapClick({ lat: e.latlng.lat, lng: e.latlng.lng });
-    },
-  });
-  return null;
-}
-
 function ClusterLayer({
   points,
   selectedId,
@@ -117,6 +101,7 @@ function ClusterLayer({
   onSelectSpot,
   onVisibleChange,
   onPanningChange,
+  onMapClick,
 }: {
   points: Spot[];
   selectedId: string | null;
@@ -124,11 +109,17 @@ function ClusterLayer({
   onSelectSpot: (id: string) => void;
   onVisibleChange?: (visibleIds: string[]) => void;
   onPanningChange?: (isPanning: boolean) => void;
+  onMapClick?: (p: { lat: number; lng: number }) => void;
 }) {
   const [tick, setTick] = useState(0);
   const panningRef = useRef(false);
 
   const map = useMapEvents({
+    click: (e) => {
+      // kun “empty map click” – markers håndterer deres egen click
+      onMapClick?.({ lat: e.latlng.lat, lng: e.latlng.lng });
+    },
+
     movestart: () => {
       if (!panningRef.current) {
         panningRef.current = true;
@@ -186,34 +177,22 @@ function ClusterLayer({
     return sc;
   }, [points]);
 
-  // expose map api once
   useEffect(() => {
     onMapReady?.({
       zoomIn: () => map.zoomIn(),
       zoomOut: () => map.zoomOut(),
-
       flyTo: (lat, lng, zoom = 12) => {
-        map.flyTo([lat, lng], zoom, {
-          animate: true,
-          duration: 0.5,
-        });
+        map.flyTo([lat, lng], zoom, { animate: true, duration: 0.5 });
       },
-
       panBy: (x, y) => {
-        map.panBy([x, y], {
-          animate: true,
-          duration: 0.35,
-        });
+        map.panBy([x, y], { animate: true, duration: 0.35 });
       },
-
       getZoom: () => map.getZoom(),
-
       getBoundsBbox: () => bboxFromLeaflet(map),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // initial visible list once
   useEffect(() => {
     if (!onVisibleChange) return;
     const bbox = bboxFromLeaflet(map);
@@ -292,7 +271,7 @@ export default function LeafletMap({
   onMapReady?: (m: LeafletLikeMap) => void;
   onVisibleChange?: (visibleIds: string[]) => void;
   onPanningChange?: (isPanning: boolean) => void;
-  onMapClick?: (p: { lat: number; lng: number }) => void; // ✅ NEW
+  onMapClick?: (p: { lat: number; lng: number }) => void;
 }) {
   useEffect(() => {
     ensureLeafletIcons();
@@ -311,10 +290,6 @@ export default function LeafletMap({
     <div className={styles.mapWrap}>
       <MapContainer className={styles.map} center={center} zoom={6} zoomControl={false}>
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-
-        {/* ✅ click anywhere on map */}
-        <MapClickLayer onMapClick={onMapClick} />
-
         <ClusterLayer
           points={spots}
           selectedId={selectedId}
@@ -322,6 +297,7 @@ export default function LeafletMap({
           onSelectSpot={onSelect}
           onVisibleChange={onVisibleChange}
           onPanningChange={onPanningChange}
+          onMapClick={onMapClick}
         />
       </MapContainer>
     </div>
