@@ -139,3 +139,36 @@
   font-size: 12px;
   cursor: pointer;
 }
+
+/* -------- Desktop: make sheet a normal panel -------- */
+@media (min-width: 1024px){
+  .sheet{
+    border-radius: 16px;            /* ikke top-only */
+    border: var(--stroke) solid var(--glassLine);
+    border-bottom: var(--stroke) solid var(--glassLine);
+    background: var(--panel);       /* mindre “glass” i sidebar */
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .grab{ display:none; }            /* ingen handle på desktop */
+
+  .header{
+    padding: 12px 14px;
+    cursor: default;               /* ikke “sheet”-click vibe */
+  }
+
+  .body{
+    max-height: none;              /* panel skal kunne fylde */
+    height: calc(100vh - 220px);   /* tweak: topbar+insights+padding */
+    overflow: auto;
+  }
+
+  .list{
+    padding: 0 12px 12px;
+  }
+
+  .row{
+    border-radius: 14px;
+  }
+}
