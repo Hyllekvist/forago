@@ -1,4 +1,4 @@
-"use client"; 
+"use client";
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -42,12 +42,31 @@ function isDesktopNow() {
   return window.matchMedia?.("(min-width: 1024px)")?.matches ?? false;
 }
 
+function safeParseDrop(raw: string | null): { lat: number; lng: number; name?: string; speciesSlug?: string | null } | null {
+  if (!raw) return null;
+  try {
+    const obj = JSON.parse(raw);
+    const lat = Number(obj?.lat);
+    const lng = Number(obj?.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    return {
+      lat,
+      lng,
+      name: typeof obj?.name === "string" ? obj.name : undefined,
+      speciesSlug: typeof obj?.speciesSlug === "string" ? obj.speciesSlug : obj?.speciesSlug === null ? null : undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export default function MapClient({ spots }: Props) {
   const pathname = usePathname();
   const search = useSearchParams();
 
   const deepLinkHandledRef = useRef(false);
   const didAutoFocusRef = useRef(false);
+  const restoredDropRef = useRef(false);
 
   const locale = useMemo(() => {
     const raw = (pathname?.split("/")[1] || "dk") as string;
@@ -59,6 +78,9 @@ export default function MapClient({ spots }: Props) {
 
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [mapApi, setMapApi] = useState<LeafletLikeMap | null>(null);
+
+  // auth gate
+  const [isAuthed, setIsAuthed] = useState(false);
 
   // local spots (for instant create)
   const [spotsLocal, setSpotsLocal] = useState<Spot[]>(spots);
@@ -84,6 +106,25 @@ export default function MapClient({ spots }: Props) {
   const [dropErr, setDropErr] = useState<string | null>(null);
 
   const isEmptyProd = spotsLocal.length === 0;
+
+  // auth: /api/auth/me
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/auth/me", { cache: "no-store" });
+        const j = await res.json();
+        if (!alive) return;
+        setIsAuthed(!!j?.authed);
+      } catch {
+        if (!alive) return;
+        setIsAuthed(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   // geo
   useEffect(() => {
@@ -186,7 +227,6 @@ export default function MapClient({ spots }: Props) {
       setActiveInsight((prev) => (prev === k ? null : k));
       setSheetExpanded(true);
 
-      // mobile: close peek
       setSelectedId(null);
       setSpotCounts(null);
       setDrop(null);
@@ -204,8 +244,6 @@ export default function MapClient({ spots }: Props) {
       const sid = String(id);
       setSelectedId(sid);
 
-      // desktop: keep list visible, show details on right
-      // mobile: close sheet so peek becomes primary
       if (!isDesktopNow()) setSheetExpanded(false);
 
       setDrop(null);
@@ -232,6 +270,32 @@ export default function MapClient({ spots }: Props) {
       deepLinkHandledRef.current = true;
     }
   }, [search, mapApi, spotsById, onSelectSpot]);
+
+  // restore drop after login: ?drop=...
+  useEffect(() => {
+    if (restoredDropRef.current) return;
+    const raw = search.get("drop");
+    const parsed = safeParseDrop(raw);
+    if (!parsed) return;
+
+    restoredDropRef.current = true;
+
+    // user intention: if they come back with a drop, force forage mode
+    setMode("forage");
+    setActiveInsight(null);
+
+    setDrop({ lat: parsed.lat, lng: parsed.lng });
+    setDropErr(null);
+
+    setSelectedId(null);
+    setSpotCounts(null);
+    setSheetExpanded(false);
+
+    // optional: fly to it if map is ready
+    if (mapApi) {
+      mapApi.flyTo(parsed.lat, parsed.lng, Math.max(mapApi.getZoom(), 14));
+    }
+  }, [search, mapApi]);
 
   // selected counts
   useEffect(() => {
@@ -277,7 +341,7 @@ export default function MapClient({ spots }: Props) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            spot_id: String(spot.id), // slug
+            spot_id: String(spot.id),
             species_slug: spot.species_slug ?? null,
             observed_at: new Date().toISOString(),
             visibility: "public_aggregate",
@@ -408,7 +472,7 @@ export default function MapClient({ spots }: Props) {
     });
   }, [filteredSpots, countsMap, mode, selectedId]);
 
-  // click-to-drop (ONLY in forage to keep daily clean)
+  // click-to-drop (ONLY in forage)
   const onMapClick = useCallback(
     (p: { lat: number; lng: number }) => {
       if (mode !== "forage") return;
@@ -419,6 +483,18 @@ export default function MapClient({ spots }: Props) {
       setSheetExpanded(false);
     },
     [mode]
+  );
+
+  // login gate handler from DropSpotSheet
+  const onRequireAuth = useCallback(
+    (payload: { lat: number; lng: number; name: string; speciesSlug: string | null }) => {
+      // redirect back to current url, keep drop payload
+      const qs = new URLSearchParams();
+      qs.set("redirect", pathname + (search.toString() ? `?${search.toString()}` : ""));
+      qs.set("drop", JSON.stringify(payload));
+      window.location.href = `/${locale}/login?${qs.toString()}`;
+    },
+    [locale, pathname, search]
   );
 
   const onCreateAndLogFromDrop = useCallback(
@@ -434,17 +510,16 @@ export default function MapClient({ spots }: Props) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-  lat: drop.lat,
-  lng: drop.lng,
-  name,
-  country: "dk",
-  region: "",
-  habitat: "unknown",
-  description: "",
-  ...(speciesSlug ? { species_slug: speciesSlug } : {}),
-  confidence: 60,
-}),
-
+            lat: drop.lat,
+            lng: drop.lng,
+            name,
+            country: "dk",
+            region: "",
+            habitat: "unknown",
+            description: "",
+            ...(speciesSlug ? { species_slug: speciesSlug } : {}),
+            confidence: 60,
+          }),
         });
 
         const jPlace = await resPlace.json();
@@ -509,22 +584,18 @@ export default function MapClient({ spots }: Props) {
   );
 
   const mobileDockMode: "peek" | "sheet" | "none" = useMemo(() => {
-    if (drop) return "none";           // drop sheet is its own overlay
+    if (drop) return "none";
     if (selectedSpot) return "peek";
     return "sheet";
   }, [drop, selectedSpot]);
 
   return (
-    <div
-      className={styles.page}
-      data-sheet-open={sheetExpanded ? "1" : "0"}
-      data-mobile-dock={mobileDockMode}
-    >
+    <div className={styles.page} data-sheet-open={sheetExpanded ? "1" : "0"} data-mobile-dock={mobileDockMode}>
       <MapTopbar mode={mode} onToggleMode={onToggleMode} />
       <InsightStrip mode={mode} active={activeInsight} insights={insights} onPick={onPickInsight} />
 
       <div className={styles.desktopBody}>
-        {/* LEFT: list (desktop only) */}
+        {/* LEFT */}
         <aside className={styles.desktopLeft}>
           <div className={styles.panelInner}>
             {isEmptyProd ? (
@@ -553,7 +624,7 @@ export default function MapClient({ spots }: Props) {
           </div>
         </aside>
 
-        {/* CENTER: map */}
+        {/* MAP */}
         <div className={styles.mapShell}>
           <LeafletMap
             spots={spotsForMap}
@@ -610,7 +681,7 @@ export default function MapClient({ spots }: Props) {
             ) : null}
           </div>
 
-          {/* DROP overlay (desktop + mobile) */}
+          {/* DROP overlay */}
           {drop ? (
             <DropSpotSheet
               locale={locale}
@@ -618,13 +689,15 @@ export default function MapClient({ spots }: Props) {
               lng={drop.lng}
               isBusy={dropBusy}
               error={dropErr}
+              isAuthed={isAuthed}
+              onRequireAuth={onRequireAuth}
               onClose={() => setDrop(null)}
               onCreateAndLog={onCreateAndLogFromDrop}
             />
           ) : null}
         </div>
 
-        {/* RIGHT: details (desktop only) */}
+        {/* RIGHT */}
         <aside className={styles.desktopRight}>
           <div className={styles.panelInner}>
             {drop ? (
