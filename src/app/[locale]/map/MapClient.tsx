@@ -422,7 +422,7 @@ export default function MapClient({ spots }: Props) {
   );
 
   const onCreateAndLogFromDrop = useCallback(
-    async ({ name, speciesSlug }: { name: string; speciesSlug: string; }) => {
+    async ({ name, speciesSlug }: { name: string; speciesSlug: string | null }) => {
       if (!drop) return;
       if (dropBusy) return;
 
@@ -434,16 +434,17 @@ export default function MapClient({ spots }: Props) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            lat: drop.lat,
-            lng: drop.lng,
-            name,
-            country: "dk",
-            region: "",
-            habitat: "unknown",
-            description: "",
-            species_slug: speciesSlug,
-            confidence: 60,
-          }),
+  lat: drop.lat,
+  lng: drop.lng,
+  name,
+  country: "dk",
+  region: "",
+  habitat: "unknown",
+  description: "",
+  ...(speciesSlug ? { species_slug: speciesSlug } : {}),
+  confidence: 60,
+}),
+
         });
 
         const jPlace = await resPlace.json();
@@ -458,7 +459,7 @@ export default function MapClient({ spots }: Props) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             spot_id: place.slug,
-            species_slug: speciesSlug,
+            species_slug: speciesSlug ?? null,
             observed_at: new Date().toISOString(),
             visibility: "public_aggregate",
             country: "DK",
