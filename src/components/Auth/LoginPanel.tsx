@@ -1,31 +1,49 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import styles from "./LoginPanel.module.css";
 import { createClient } from "@/lib/supabase/client";
 
+function safeLocalReturnTo(v: string | null) {
+  if (!v) return null;
+  if (!v.startsWith("/")) return null;
+  if (v.startsWith("//")) return null;
+  return v;
+}
+
 export function LoginPanel() {
-const supabase = useMemo(() => createClient(), []);
+  const supabase = useMemo(() => createClient(), []);
+  const sp = useSearchParams();
+
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   async function onMagicLink(e: React.FormEvent) {
     e.preventDefault();
+    if (busy) return;
+
     setError(null);
+    setBusy(true);
+
+    const returnTo = safeLocalReturnTo(sp?.get("returnTo")) || safeLocalReturnTo(sp?.get("next"));
 
     const redirectTo =
       typeof window !== "undefined"
-        ? `${window.location.origin}/callback`
+        ? `${window.location.origin}/callback${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`
         : undefined;
 
     const { error } = await supabase.auth.signInWithOtp({
-      email,
+      email: email.trim(),
       options: { emailRedirectTo: redirectTo },
     });
 
     if (error) setError(error.message);
     else setSent(true);
+
+    setBusy(false);
   }
 
   return (
@@ -54,8 +72,8 @@ const supabase = useMemo(() => createClient(), []);
 
             {error && <div className={styles.err}>{error}</div>}
 
-            <button className={styles.btn} type="submit">
-              Send link
+            <button className={styles.btn} type="submit" disabled={busy}>
+              {busy ? "Sending…" : "Send link"}
             </button>
           </form>
         )}
