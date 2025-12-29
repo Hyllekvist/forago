@@ -1,0 +1,88 @@
+.sheet{
+  position: absolute;
+  left: 12px;
+  right: 12px;
+
+  /* ✅ aldrig under bottom nav */
+  bottom: calc(var(--bottom-nav-h, 92px) + 14px + env(safe-area-inset-bottom));
+
+  z-index: 950;
+  border-radius: 18px;
+  border: 1px solid var(--glassLine);
+  background: var(--glassBg);
+  box-shadow: var(--shadow-1);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  padding: 12px;
+}
+
+@media (min-width: 1024px){
+  /* desktop: giv mere luft, ikke ovenpå nav */
+  .sheet{
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    max-width: 520px;
+  }
+}
+
+.head{
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.title{ font-weight: 950; }
+.sub{ font-size: 12px; opacity: 0.8; margin-top: 2px; }
+
+.close{
+  border-radius: 12px;
+  border: 1px solid var(--glassLine);
+  background: transparent;
+  padding: 8px 10px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.form{
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.input{
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid var(--glassLine);
+  background: rgba(255,255,255,0.03);
+  padding: 10px 12px;
+  outline: none;
+}
+
+.primary{
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(16,185,129,0.92);
+  color: rgba(255,255,255,0.96);
+  padding: 11px 12px;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.primary[disabled]{
+  opacity: .65;
+  cursor: default;
+}
+
+.note{
+  font-size: 12px;
+  opacity: 0.65;
+  padding: 6px 2px;
+}
+
+.error{
+  font-size: 12px;
+  opacity: 0.9;
+  padding: 6px 2px;
+}
