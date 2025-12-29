@@ -10,7 +10,7 @@ import type { Map as LeafletMapType } from "leaflet";
 import styles from "./MapPage.module.css";
 
 export type Spot = {
-  id: string; // ✅ spots_map.id = places.slug
+  id: string;
   lat: number;
   lng: number;
   title?: string | null;
@@ -33,11 +33,9 @@ function bboxFromLeaflet(map: LeafletMapType): [number, number, number, number] 
   return [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()];
 }
 
-/** Fix Leaflet default marker icons (robust: CDN, ingen import.meta.url) */
 function ensureLeafletIcons() {
   // @ts-expect-error private
   delete L.Icon.Default.prototype._getIconUrl;
-
   L.Icon.Default.mergeOptions({
     iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
     iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -115,13 +113,6 @@ function ClusterLayer({
   const [tick, setTick] = useState(0);
   const panningRef = useRef(false);
 
-  // 🔒 Forhindr at map-click trigger når man klikker på marker/cluster
-  const suppressMapClickUntilRef = useRef<number>(0);
-  const suppressMapClick = () => {
-    suppressMapClickUntilRef.current = Date.now() + 450;
-  };
-  const canMapClick = () => Date.now() > suppressMapClickUntilRef.current;
-
   const map = useMapEvents({
     movestart: () => {
       if (!panningRef.current) {
@@ -129,48 +120,40 @@ function ClusterLayer({
         onPanningChange?.(true);
       }
     },
-
     moveend: () => {
       if (panningRef.current) {
         panningRef.current = false;
         onPanningChange?.(false);
       }
-
       if (onVisibleChange) {
         const bbox = bboxFromLeaflet(map);
         const visible = points.filter((s) => inBbox(s, bbox)).map((s) => s.id);
         onVisibleChange(visible);
       }
-
       setTick((t) => t + 1);
     },
-
     zoomstart: () => {
       if (!panningRef.current) {
         panningRef.current = true;
         onPanningChange?.(true);
       }
     },
-
     zoomend: () => {
       if (panningRef.current) {
         panningRef.current = false;
         onPanningChange?.(false);
       }
-
       if (onVisibleChange) {
         const bbox = bboxFromLeaflet(map);
         const visible = points.filter((s) => inBbox(s, bbox)).map((s) => s.id);
         onVisibleChange(visible);
       }
-
       setTick((t) => t + 1);
     },
 
+    // ✅ click-to-drop (fires only if you click on map background)
     click: (e) => {
-      if (!onMapClick) return;
-      if (!canMapClick()) return;
-      onMapClick({ lat: e.latlng.lat, lng: e.latlng.lng });
+      onMapClick?.({ lat: e.latlng.lat, lng: e.latlng.lng });
     },
   });
 
@@ -190,25 +173,15 @@ function ClusterLayer({
     onMapReady?.({
       zoomIn: () => map.zoomIn(),
       zoomOut: () => map.zoomOut(),
-
       flyTo: (lat, lng, zoom = 12) => {
-        map.flyTo([lat, lng], zoom, {
-          animate: true,
-          duration: 0.5,
-        });
+        map.flyTo([lat, lng], zoom, { animate: true, duration: 0.5 });
       },
-
       panBy: (x, y) => {
-        map.panBy([x, y], {
-          animate: true,
-          duration: 0.35,
-        });
+        map.panBy([x, y], { animate: true, duration: 0.35 });
       },
-
       getZoom: () => map.getZoom(),
       getBoundsBbox: () => bboxFromLeaflet(map),
     });
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -235,7 +208,6 @@ function ClusterLayer({
         if (isCluster) {
           const count = c.properties.point_count as number;
           const clusterId = c.id as number;
-
           return (
             <Marker
               key={`c-${clusterId}`}
@@ -243,7 +215,6 @@ function ClusterLayer({
               icon={clusterIcon(count)}
               eventHandlers={{
                 click: () => {
-                  suppressMapClick();
                   const nextZoom = Math.min(index.getClusterExpansionZoom(clusterId), 17);
                   map.flyTo([lat, lng], nextZoom, { animate: true, duration: 0.5 });
                 },
@@ -262,7 +233,6 @@ function ClusterLayer({
             icon={spotIcon(selected)}
             eventHandlers={{
               click: () => {
-                suppressMapClick();
                 const targetZoom = Math.max(map.getZoom(), 14);
                 map.flyTo([lat, lng], targetZoom, { animate: true, duration: 0.5 });
                 onSelectSpot(spotId);
