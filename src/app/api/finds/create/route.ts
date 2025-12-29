@@ -173,15 +173,24 @@ export async function POST(req: Request) {
     }
 
     // ✅ optional: hvis stedet ikke har en “best” species endnu, så giv det en (low risk MVP)
-    // (vi bruger place_id uuid til place_species)
     if (place_id && species_id) {
-      await supabase.from("place_species").insert({
-        place_id,
-        species_id,
-        confidence: 60,
-        note: "",
-      });
-    }
+  const { data: existing, error: exErr } = await supabase
+    .from("place_species")
+    .select("place_id, species_id")
+    .eq("place_id", place_id)
+    .eq("species_id", species_id)
+    .maybeSingle();
+
+  if (!exErr && !existing) {
+    await supabase.from("place_species").insert({
+      place_id,
+      species_id,
+      confidence: 60,
+      note: "",
+    });
+  }
+}
+
 
     return NextResponse.json({ ok: true, find: data });
   } catch (e: any) {
