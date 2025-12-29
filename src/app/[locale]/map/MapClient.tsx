@@ -387,16 +387,16 @@ export default function MapClient({ spots }: Props) {
             </div>
           ) : selectedSpot ? (
             <SpotPeekCard
-              spot={selectedSpot}
-              mode={mode}
-              userPos={userPos}
-              counts={spotCounts}
-              isLogging={isLogging}
-              logOk={logOk}
-              onClose={() => setSelectedId(null)}
-              onLog={() => void onQuickLog(selectedSpot)}
-              onLearnHref={`/${locale}/spot/${encodeURIComponent(String(selectedSpot.id))}`}
-            />
+  spot={selectedSpot}
+  mode={mode}
+  userPos={userPos}
+  counts={spotCounts}
+  isLogging={isLogging}
+  logOk={logOk}
+  onClose={() => setSelectedId(null)}
+  onLog={() => void onQuickLog(selectedSpot)}
+/>
+
           ) : (
             <MapSheet
               mode={mode}
@@ -440,16 +440,16 @@ export default function MapClient({ spots }: Props) {
             ) : selectedSpot ? (
               <div className={styles.peekWrap}>
                 <SpotPeekCard
-                  spot={selectedSpot}
-                  mode={mode}
-                  userPos={userPos}
-                  counts={spotCounts}
-                  isLogging={isLogging}
-                  logOk={logOk}
-                  onClose={() => setSelectedId(null)}
-                  onLog={() => void onQuickLog(selectedSpot)}
-                  onLearnHref={`/${locale}/spot/${encodeURIComponent(String(selectedSpot.id))}`}
-                />
+  spot={selectedSpot}
+  mode={mode}
+  userPos={userPos}
+  counts={spotCounts}
+  isLogging={isLogging}
+  logOk={logOk}
+  onClose={() => setSelectedId(null)}
+  onLog={() => void onQuickLog(selectedSpot)}
+/>
+
               </div>
             ) : (
               <div className={styles.sheetWrap}>
