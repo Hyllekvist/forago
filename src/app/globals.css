@@ -1,3 +1,5 @@
+/* src/app/globals.css (eller src/styles/globals.css) */
+
 @import "../styles/tokens.css";
 @import "../styles/themes.css";
 @import "../styles/typography.css";
@@ -51,6 +53,7 @@ body {
 
 /* =========================
    FORAGO AMBIENT BACKGROUND
+   (Dark by default)
    ========================= */
 
 body::before {
@@ -59,6 +62,8 @@ body::before {
   inset: -24px;
   pointer-events: none;
   z-index: -1;
+
+  /* kræver at du har --g-core / --g-warm defineret (ellers skift til noget andet) */
   background: var(--g-core), var(--g-warm);
   opacity: 0.95;
   filter: saturate(1.1);
@@ -70,6 +75,7 @@ body::after {
   inset: 0;
   pointer-events: none;
   z-index: -1;
+
   background:
     radial-gradient(
       1200px 800px at 50% 0%,
@@ -84,8 +90,38 @@ body::after {
       transparent 1px,
       transparent 3px
     );
+
   mix-blend-mode: overlay;
   opacity: 0.22;
+}
+
+/* =========================
+   LIGHT THEME AMBIENT OVERRIDES
+   (Gør light “clean”, ikke muddy)
+   ========================= */
+
+:root[data-theme="light"] body::before {
+  opacity: 0.55;
+  filter: saturate(1.05);
+}
+
+:root[data-theme="light"] body::after {
+  background:
+    radial-gradient(
+      900px 600px at 50% -10%,
+      rgba(14, 163, 113, 0.10),
+      rgba(255, 255, 255, 0) 55%
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(15, 23, 42, 0.02),
+      rgba(15, 23, 42, 0.02) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+
+  mix-blend-mode: normal;
+  opacity: 0.35;
 }
 
 /* =========================
