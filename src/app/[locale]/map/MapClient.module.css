@@ -1,4 +1,4 @@
-.page { 
+.page {
   height: 100svh;
   background: var(--bg);
   color: var(--ink);
@@ -60,7 +60,12 @@
 }
 .emptyHint strong { color: var(--ink); }
 
-/* MOBILE dock */
+/* -----------------------
+   MOBILE dock
+   Fix: peek & sheet må ikke ligge samme bottom + clash
+   Vi styrer det med data-mobile-dock (peek|sheet|none)
+   ----------------------- */
+
 .mobileDock {
   position: absolute;
   inset: 0;
@@ -69,22 +74,36 @@
 }
 .mobileDock > * { pointer-events: auto; }
 
-.sheetWrap {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: calc(var(--bottom-nav-h, 92px) + 14px + env(safe-area-inset-bottom));
-  z-index: 41;
-}
-
+/* base positions */
+.sheetWrap,
 .peekWrap {
   position: absolute;
   left: 12px;
   right: 12px;
   bottom: calc(var(--bottom-nav-h, 92px) + 14px + env(safe-area-inset-bottom));
-  z-index: 42;
 }
 
+/* stacking */
+.sheetWrap { z-index: 41; }
+.peekWrap  { z-index: 42; }
+
+/* ✅ Only show the active dock, so no accidental overlap */
+.page[data-mobile-dock="sheet"] .peekWrap { display: none; }
+.page[data-mobile-dock="peek"] .sheetWrap { display: none; }
+.page[data-mobile-dock="none"] .sheetWrap,
+.page[data-mobile-dock="none"] .peekWrap { display: none; }
+
+/* ✅ When sheet is expanded, lift it a bit and give more air */
+.page[data-sheet-open="1"] .sheetWrap {
+  bottom: calc(var(--bottom-nav-h, 92px) + 10px + env(safe-area-inset-bottom));
+}
+
+/* ✅ On mobile, keep peek slightly higher than sheet would be (feels less cramped) */
+.page[data-mobile-dock="peek"] .peekWrap {
+  bottom: calc(var(--bottom-nav-h, 92px) + 18px + env(safe-area-inset-bottom));
+}
+
+/* small screens */
 @media (max-width: 420px) {
   .sheetWrap,
   .peekWrap {
@@ -93,7 +112,11 @@
   }
 }
 
-/* Desktop: 3-column real app layout */
+/* -----------------------
+   DESKTOP: 3-column “real app”
+   Fix: panelInner må ikke blive weird, og map skal være clipped
+   ----------------------- */
+
 @media (min-width: 1024px) {
   .desktopBody {
     grid-template-columns: 360px 1fr 420px;
@@ -102,11 +125,21 @@
   .desktopLeft {
     display: flex;
     border-right: 1px solid var(--glassLine);
+    min-width: 0;
   }
 
   .desktopRight {
     display: flex;
     border-left: 1px solid var(--glassLine);
+    min-width: 0;
+  }
+
+  .panelInner {
+    padding: 14px;
+  }
+
+  .mapShell {
+    min-width: 0; /* ✅ stop grid overflow issues */
   }
 
   .mobileDock {
