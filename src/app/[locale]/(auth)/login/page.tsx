@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { LoginPanel } from "@/components/Auth/LoginPanel";
+import { LoginPanel } from "./LoginPanel";
 
 export const metadata = { title: "Login · Forago" };
 
