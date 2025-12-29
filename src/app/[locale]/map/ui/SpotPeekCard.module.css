@@ -415,3 +415,14 @@
   border-top-color: rgba(15,23,42,0.08);
   color: rgba(2,6,23,0.55);
 }
+
+@media (min-width: 1024px){
+  .card{
+    border-radius: 16px;
+    padding: 12px;
+  }
+  .hint{
+    display: none; /* tip-tekst føles mobil */
+  }
+}
+
