@@ -475,6 +475,21 @@ export default function MapClient({ spots }: Props) {
     });
   }, [filteredSpots, countsMap, mode, selectedId]);
 
+  // login gate handler from DropSpotSheet
+  const onRequireAuth = useCallback(
+  (payload: { lat: number; lng: number; name: string; speciesSlug: string | null }) => {
+    const returnTo = `${pathname}${search?.toString() ? `?${search.toString()}` : ""}`;
+
+    const qs = new URLSearchParams();
+    qs.set("returnTo", returnTo);
+    qs.set("drop", JSON.stringify(payload));
+
+    window.location.href = `/${locale}/login?${qs.toString()}`;
+  },
+  [locale, pathname, search]
+);
+
+  
   // click-to-drop (ONLY in forage)
   const onMapClick = useCallback(
   (p: { lat: number; lng: number }) => {
@@ -493,20 +508,6 @@ export default function MapClient({ spots }: Props) {
   [mode, isAuthed, onRequireAuth]
 );
 
-
-  // login gate handler from DropSpotSheet
-  const onRequireAuth = useCallback(
-  (payload: { lat: number; lng: number; name: string; speciesSlug: string | null }) => {
-    const returnTo = `${pathname}${search?.toString() ? `?${search.toString()}` : ""}`;
-
-    const qs = new URLSearchParams();
-    qs.set("returnTo", returnTo);
-    qs.set("drop", JSON.stringify(payload));
-
-    window.location.href = `/${locale}/login?${qs.toString()}`;
-  },
-  [locale, pathname, search]
-);
 
 
   const onCreateAndLogFromDrop = useCallback(
