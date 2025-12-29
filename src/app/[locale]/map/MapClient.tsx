@@ -1,4 +1,4 @@
-"use client"; 
+"use client";
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -48,7 +48,6 @@ export default function MapClient({ spots }: Props) {
   const deepLinkHandledRef = useRef(false);
   const didAutoFocusRef = useRef(false);
 
-  // behold hvis du bruger locale andre steder (ikke nødvendig for SpotPeekCard længere)
   const locale = useMemo(() => (pathname?.split("/")[1] || "dk") as string, [pathname]);
 
   const [mode, setMode] = useState<Mode>("daily");
@@ -70,6 +69,9 @@ export default function MapClient({ spots }: Props) {
 
   const [spotCounts, setSpotCounts] = useState<SpotCounts | null>(null);
   const [countsMap, setCountsMap] = useState<Record<string, { total: number; qtr: number }>>({});
+
+  // ✅ PROD empty-state: hvis spots er tomt (MapPage sætter [] i production)
+  const isEmptyProd = spots.length === 0;
 
   // geolocation
   useEffect(() => {
@@ -120,6 +122,7 @@ export default function MapClient({ spots }: Props) {
       ? spots.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2).length
       : 0;
 
+    // heuristik til UI — ikke “sandhed”
     const seasonNowCount = Math.min(total, Math.max(0, Math.round(total * 0.35)));
     const peakCount = Math.min(total, Math.max(0, Math.round(total * 0.12)));
 
@@ -141,7 +144,7 @@ export default function MapClient({ spots }: Props) {
         .map((x) => x.s);
     }
 
-    // Sankemode: hvis du har valgt en art, så filtrér til samme art
+    // Sankemode: hvis valgt art → vis samme art
     if (mode === "forage" && selectedSpot?.species_slug) {
       base = base.filter((s) => s.species_slug === selectedSpot.species_slug);
     }
@@ -286,7 +289,7 @@ export default function MapClient({ spots }: Props) {
           },
         }));
 
-        // også opdater den åbne card-counts, så UI føles instant
+        // instant UI på åbent card
         setSpotCounts((prev) =>
           prev
             ? { ...prev, total: prev.total + 1, qtr: prev.qtr + 1, last30: prev.last30 + 1 }
@@ -352,13 +355,23 @@ export default function MapClient({ spots }: Props) {
   return (
     <div className={styles.page}>
       <MapTopbar mode={mode} onToggleMode={onToggleMode} />
-
       <InsightStrip mode={mode} active={activeInsight} insights={insights} onPick={onPickInsight} />
 
       <div className={styles.desktopBody}>
         {/* DESKTOP PANEL */}
         <aside className={styles.desktopPanel}>
-          {mode === "forage" && sortedVisibleSpots.length === 0 ? (
+          {isEmptyProd ? (
+            <div className={styles.emptyHint}>
+              <p>
+                <strong>Ingen spots endnu.</strong>
+                <br />
+                Log det første fund for at starte kortet.
+              </p>
+              <p style={{ marginTop: 10, opacity: 0.9 }}>
+                Tip: Skift til <strong>Sankemode</strong> og log et fund.
+              </p>
+            </div>
+          ) : mode === "forage" && sortedVisibleSpots.length === 0 ? (
             <div className={styles.emptyHint}>
               {!userPos ? (
                 <p>
@@ -382,6 +395,7 @@ export default function MapClient({ spots }: Props) {
               logOk={logOk}
               onClose={() => setSelectedId(null)}
               onLog={() => void onQuickLog(selectedSpot)}
+              onLearnHref={`/${locale}/spot/${encodeURIComponent(String(selectedSpot.id))}`}
             />
           ) : (
             <MapSheet
@@ -412,9 +426,18 @@ export default function MapClient({ spots }: Props) {
             onPanningChange={setIsPanning}
           />
 
-          {/* MOBILE: peek + sheet */}
           <div className={styles.mobileDock}>
-            {selectedSpot ? (
+            {isEmptyProd ? (
+              <div className={styles.sheetWrap}>
+                <div className={styles.emptyHint}>
+                  <p>
+                    <strong>Ingen spots endnu.</strong>
+                    <br />
+                    Log det første fund for at starte kortet.
+                  </p>
+                </div>
+              </div>
+            ) : selectedSpot ? (
               <div className={styles.peekWrap}>
                 <SpotPeekCard
                   spot={selectedSpot}
@@ -425,6 +448,7 @@ export default function MapClient({ spots }: Props) {
                   logOk={logOk}
                   onClose={() => setSelectedId(null)}
                   onLog={() => void onQuickLog(selectedSpot)}
+                  onLearnHref={`/${locale}/spot/${encodeURIComponent(String(selectedSpot.id))}`}
                 />
               </div>
             ) : (
@@ -450,9 +474,6 @@ export default function MapClient({ spots }: Props) {
 
       {logError ? <div className={styles.toastError}>{logError}</div> : null}
       {isLogging ? <div className={styles.toastInfo}>Logger fund…</div> : null}
-
-      {/* keep locale var referenced if lint complains in your setup */}
-      {locale ? null : null}
     </div>
   );
 }
