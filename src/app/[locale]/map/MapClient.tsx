@@ -1,4 +1,4 @@
-"use client"; 
+"use client";
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -311,7 +311,7 @@ export default function MapClient({ spots }: Props) {
     [isLogging]
   );
 
-  // batch counts
+  // batch counts (stable merge: aldrig overskriv optimistiske højere tal)
   useEffect(() => {
     if (!debouncedVisibleIds.length) return;
     const ac = new AbortController();
@@ -324,7 +324,20 @@ export default function MapClient({ spots }: Props) {
         );
         const json = await res.json();
         if (!res.ok || !json?.ok || !json.map) return;
-        setCountsMap((prev) => ({ ...prev, ...json.map }));
+
+        const incoming = json.map as Record<string, { total: number; qtr: number }>;
+
+        setCountsMap((prev) => {
+          const next = { ...prev };
+          for (const [id, v] of Object.entries(incoming)) {
+            const p = next[id];
+            next[id] = {
+              total: Math.max(p?.total ?? 0, Number(v?.total ?? 0)),
+              qtr: Math.max(p?.qtr ?? 0, Number(v?.qtr ?? 0)),
+            };
+          }
+          return next;
+        });
       } catch {
         // ignore
       }
@@ -373,6 +386,29 @@ export default function MapClient({ spots }: Props) {
       last_seen: null,
     } satisfies SpotCounts;
   }, [selectedSpot?.id, spotCounts, countsMap]);
+
+  // ✅ Kort-polish: skjul spots uden public finds (kun når vi HAR batch counts)
+  const spotsForMap = useMemo(() => {
+    // Hvis vi ikke har batch-data endnu, må vi ikke filtrere (ellers "tomt kort")
+    const hasCounts = Object.keys(countsMap).length > 0;
+    if (!hasCounts) return filteredSpots;
+
+    const hasPublic = (id: string) => {
+      const c = countsMap[id];
+      const total = c?.total ?? 0;
+      const qtr = c?.qtr ?? 0;
+      return total > 0 || qtr > 0;
+    };
+
+    // I forage-mode filtrerer vi IKKE hårdt (ellers bliver det hurtigt for tomt)
+    if (mode === "forage") return filteredSpots;
+
+    return filteredSpots.filter((s) => {
+      const id = String(s.id);
+      if (selectedId && id === String(selectedId)) return true; // behold valgt pin altid
+      return hasPublic(id);
+    });
+  }, [filteredSpots, countsMap, mode, selectedId]);
 
   return (
     <div className={styles.page}>
@@ -438,7 +474,7 @@ export default function MapClient({ spots }: Props) {
         {/* MAP + MOBILE DOCK */}
         <div className={styles.mapShell}>
           <LeafletMap
-            spots={filteredSpots}
+            spots={spotsForMap}
             userPos={userPos}
             selectedId={selectedId}
             onSelect={onSelectSpot}
