@@ -6,12 +6,16 @@ type Props = {
   locale: "dk" | "en";
   lat: number;
   lng: number;
-
   isBusy?: boolean;
   error?: string | null;
 
-  isAuthed: boolean;                 // ✅
-  onRequireAuth: () => void;         // ✅
+  isAuthed: boolean;
+  onRequireAuth: (payload: {
+    lat: number;
+    lng: number;
+    name: string;
+    speciesSlug: string | null;
+  }) => void;
 
   onClose: () => void;
   onCreateAndLog: (args: { name: string; speciesSlug: string | null }) => void;
@@ -130,13 +134,19 @@ export function DropSpotSheet({
 
         <button
           disabled={!!isBusy}
-          onClick={() => {
-            if (!isAuthed) return onRequireAuth(); // ✅ go login
-            onCreateAndLog({
-              name: name.trim() || "Nyt spot",
-              speciesSlug: speciesSlug.trim() ? speciesSlug.trim().toLowerCase() : null,
-            });
-          }}
+         onClick={() => {
+  const payload = {
+    lat,
+    lng,
+    name: name.trim() || "Nyt spot",
+    speciesSlug: speciesSlug.trim() ? speciesSlug.trim().toLowerCase() : null,
+  };
+
+  if (!isAuthed) return onRequireAuth(payload);
+
+  onCreateAndLog({ name: payload.name, speciesSlug: payload.speciesSlug });
+}}
+
           type="button"
           style={{
             width: "100%",
