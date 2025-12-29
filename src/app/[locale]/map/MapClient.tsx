@@ -272,30 +272,33 @@ export default function MapClient({ spots }: Props) {
   }, [search, mapApi, spotsById, onSelectSpot]);
 
   // restore drop after login: ?drop=...
-  useEffect(() => {
-    if (restoredDropRef.current) return;
-    const raw = search.get("drop");
-    const parsed = safeParseDrop(raw);
-    if (!parsed) return;
+ useEffect(() => {
+  if (restoredDropRef.current) return;
+  const raw = search.get("drop");
+  const parsed = safeParseDrop(raw);
+  if (!parsed) return;
 
-    restoredDropRef.current = true;
+  restoredDropRef.current = true;
 
-    // user intention: if they come back with a drop, force forage mode
-    setMode("forage");
-    setActiveInsight(null);
+  setMode("forage");
+  setActiveInsight(null);
 
-    setDrop({ lat: parsed.lat, lng: parsed.lng });
-    setDropErr(null);
+  setDrop({ lat: parsed.lat, lng: parsed.lng });
+  setDropErr(null);
+  setSelectedId(null);
+  setSpotCounts(null);
+  setSheetExpanded(false);
 
-    setSelectedId(null);
-    setSpotCounts(null);
-    setSheetExpanded(false);
+  if (mapApi) {
+    mapApi.flyTo(parsed.lat, parsed.lng, Math.max(mapApi.getZoom(), 14));
+  }
 
-    // optional: fly to it if map is ready
-    if (mapApi) {
-      mapApi.flyTo(parsed.lat, parsed.lng, Math.max(mapApi.getZoom(), 14));
-    }
-  }, [search, mapApi]);
+  // ✅ ryd ?drop=... fra URL (så den ikke re-trigges)
+  const url = new URL(window.location.href);
+  url.searchParams.delete("drop");
+  window.history.replaceState({}, "", url.toString());
+}, [search, mapApi]);
+
 
   // selected counts
   useEffect(() => {
@@ -474,28 +477,37 @@ export default function MapClient({ spots }: Props) {
 
   // click-to-drop (ONLY in forage)
   const onMapClick = useCallback(
-    (p: { lat: number; lng: number }) => {
-      if (mode !== "forage") return;
-      setDrop(p);
-      setDropErr(null);
-      setSelectedId(null);
-      setSpotCounts(null);
-      setSheetExpanded(false);
-    },
-    [mode]
-  );
+  (p: { lat: number; lng: number }) => {
+    if (mode !== "forage") return;
+
+    if (!isAuthed) {
+      return onRequireAuth({ lat: p.lat, lng: p.lng, name: "Nyt spot", speciesSlug: null });
+    }
+
+    setDrop(p);
+    setDropErr(null);
+    setSelectedId(null);
+    setSpotCounts(null);
+    setSheetExpanded(false);
+  },
+  [mode, isAuthed, onRequireAuth]
+);
+
 
   // login gate handler from DropSpotSheet
   const onRequireAuth = useCallback(
-    (payload: { lat: number; lng: number; name: string; speciesSlug: string | null }) => {
-      // redirect back to current url, keep drop payload
-      const qs = new URLSearchParams();
-      qs.set("redirect", pathname + (search.toString() ? `?${search.toString()}` : ""));
-      qs.set("drop", JSON.stringify(payload));
-      window.location.href = `/${locale}/login?${qs.toString()}`;
-    },
-    [locale, pathname, search]
-  );
+  (payload: { lat: number; lng: number; name: string; speciesSlug: string | null }) => {
+    const returnTo = `${pathname}${search?.toString() ? `?${search.toString()}` : ""}`;
+
+    const qs = new URLSearchParams();
+    qs.set("returnTo", returnTo);
+    qs.set("drop", JSON.stringify(payload));
+
+    window.location.href = `/${locale}/login?${qs.toString()}`;
+  },
+  [locale, pathname, search]
+);
+
 
   const onCreateAndLogFromDrop = useCallback(
     async ({ name, speciesSlug }: { name: string; speciesSlug: string | null }) => {
