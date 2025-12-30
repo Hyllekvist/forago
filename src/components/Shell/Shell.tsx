@@ -1,4 +1,4 @@
-// src/components/Shell/Shell.tsx  
+// src/components/Shell/Shell.tsx
 "use client";
 
 import { useEffect } from "react";
@@ -29,12 +29,12 @@ export default function Shell({
       <div className={styles.bg} aria-hidden="true" />
       <div className={styles.noise} aria-hidden="true" />
 
-      {/* 👇 user sendes videre til headeren */}
       <TopNav locale={locale} user={user} />
 
       <div className={styles.stack}>{children}</div>
 
-      <BottomNav locale={locale} />
+      {/* ✅ send user videre */}
+      <BottomNav locale={locale} user={user} />
     </div>
   );
 }
