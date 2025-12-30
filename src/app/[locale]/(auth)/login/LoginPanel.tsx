@@ -239,36 +239,6 @@ setMsg(
       : "You’re creating a new account with email and password."
     : t.subtitle}
 </p>
-<div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-  <span
-    style={{
-      padding: "6px 10px",
-      borderRadius: 999,
-      border: "1px solid rgba(255,255,255,0.14)",
-      background: mode === "signin" ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)",
-      fontWeight: 800,
-      fontSize: 12,
-      opacity: mode === "signin" ? 1 : 0.7,
-    }}
-  >
-    {locale === "dk" ? "LOG IND" : "SIGN IN"}
-  </span>
-
-  <span
-    style={{
-      padding: "6px 10px",
-      borderRadius: 999,
-      border: "1px solid rgba(255,255,255,0.14)",
-      background: mode === "signup" ? "rgba(61,220,151,0.14)" : "rgba(255,255,255,0.03)",
-      fontWeight: 800,
-      fontSize: 12,
-      opacity: mode === "signup" ? 1 : 0.7,
-    }}
-  >
-    {locale === "dk" ? "OPRET KONTO" : "CREATE ACCOUNT"}
-  </span>
-</div>
-
 
       <form onSubmit={onPasswordSubmit} style={{ marginTop: 14 }}>
         <input
