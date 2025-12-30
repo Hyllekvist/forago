@@ -1,6 +1,6 @@
-// src/app/[locale]/callback/route.ts 
+// src/app/[locale]/callback/route.ts
 import { NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseRoute } from "@/lib/supabase/route";
 
 export const dynamic = "force-dynamic";
 
@@ -28,37 +28,25 @@ export async function GET(req: Request) {
     safeLocalPath(url.searchParams.get("next")) ||
     safeLocalPath(url.searchParams.get("redirectTo"));
 
-  // Supabase kan komme med enten:
-  // - code (PKCE / OAuth)  ❌ (ustabilt på server pga code_verifier i browser storage)
-  // - token_hash + type (magiclink / recovery) ✅ (stabilt)
   const code = url.searchParams.get("code");
   const token_hash = url.searchParams.get("token_hash");
   const type = url.searchParams.get("type");
 
   if (errorDesc) {
-    return NextResponse.redirect(
-      new URL(`/${locale}/login?e=callback_failed`, url.origin)
-    );
+    return NextResponse.redirect(new URL(`/${locale}/login?e=callback_failed`, url.origin));
   }
 
-  // 🔒 Drop PKCE server-exchange (det er netop det der giver "code verifier not found")
+  // Drop PKCE server-exchange (ustabilt pga code_verifier i browser storage)
   if (code) {
-    return NextResponse.redirect(
-      new URL(
-        `/${locale}/login?e=pkce_unsupported`,
-        url.origin
-      )
-    );
+    return NextResponse.redirect(new URL(`/${locale}/login?e=pkce_unsupported`, url.origin));
   }
 
   if (!token_hash || !type) {
-    return NextResponse.redirect(
-      new URL(`/${locale}/login?e=missing_token`, url.origin)
-    );
+    return NextResponse.redirect(new URL(`/${locale}/login?e=missing_token`, url.origin));
   }
 
   try {
-    const supabase = await supabaseServer();
+    const supabase = supabaseRoute();
 
     const { error } = await supabase.auth.verifyOtp({
       token_hash,
@@ -96,10 +84,7 @@ export async function GET(req: Request) {
       "verify_failed";
 
     return NextResponse.redirect(
-      new URL(
-        `/${locale}/login?e=verify_failed&m=${encodeURIComponent(String(msg))}`,
-        url.origin
-      )
+      new URL(`/${locale}/login?e=verify_failed&m=${encodeURIComponent(String(msg))}`, url.origin)
     );
   }
 }
