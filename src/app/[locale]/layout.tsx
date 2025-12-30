@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata } from "next"; 
 import { notFound } from "next/navigation";
 import { LOCALES, isLocale } from "@/lib/i18n/locales";
 import { buildHreflangs } from "@/lib/i18n/hreflang";
