@@ -1,4 +1,4 @@
-/* src/components/Auth/LogoutButton.module.css */
+/* src/components/Auth/LogoutButton.module.css */ 
 .btn{
   border-radius: var(--radius);
   border: 1px solid rgba(255, 94, 98, .35);
