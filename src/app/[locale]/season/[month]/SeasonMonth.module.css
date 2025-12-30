@@ -1,188 +1,189 @@
-/* src/app/[locale]/season/[month]/SeasonMonth.module.css */
-
-.wrap {
-  padding: 18px var(--pad) 110px;
+.wrap{
+  padding: 18px var(--pad) 120px;
   max-width: var(--maxw);
   margin: 0 auto;
 }
 
-.back {
-  display: inline-block;
-  text-decoration: none;
+.back{
+  display:inline-block;
+  text-decoration:none;
   color: var(--muted);
-  margin-bottom: 12px;
+  margin: 4px 0 10px;
 }
 
-.hero {
-  padding: 8px 0 14px;
+.hero{
+  border-radius: 22px;
+  padding: 18px;
+  border: 1px solid var(--cardBorder);
+  background: var(--card);
+  box-shadow: var(--shadow1);
+  position: relative;
+  overflow: hidden;
 }
 
-.kicker {
-  font-size: 12px;
+.hero::before{
+  content:"";
+  position:absolute;
+  inset:-120px -80px auto -80px;
+  height: 240px;
+  background: radial-gradient(closest-side, rgba(16,185,129,0.18), transparent 70%);
+  pointer-events:none;
+}
+
+.kicker{
   letter-spacing: 0.22em;
-  text-transform: uppercase;
+  font-size: 12px;
   color: var(--muted);
-  margin-bottom: 8px;
+  text-transform: uppercase;
 }
 
-.h1 {
-  margin: 0;
-  font-size: 30px;
-  line-height: 1.08;
-  letter-spacing: -0.02em;
+.h1{
+  margin: 8px 0 0;
+  font-size: 28px;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
 }
 
-.sub {
+.sub{
   margin: 10px 0 0;
   color: var(--muted);
-  max-width: 64ch;
   line-height: 1.45;
+  max-width: 60ch;
 }
 
-.panel {
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  background: rgba(255, 255, 255, 0.03);
+.panel{
+  margin-top: 14px;
   border-radius: 18px;
   padding: 14px;
+  border: 1px solid var(--cardBorder);
+  background: color-mix(in srgb, var(--card) 76%, transparent);
+  box-shadow: var(--shadow0);
 }
 
-.h2 {
+.h2{
   margin: 0;
   font-size: 16px;
-  letter-spacing: -0.01em;
+  font-weight: 850;
 }
 
-.intro {
+.intro{
   margin-top: 10px;
-  color: rgba(255, 255, 255, 0.86);
+  color: color-mix(in srgb, var(--ink) 88%, transparent);
   line-height: 1.6;
   white-space: pre-wrap;
 }
 
-.links {
-  margin-top: 12px;
-  display: flex;
-  gap: 10px;
+.links{
+  display:flex;
+  gap: 8px;
   flex-wrap: wrap;
+  margin-top: 12px;
 }
 
-.pill {
-  text-decoration: none;
+.pillLink{
+  text-decoration:none;
   color: var(--ink);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.03);
   border-radius: 999px;
   padding: 10px 12px;
+  border: 1px solid var(--cardBorder);
+  background: color-mix(in srgb, var(--card) 70%, transparent);
+  box-shadow: var(--shadow0);
   font-size: 13px;
-  font-weight: 700;
 }
 
-.section {
+.section{
   margin-top: 16px;
 }
 
-.sectionHead {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
+.sectionTop{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
   gap: 12px;
   margin-bottom: 10px;
 }
 
-.sectionKicker {
-  font-size: 12px;
+.sectionKicker{
   letter-spacing: 0.22em;
+  font-size: 11px;
   text-transform: uppercase;
   color: var(--muted);
-  margin-bottom: 6px;
 }
 
-.count {
+.sectionHint{
+  padding-top: 16px;
+  font-size: 13px;
   color: var(--muted);
-  font-weight: 800;
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: 12px;
-}
-
-@media (max-width: 920px) {
-  .grid {
-    grid-template-columns: repeat(6, 1fr);
-  }
-}
-@media (max-width: 560px) {
-  .grid {
-    grid-template-columns: repeat(1, 1fr);
-  }
-}
-
-.card {
-  grid-column: span 4;
-  text-decoration: none;
-  color: inherit;
-
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 18px;
-  padding: 14px;
-  position: relative;
-  min-height: 92px;
-}
-
-@media (max-width: 920px) {
-  .card {
-    grid-column: span 3;
-  }
-}
-@media (max-width: 560px) {
-  .card {
-    grid-column: span 1;
-  }
-}
-
-.cardTop {
-  display: flex;
-  justify-content: space-between;
+.cards{
+  display:grid;
+  grid-template-columns: 1fr;
   gap: 10px;
-  align-items: flex-start;
 }
 
-.cardTitle {
+@media (min-width: 740px){
+  .cards{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.card{
+  position: relative;
+  text-decoration:none;
+  color: inherit;
+  border-radius: 18px;
+  padding: 14px 14px 16px;
+  border: 1px solid var(--cardBorder);
+  background: color-mix(in srgb, var(--card) 80%, transparent);
+  box-shadow: var(--shadow0);
+}
+
+.cardTop{
+  display:flex;
+  justify-content:space-between;
+  gap: 10px;
+  align-items:flex-start;
+}
+
+.cardTitle{
+  font-size: 18px;
   font-weight: 900;
-  font-size: 16px;
+  letter-spacing: -0.02em;
 }
 
-.badge {
-  flex: 0 0 auto;
+.pill{
   border-radius: 999px;
   padding: 8px 10px;
+  border: 1px solid rgba(16,185,129,0.22);
+  background: rgba(16,185,129,0.12);
   font-weight: 900;
-  border: 1px solid rgba(46, 229, 157, 0.35);
-  background: rgba(46, 229, 157, 0.12);
 }
 
-.cardMeta {
-  margin-top: 8px;
-  color: var(--muted);
+.cardHint{
+  margin-top: 10px;
   font-size: 13px;
-}
-
-.cardArrow {
-  position: absolute;
-  right: 14px;
-  bottom: 12px;
-  color: rgba(255, 255, 255, 0.45);
-  font-weight: 900;
-}
-
-.empty {
-  margin-top: 12px;
-  border: 1px dashed rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 16px;
-  padding: 14px;
   color: var(--muted);
+}
+
+.cardArrow{
+  position:absolute;
+  right: 12px;
+  bottom: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display:grid;
+  place-items:center;
+  border: 1px solid var(--cardBorder);
+  background: color-mix(in srgb, var(--card) 70%, transparent);
+  color: var(--muted);
+}
+
+.empty{
+  border-radius: 18px;
+  padding: 14px;
+  border: 1px dashed color-mix(in srgb, var(--cardBorder) 80%, transparent);
+  color: var(--muted);
+  background: color-mix(in srgb, var(--card) 65%, transparent);
 }
