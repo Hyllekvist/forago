@@ -14,18 +14,58 @@ function isLocale(x: string): x is Locale {
   return (SUPPORTED_LOCALES as readonly string[]).includes(x);
 }
 
+// Locale = sprog. Country = geografi.
+function countryForLocale(locale: Locale) {
+  // MVP: alt kører på DK data
+  // (senere: map locale->default country eller brugerprofil)
+  if (locale === "dk") return "DK";
+  if (locale === "en") return "DK";
+  return "DK";
+}
+
+function groupLabel(locale: Locale, g: string) {
+  const key = (g || "").toLowerCase();
+  if (locale === "dk") {
+    if (key === "plant") return "Plante";
+    if (key === "berry") return "Bær";
+    if (key === "seaweed") return "Tang";
+    if (key === "mushroom" || key === "fungus") return "Svamp";
+    return g || "Art";
+  }
+  // en
+  if (key === "plant") return "Plant";
+  if (key === "berry") return "Berry";
+  if (key === "seaweed") return "Seaweed";
+  if (key === "mushroom") return "Mushroom";
+  if (key === "fungus") return "Fungus";
+  return g || "Species";
+}
+
+type RpcRow = {
+  id: string;
+  slug: string;
+  primary_group: string | null;
+  scientific_name: string | null;
+  common_name: string | null;
+  short_description: string | null;
+  month_from: number | null;
+  month_to: number | null;
+  confidence: number | null;
+  in_season_now: boolean | null;
+};
+
 export async function generateMetadata({ params }: { params: { locale: string } }) {
-  const locale = params.locale;
-  const title = locale === "dk" ? "Arter — Forago" : "Species — Forago";
+  const loc = params.locale;
+  const title = loc === "dk" ? "Arter — Forago" : "Species — Forago";
   const description =
-    locale === "dk"
+    loc === "dk"
       ? "Find vilde råvarer: sæson, identifikation, forvekslinger og brug."
       : "Explore wild food species: season, identification, look-alikes and use.";
 
   return {
     title,
     description,
-    alternates: { canonical: `/${locale}/species` },
+    alternates: { canonical: `/${loc}/species` },
   };
 }
 
@@ -41,55 +81,21 @@ export default async function SpeciesIndexPage({
   const locale = localeParam;
 
   const q = (searchParams?.q ?? "").trim();
-  const group = (searchParams?.group ?? "").trim();
+  const group = (searchParams?.group ?? "").trim(); // plant|mushroom|fungus|seaweed|berry
 
   const supabase = await supabaseServer();
+  const country = countryForLocale(locale);
 
-  const { data: species, error: spErr } = await supabase
-    .from("species")
-    .select("id, slug, primary_group, scientific_name")
-    .order("slug", { ascending: true });
-
-  if (spErr) throw spErr;
-
-  const safeSpecies = species ?? [];
-  const ids = safeSpecies.map((s) => s.id as string);
-
-  // never .in([]) – good
-  const { data: tr } =
-    ids.length > 0
-      ? await supabase
-          .from("species_translations")
-          .select("species_id, locale, common_name, short_description")
-          .eq("locale", locale)
-          .in("species_id", ids)
-      : { data: [] as any[] };
-
-  const trMap = new Map((tr ?? []).map((t: any) => [t.species_id as string, t]));
-
-  let items = safeSpecies.map((s) => {
-    const t = trMap.get(s.id as string);
-    return {
-      id: s.id as string,
-      slug: s.slug as string,
-      group: (s.primary_group as string) || "plant",
-      scientific: (s.scientific_name as string) || "",
-      name: (t?.common_name as string) || (s.slug as string),
-      desc: (t?.short_description as string) || "",
-    };
+  const { data, error } = await supabase.rpc("species_index", {
+    p_locale: locale,
+    p_country: country,
+    p_q: q,
+    p_group: group,
   });
 
-  if (group) items = items.filter((x) => x.group === group);
+  if (error) throw error;
 
-  if (q) {
-    const qq = q.toLowerCase();
-    items = items.filter(
-      (x) =>
-        x.name.toLowerCase().includes(qq) ||
-        x.slug.toLowerCase().includes(qq) ||
-        x.scientific.toLowerCase().includes(qq)
-    );
-  }
+  const rows = (data ?? []) as RpcRow[];
 
   const title = locale === "dk" ? "Arter" : "Species";
   const subtitle =
@@ -130,41 +136,68 @@ export default async function SpeciesIndexPage({
         </button>
       </form>
 
-      {safeSpecies.length === 0 ? (
+      {rows.length === 0 ? (
         <p className={styles.sub}>
-          {locale === "dk"
-            ? "Ingen arter endnu. Tilføj rækker i 'species' og 'species_translations'."
-            : "No species yet. Add rows in 'species' and 'species_translations'."}
+          {q || group
+            ? locale === "dk"
+              ? "Ingen resultater."
+              : "No results."
+            : locale === "dk"
+            ? "Ingen arter endnu. Seed 'species' + 'species_translations' + 'seasonality'."
+            : "No species yet. Seed 'species' + 'species_translations' + 'seasonality'."}
         </p>
       ) : (
         <section className={styles.grid}>
-          {items.map((s) => (
-            <Link key={s.id} href={`/${locale}/species/${s.slug}`} className={styles.card}>
-              {/* placeholder badge – gør den dynamisk senere via seasonality */}
-              <span className={styles.badge}>{s.group}</span>
+          {rows.map((r) => {
+            const g = (r.primary_group ?? "plant").toLowerCase();
+            const gText = groupLabel(locale, g);
 
-              <div className={styles.name}>{s.name}</div>
+            const inSeason = !!r.in_season_now;
+            const conf = typeof r.confidence === "number" ? r.confidence : null;
 
-              <div className={styles.meta}>
-                {s.scientific ? <em>{s.scientific}</em> : <span>{s.slug}</span>}
-              </div>
+            const name = r.common_name?.trim() || r.slug;
+            const sci = r.scientific_name?.trim() || "";
 
-              <div className={styles.desc}>
-                {s.desc ||
-                  (locale === "dk" ? "Tilføj beskrivelse i DB." : "Add description in DB.")}
-              </div>
+            return (
+              <Link key={r.id} href={`/${locale}/species/${r.slug}`} className={styles.card}>
+                {/* top badges */}
+                <span className={styles.badge}>
+                  {gText}
+                  {conf !== null ? ` · ${conf}%` : ""}
+                </span>
 
-              <div className={styles.footer}>
-                <span className={styles.pill}>/{locale}/species/{s.slug}</span>
-              </div>
-            </Link>
-          ))}
+                {/* OPTIONAL: hvis du vil style “in season” tydeligt i CSS,
+                    så tilføj .badgeSeason og brug den her.
+                    Jeg bruger dine eksisterende classes uden at kræve nye. */}
+                <span className={styles.badge} style={{ marginRight: 8 }}>
+                  {inSeason
+                    ? locale === "dk"
+                      ? "I sæson nu"
+                      : "In season now"
+                    : locale === "dk"
+                    ? "Ikke i sæson"
+                    : "Out of season"}
+                </span>
+
+                <div className={styles.name}>{name}</div>
+
+                <div className={styles.meta}>
+                  {sci ? <em>{sci}</em> : <span>{r.slug}</span>}
+                </div>
+
+                <div className={styles.desc}>
+                  {r.short_description?.trim() ||
+                    (locale === "dk" ? "Tilføj beskrivelse i DB." : "Add description in DB.")}
+                </div>
+
+                <div className={styles.footer}>
+                  <span className={styles.pill}>/{locale}/species/{r.slug}</span>
+                </div>
+              </Link>
+            );
+          })}
         </section>
       )}
-
-      {safeSpecies.length > 0 && items.length === 0 ? (
-        <p className={styles.sub}>{locale === "dk" ? "Ingen resultater." : "No results."}</p>
-      ) : null}
     </main>
   );
 }
