@@ -1,199 +1,166 @@
-/* src/app/[locale]/species/SpeciesIndex.module.css */
+/* ================================
+   SPECIES INDEX — AMBITIOUS
+   ================================ */
 
-/* Page shell */
 .page {
-  padding: 16px;
-  max-width: 980px;
+  padding: 20px 16px 32px;
+  max-width: 1100px;
   margin: 0 auto;
 }
 
+/* --- Hero --- */
 .header {
-  margin-bottom: 14px;
+  margin-bottom: 24px;
 }
 
 .h1 {
+  font-size: 34px;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
   margin: 0;
-  font-size: 26px;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
 }
 
 .sub {
-  margin: 8px 0 0;
-  opacity: 0.82;
-  font-size: 14px;
-  line-height: 1.35;
-}
-
-/* Chips */
-.chips {
   margin-top: 10px;
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  font-size: 15px;
+  opacity: 0.8;
+  max-width: 520px;
 }
 
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border-radius: 999px;
-  padding: 8px 10px;
-  font-size: 13px;
-  text-decoration: none;
-  color: inherit;
-  border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(255,255,255,0.04);
-}
-
-.chipSuccess {
-  border-color: rgba(34,197,94,0.35);
-  background: rgba(34,197,94,0.14);
-}
-
-/* Filters */
+/* --- Filters --- */
 .filters {
+  margin-top: 22px;
+  margin-bottom: 22px;
   display: grid;
-  grid-template-columns: 1fr 160px 160px auto;
-  gap: 10px;
-  align-items: center;
-  margin-bottom: 16px;
+  grid-template-columns: 1fr 200px auto;
+  gap: 12px;
 }
 
-@media (max-width: 740px) {
+@media (max-width: 720px) {
   .filters {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
-  .filters > *:nth-child(1) { grid-column: 1 / -1; }
 }
 
 .input,
 .select,
 .button {
-  border-radius: 14px;
-  padding: 10px 12px;
+  border-radius: 16px;
+  padding: 12px 14px;
   border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(255,255,255,0.04);
+  background: rgba(255,255,255,0.05);
   color: inherit;
+  font-size: 14px;
 }
 
 .button {
-  background: rgba(255,255,255,0.08);
-  cursor: pointer;
+  background: linear-gradient(
+    135deg,
+    rgba(34,197,94,0.18),
+    rgba(16,185,129,0.25)
+  );
+  border-color: rgba(34,197,94,0.35);
+  font-weight: 600;
 }
 
-.sortRow {
-  grid-column: 1 / -1;
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-/* Grid */
+/* --- Grid --- */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
 }
 
-/* Card */
+/* --- Card --- */
 .card {
-  border-radius: 16px;
-  padding: 14px;
+  position: relative;
+  border-radius: 18px;
+  padding: 16px 16px 18px;
   text-decoration: none;
   color: inherit;
 
-  /* Apple Health-ish */
-  border: 1px solid rgba(255,255,255,0.10);
-  background: rgba(255,255,255,0.03);
-  box-shadow: 0 1px 0 rgba(0,0,0,0.25);
-  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+  background:
+    radial-gradient(
+      120% 120% at top right,
+      rgba(255,255,255,0.08),
+      rgba(255,255,255,0.02)
+    );
+
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow:
+    0 1px 0 rgba(0,0,0,0.25),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+
+  transition: transform 120ms ease, box-shadow 120ms ease;
 }
 
 .card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 26px rgba(0,0,0,0.22);
-  border-color: rgba(255,255,255,0.16);
+  transform: translateY(-2px);
+  box-shadow:
+    0 14px 34px rgba(0,0,0,0.28),
+    inset 0 1px 0 rgba(255,255,255,0.08);
 }
 
-.card:active {
-  transform: translateY(0px);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.20);
-}
-
+/* --- In season highlight --- */
 .cardSeason {
-  background: rgba(34,197,94,0.10);
-  border-color: rgba(34,197,94,0.22);
+  border-color: rgba(34,197,94,0.45);
+  background:
+    radial-gradient(
+      120% 120% at top right,
+      rgba(34,197,94,0.22),
+      rgba(34,197,94,0.06)
+    );
 }
 
-/* Card header */
-.cardTop {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  align-items: flex-start;
-}
-
+/* --- Card content --- */
 .name {
-  font-weight: 850;
-  font-size: 16px;
-  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 800;
   letter-spacing: -0.01em;
+  margin: 0 0 6px;
 }
 
 .meta {
-  opacity: 0.74;
   font-size: 13px;
-  line-height: 1.25;
-  margin-bottom: 8px;
+  opacity: 0.7;
+  margin-bottom: 10px;
 }
 
 .desc {
-  opacity: 0.86;
   font-size: 14px;
-  line-height: 1.35;
+  line-height: 1.4;
+  opacity: 0.88;
 }
 
-/* Badges */
+/* --- Badges --- */
 .badge {
-  font-size: 12px;
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 11px;
+  padding: 6px 10px;
   border-radius: 999px;
-  padding: 4px 8px;
-  border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(255,255,255,0.05);
-  white-space: nowrap;
-  opacity: 0.95;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.12);
+  font-weight: 600;
 }
 
 .badgeSeason {
-  border-color: rgba(34,197,94,0.35);
-  background: rgba(34,197,94,0.18);
+  border-color: rgba(34,197,94,0.5);
+  background: rgba(34,197,94,0.35);
 }
 
-/* Footer row */
+/* --- Footer --- */
 .footer {
-  margin-top: 10px;
-  display: grid;
-  gap: 8px;
+  margin-top: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .pill {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
   font-size: 12px;
-  border-radius: 999px;
   padding: 6px 10px;
+  border-radius: 999px;
   border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(255,255,255,0.04);
-}
-
-.months {
-  font-size: 12px;
-  opacity: 0.78;
-  line-height: 1.35;
-}
-
-.monthLink {
-  text-decoration: underline;
+  background: rgba(255,255,255,0.06);
 }
