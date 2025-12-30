@@ -1,0 +1,77 @@
+/* src/app/[locale]/season/_ui/MonthStrip.module.css */
+.wrap{
+  margin-top:14px;
+  padding:14px;
+  border-radius:20px;
+  border:1px solid var(--card-border);
+  background: var(--card-bg);
+  box-shadow: var(--shadow-soft);
+}
+
+.titleRow{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:10px;
+}
+
+.kicker{
+  font-size:12px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+
+.h2{
+  font-size:16px;
+  font-weight:800;
+  margin-top:6px;
+}
+
+.hint{
+  color:var(--muted);
+  font-size:12px;
+}
+
+.strip{
+  display:flex;
+  gap:8px;
+  overflow:auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom:4px;
+}
+
+.strip::-webkit-scrollbar{ height:6px; }
+.strip::-webkit-scrollbar-thumb{ background: rgba(255,255,255,0.10); border-radius:999px; }
+
+.item{
+  flex: 0 0 auto;
+  min-width:64px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:10px 12px;
+  border-radius:999px;
+  border:1px solid var(--chip-border);
+  background: var(--chip-bg);
+  color: var(--ink);
+  text-decoration:none;
+}
+
+.m{ font-weight:750; font-size:13px; }
+.c{
+  font-size:12px;
+  color: var(--muted);
+  border:1px solid var(--chip-border);
+  background: rgba(255,255,255,0.04);
+  padding:2px 8px;
+  border-radius:999px;
+}
+
+.active{
+  border-color: rgba(0,0,0,0);
+  background: color-mix(in srgb, var(--accent) 22%, var(--chip-bg));
+  box-shadow: 0 16px 28px rgba(0,0,0,0.18);
+}
