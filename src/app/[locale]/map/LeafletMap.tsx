@@ -258,6 +258,7 @@ export default function LeafletMap({
   spots,
   userPos,
   selectedId,
+  drop,
   onSelect,
   onMapReady,
   onVisibleChange,
@@ -267,6 +268,7 @@ export default function LeafletMap({
   spots: Spot[];
   userPos: { lat: number; lng: number } | null;
   selectedId: string | null;
+  drop?: { lat: number; lng: number } | null;
   onSelect: (id: string) => void;
   onMapReady?: (m: LeafletLikeMap) => void;
   onVisibleChange?: (visibleIds: string[]) => void;
@@ -290,6 +292,9 @@ export default function LeafletMap({
     <div className={styles.mapWrap}>
       <MapContainer className={styles.map} center={center} zoom={6} zoomControl={false}>
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        {drop ? (
+          <Marker position={[drop.lat, drop.lng]} />
+        ) : null}
         <ClusterLayer
           points={spots}
           selectedId={selectedId}
