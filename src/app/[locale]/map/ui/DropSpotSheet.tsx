@@ -1,6 +1,6 @@
-"use client"; 
+"use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Props = {
   locale: "dk" | "en";
@@ -10,12 +10,7 @@ type Props = {
   error?: string | null;
 
   isAuthed: boolean;
-  onRequireAuth: (payload: {
-    lat: number;
-    lng: number;
-    name: string;
-    speciesSlug: string | null;
-  }) => void;
+  onRequireAuth: (payload: { lat: number; lng: number; name: string; speciesSlug: string | null }) => void;
 
   onClose: () => void;
   onCreateAndLog: (args: { name: string; speciesSlug: string | null }) => void;
@@ -24,6 +19,8 @@ type Props = {
 function fmt(n: number) {
   return Number(n).toFixed(5);
 }
+
+type SpeciesItem = { slug: string; name: string };
 
 export function DropSpotSheet({
   locale,
@@ -38,6 +35,10 @@ export function DropSpotSheet({
 }: Props) {
   const [name, setName] = useState("");
   const [speciesSlug, setSpeciesSlug] = useState("");
+
+  const [speciesOptions, setSpeciesOptions] = useState<SpeciesItem[]>([]);
+  const [speciesBusy, setSpeciesBusy] = useState(false);
+  const speciesAbortRef = useRef<AbortController | null>(null);
 
   const title = locale === "dk" ? "Log et fund her" : "Log a find here";
   const sub = useMemo(
@@ -60,13 +61,65 @@ export function DropSpotSheet({
     ? "Logging…"
     : "Create spot + log";
 
+  // --- species search (datalist) ---
+  async function searchSpecies(qRaw: string) {
+    if (!isAuthed) return;
+    const q = qRaw.trim();
+
+    if (q.length < 2) {
+      setSpeciesOptions([]);
+      return;
+    }
+
+    // cancel previous
+    speciesAbortRef.current?.abort();
+    const ac = new AbortController();
+    speciesAbortRef.current = ac;
+
+    try {
+      setSpeciesBusy(true);
+      const res = await fetch(`/api/species/search?q=${encodeURIComponent(q)}`, {
+        cache: "no-store",
+        signal: ac.signal,
+      });
+      const j = await res.json();
+      if (!res.ok || !j?.ok) {
+        setSpeciesOptions([]);
+        return;
+      }
+      const items = (j.items ?? []) as SpeciesItem[];
+      setSpeciesOptions(items.slice(0, 12));
+    } catch {
+      // ignore
+    } finally {
+      setSpeciesBusy(false);
+    }
+  }
+
+  // cleanup abort on unmount
+  useEffect(() => {
+    return () => speciesAbortRef.current?.abort();
+  }, []);
+
+  const hint = useMemo(() => {
+    if (!isAuthed) {
+      return locale === "dk"
+        ? "Login kræves for at oprette spots og logge fund."
+        : "Login is required to create spots and log finds.";
+    }
+    if (error) return error;
+    return locale === "dk"
+      ? "Tip: Søg art og vælg fra listen (eller lad den være tom)."
+      : "Tip: Search species and pick from the list (or leave empty).";
+  }, [isAuthed, error, locale]);
+
   return (
     <div
       style={{
         position: "absolute",
         left: 12,
         right: 12,
-        bottom: `calc(var(--bottom-nav-h, 92px) + 14px + env(safe-area-inset-bottom))`, // ✅ over bundnav
+        bottom: `calc(var(--bottom-nav-h, 92px) + 14px + env(safe-area-inset-bottom))`,
         zIndex: 60,
         borderRadius: 18,
         border: "1px solid var(--glassLine)",
@@ -114,39 +167,59 @@ export function DropSpotSheet({
             padding: "10px 12px",
             outline: "none",
           }}
-          disabled={!isAuthed} // ✅ lock inputs
+          disabled={!isAuthed}
         />
 
-        <input
-          value={speciesSlug}
-          onChange={(e) => setSpeciesSlug(e.target.value)}
-          placeholder={locale === "dk" ? "Art slug (valgfrit) fx 'kantarel'" : "Species slug (optional)"}
-          style={{
-            width: "100%",
-            borderRadius: 14,
-            border: "1px solid var(--glassLine)",
-            background: "rgba(255,255,255,0.03)",
-            padding: "10px 12px",
-            outline: "none",
-          }}
-          disabled={!isAuthed} // ✅ lock inputs
-        />
+        <div style={{ position: "relative" }}>
+          <input
+            value={speciesSlug}
+            onChange={(e) => {
+              const v = e.target.value;
+              setSpeciesSlug(v);
+              void searchSpecies(v);
+            }}
+            list="species-list"
+            placeholder={locale === "dk" ? "Art (valgfrit) — søg og vælg" : "Species (optional) — search & pick"}
+            style={{
+              width: "100%",
+              borderRadius: 14,
+              border: "1px solid var(--glassLine)",
+              background: "rgba(255,255,255,0.03)",
+              padding: "10px 12px",
+              outline: "none",
+            }}
+            disabled={!isAuthed}
+          />
+
+          <datalist id="species-list">
+            {speciesOptions.map((s) => (
+              <option key={s.slug} value={s.slug}>
+                {s.name}
+              </option>
+            ))}
+          </datalist>
+
+          {speciesBusy ? (
+            <div style={{ position: "absolute", right: 10, top: 10, fontSize: 12, opacity: 0.65 }}>
+              …
+            </div>
+          ) : null}
+        </div>
 
         <button
           disabled={!!isBusy}
-         onClick={() => {
-  const payload = {
-    lat,
-    lng,
-    name: name.trim() || "Nyt spot",
-    speciesSlug: speciesSlug.trim() ? speciesSlug.trim().toLowerCase() : null,
-  };
+          onClick={() => {
+            const payload = {
+              lat,
+              lng,
+              name: name.trim() || "Nyt spot",
+              speciesSlug: speciesSlug.trim() ? speciesSlug.trim().toLowerCase() : null,
+            };
 
-  if (!isAuthed) return onRequireAuth(payload);
+            if (!isAuthed) return onRequireAuth(payload);
 
-  onCreateAndLog({ name: payload.name, speciesSlug: payload.speciesSlug });
-}}
-
+            onCreateAndLog({ name: payload.name, speciesSlug: payload.speciesSlug });
+          }}
           type="button"
           style={{
             width: "100%",
@@ -163,21 +236,15 @@ export function DropSpotSheet({
           {ctaLabel}
         </button>
 
-        {!isAuthed ? (
-          <div style={{ fontSize: 12, opacity: 0.75, padding: "6px 2px" }}>
+        <div style={{ fontSize: 12, opacity: error ? 0.9 : 0.65, padding: "6px 2px" }}>{hint}</div>
+
+        {isAuthed && speciesSlug.trim().length > 0 && speciesOptions.length === 0 && speciesSlug.trim().length >= 2 ? (
+          <div style={{ fontSize: 12, opacity: 0.7, padding: "0 2px" }}>
             {locale === "dk"
-              ? "Login kræves for at oprette spots og logge fund."
-              : "Login is required to create spots and log finds."}
+              ? "Ingen match i listen. Vælg helst en art der findes (ellers bør backend afvise)."
+              : "No matches. Prefer picking an existing species (backend should reject unknown)."}
           </div>
-        ) : error ? (
-          <div style={{ fontSize: 12, opacity: 0.9, padding: "6px 2px" }}>{error}</div>
-        ) : (
-          <div style={{ fontSize: 12, opacity: 0.65, padding: "6px 2px" }}>
-            {locale === "dk"
-              ? "Tip: Klik på kortet igen for at flytte markøren."
-              : "Tip: Click the map again to move the drop point."}
-          </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
