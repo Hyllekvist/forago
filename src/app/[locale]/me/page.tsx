@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
 import styles from "./Me.module.css";
+import { LogoutButton } from "@/components/Auth/LogoutButton";
+
 
 export const dynamic = "force-dynamic";
 
@@ -35,9 +37,7 @@ export default async function MePage({ params }: { params: { locale: string } })
               </Link>
             </div>
 
-            <p className={styles.note}>
-              Logout kan vi lave som en lille client-knap bagefter.
-            </p>
+       <LogoutButton />
           </>
         ) : (
           <>
