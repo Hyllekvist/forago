@@ -6,16 +6,14 @@ import { usePathname } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import styles from "./BottomNav.module.css";
 
-type Props = { locale: string; user: User | null };
+type ItemKey = "feed" | "season" | "log" | "map" | "me";
 
-type Item = {
-  key: "feed" | "season" | "log" | "map" | "me";
-  label: string;
-  href: string;
-  icon: "feed" | "season" | "log" | "map" | "me" | "login";
-};
+const LABELS = {
+  dk: { feed: "Feed", season: "Sæson", log: "Log", map: "Kort", me: "Me", login: "Login" },
+  en: { feed: "Feed", season: "Season", log: "Log", map: "Map", me: "Me", login: "Login" },
+} as const;
 
-function Icon({ kind }: { kind: Item["icon"] }) {
+function Icon({ kind }: { kind: ItemKey }) {
   const common = {
     className: styles.icon,
     viewBox: "0 0 24 24",
@@ -34,7 +32,7 @@ function Icon({ kind }: { kind: Item["icon"] }) {
       </svg>
     );
 
-  if (kind === "log" || kind === "feed")
+  if (kind === "log")
     return (
       <svg {...common}>
         <path
@@ -60,32 +58,24 @@ function Icon({ kind }: { kind: Item["icon"] }) {
       </svg>
     );
 
-  if (kind === "login")
+  if (kind === "me")
     return (
       <svg {...common}>
         <path
-          d="M10 7V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6a2 2 0 0 1-2-2v-1"
+          d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm7 9a7 7 0 0 0-14 0"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.8"
           strokeLinecap="round"
-        />
-        <path
-          d="M4 12h10m0 0-3-3m3 3-3 3"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
         />
       </svg>
     );
 
-  // me
+  // feed
   return (
     <svg {...common}>
       <path
-        d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm7 9a7 7 0 0 0-14 0"
+        d="M5 7h14M5 12h14M5 17h10"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.8"
@@ -95,47 +85,70 @@ function Icon({ kind }: { kind: Item["icon"] }) {
   );
 }
 
-function isActivePath(pathname: string | null, href: string) {
-  if (!pathname) return false;
-  if (href === "/") return pathname === "/";
-  return pathname === href || pathname.startsWith(href + "/");
+function normalizePath(p?: string | null) {
+  if (!p) return "";
+  const noQuery = p.split("?")[0].split("#")[0];
+  // drop trailing slash (except root "/")
+  if (noQuery.length > 1 && noQuery.endsWith("/")) return noQuery.slice(0, -1);
+  return noQuery;
 }
 
-export function BottomNav({ locale, user }: Props) {
-  const pathname = usePathname();
+function isActivePath(pathname: string, href: string) {
+  if (pathname === href) return true;
+  if (href !== "/" && pathname.startsWith(href + "/")) return true;
+  return false;
+}
 
-  const meHref = user ? `/${locale}/me` : `/${locale}/login`;
-  const meLabel = user ? "Me" : locale === "dk" ? "Login" : "Login";
-  const meIcon: Item["icon"] = user ? "me" : "login";
+export function BottomNav({ locale, user }: { locale: string; user: User | null }) {
+  const pathnameRaw = usePathname();
+  const pathname = normalizePath(pathnameRaw);
 
-  const items: Item[] = [
-    { key: "feed", label: locale === "dk" ? "Feed" : "Feed", href: `/${locale}`, icon: "feed" },
-    { key: "season", label: locale === "dk" ? "Sæson" : "Season", href: `/${locale}/season`, icon: "season" },
-    { key: "log", label: "Log", href: `/${locale}/log`, icon: "log" },
-    { key: "map", label: locale === "dk" ? "Kort" : "Map", href: `/${locale}/map`, icon: "map" },
-    { key: "me", label: meLabel, href: meHref, icon: meIcon },
+  // ✅ rigtige routes (Feed = /{locale}, ikke /{locale}/feed)
+  const hrefs = {
+    feed: `/${locale}`,
+    season: `/${locale}/season`,
+    log: `/${locale}/log`,
+    map: `/${locale}/map`,
+    me: user ? `/${locale}/me` : `/${locale}/login`,
+  } satisfies Record<ItemKey, string>;
+
+  // ✅ label skifter ved login/logout
+  const L = (locale === "dk" ? LABELS.dk : LABELS.en);
+  const items: { key: ItemKey; label: string }[] = [
+    { key: "feed", label: L.feed },
+    { key: "season", label: L.season },
+    { key: "log", label: L.log },
+    { key: "map", label: L.map },
+    { key: "me", label: user ? L.me : L.login },
   ];
 
+  // ✅ find præcis én aktiv (mest specifik vinder)
+  const activeKey: ItemKey | null = ((): ItemKey | null => {
+    // check me/map/log/season før feed så “/dk/map/..” ikke ender som feed
+    const order: ItemKey[] = ["me", "map", "log", "season", "feed"];
+    for (const k of order) {
+      const href = normalizePath(hrefs[k]);
+      if (isActivePath(pathname, href)) return k;
+    }
+    return null;
+  })();
+
   return (
-    <nav className={styles.nav} aria-label="Bottom navigation">
+    <nav
+      className={styles.nav}
+      data-auth={user ? "in" : "out"}
+      aria-label="Bottom navigation"
+    >
       <div className={styles.inner}>
         {items.map((it) => {
-          const active = isActivePath(pathname, it.href);
+          const href = hrefs[it.key];
+          const active = activeKey === it.key;
+
           return (
             <Link
               key={it.key}
-              href={it.href}
+              href={href}
               className={[styles.item, active ? styles.itemActive : ""].join(" ")}
               aria-current={active ? "page" : undefined}
             >
-              <span className={styles.iconWrap}>
-                <Icon kind={it.icon} />
-              </span>
-              <span className={styles.label}>{it.label}</span>
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
-  );
-}
+              <span className={styles.iconWrap} aria-hidden="true
