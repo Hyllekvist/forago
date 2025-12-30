@@ -1,4 +1,4 @@
-// src/app/[locale]/callback/route.ts 
+// src/app/[locale]/callback/route.ts
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 
@@ -18,7 +18,6 @@ function safeLocale(v: string | null) {
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
-
   const locale = safeLocale(url.pathname.split("/")[1] || "dk");
 
   const errorDesc =
@@ -30,8 +29,8 @@ export async function GET(req: Request) {
     safeLocalPath(url.searchParams.get("redirectTo"));
 
   // Supabase kan komme med enten:
-  // - code (PKCE)
-  // - token_hash + type (magiclink)
+  // - code (PKCE / OAuth)  ❌ (ustabilt på server pga code_verifier i browser storage)
+  // - token_hash + type (magiclink / recovery) ✅ (stabilt)
   const code = url.searchParams.get("code");
   const token_hash = url.searchParams.get("token_hash");
   const type = url.searchParams.get("type");
@@ -42,23 +41,30 @@ export async function GET(req: Request) {
     );
   }
 
+  // 🔒 Drop PKCE server-exchange (det er netop det der giver "code verifier not found")
+  if (code) {
+    return NextResponse.redirect(
+      new URL(
+        `/${locale}/login?e=pkce_unsupported`,
+        url.origin
+      )
+    );
+  }
+
+  if (!token_hash || !type) {
+    return NextResponse.redirect(
+      new URL(`/${locale}/login?e=missing_token`, url.origin)
+    );
+  }
+
   try {
     const supabase = await supabaseServer();
 
-    if (code) {
-      const { error } = await supabase.auth.exchangeCodeForSession(code);
-      if (error) throw error;
-    } else if (token_hash && type) {
-      const { error } = await supabase.auth.verifyOtp({
-        token_hash,
-        type: type as any,
-      });
-      if (error) throw error;
-    } else {
-      return NextResponse.redirect(
-        new URL(`/${locale}/login?e=missing_code`, url.origin)
-      );
-    }
+    const { error } = await supabase.auth.verifyOtp({
+      token_hash,
+      type: type as any,
+    });
+    if (error) throw error;
 
     // ✅ check profile exists (sankeprofil)
     const { data: auth } = await supabase.auth.getUser();
@@ -82,17 +88,16 @@ export async function GET(req: Request) {
     if (returnTo) return NextResponse.redirect(new URL(returnTo, url.origin));
     return NextResponse.redirect(new URL(`/${locale}/today`, url.origin));
   } catch (e: any) {
-    // Midlertidig debug så vi kan se hvad Supabase brokker sig over
     const msg =
       e?.message ||
       e?.error_description ||
       e?.details ||
       (typeof e === "string" ? e : null) ||
-      "exchange_failed";
+      "verify_failed";
 
     return NextResponse.redirect(
       new URL(
-        `/${locale}/login?e=exchange_failed&m=${encodeURIComponent(String(msg))}`,
+        `/${locale}/login?e=verify_failed&m=${encodeURIComponent(String(msg))}`,
         url.origin
       )
     );
