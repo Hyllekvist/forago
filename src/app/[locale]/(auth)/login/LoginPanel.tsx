@@ -228,8 +228,47 @@ setMsg(
 
   return (
     <div style={{ maxWidth: 420, margin: "40px auto", padding: 16 }}>
-      <h1 style={{ margin: 0 }}>{t.title}</h1>
-      <p style={{ opacity: 0.75, marginTop: 6 }}>{t.subtitle}</p>
+    <h1 style={{ margin: 0 }}>
+  {mode === "signup" ? (locale === "dk" ? "Opret konto" : "Create account") : t.title}
+</h1>
+
+<p style={{ opacity: 0.75, marginTop: 6 }}>
+  {mode === "signup"
+    ? locale === "dk"
+      ? "Du opretter en ny konto med email og password."
+      : "You’re creating a new account with email and password."
+    : t.subtitle}
+</p>
+<div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+  <span
+    style={{
+      padding: "6px 10px",
+      borderRadius: 999,
+      border: "1px solid rgba(255,255,255,0.14)",
+      background: mode === "signin" ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)",
+      fontWeight: 800,
+      fontSize: 12,
+      opacity: mode === "signin" ? 1 : 0.7,
+    }}
+  >
+    {locale === "dk" ? "LOG IND" : "SIGN IN"}
+  </span>
+
+  <span
+    style={{
+      padding: "6px 10px",
+      borderRadius: 999,
+      border: "1px solid rgba(255,255,255,0.14)",
+      background: mode === "signup" ? "rgba(61,220,151,0.14)" : "rgba(255,255,255,0.03)",
+      fontWeight: 800,
+      fontSize: 12,
+      opacity: mode === "signup" ? 1 : 0.7,
+    }}
+  >
+    {locale === "dk" ? "OPRET KONTO" : "CREATE ACCOUNT"}
+  </span>
+</div>
+
 
       <form onSubmit={onPasswordSubmit} style={{ marginTop: 14 }}>
         <input
@@ -322,45 +361,56 @@ setMsg(
           </button>
         </div>
 
-        <hr style={{ opacity: 0.25, margin: "14px 0" }} />
+        {mode === "signin" ? (
+  <>
+    <hr style={{ opacity: 0.25, margin: "14px 0" }} />
 
-        <button
-          onClick={onMagicLinkFallback}
-          disabled={loading || !cleanEmail}
-          type="button"
-          style={{
-            width: "100%",
-            padding: 12,
-            borderRadius: 12,
-            border: "1px solid rgba(255,255,255,0.14)",
-            background: "rgba(255,255,255,0.04)",
-            color: "inherit",
-            cursor: loading ? "default" : "pointer",
-            fontWeight: 800,
-          }}
-        >
-          {loading ? t.sending : t.magic}
-        </button>
+    <button
+      onClick={onMagicLinkFallback}
+      disabled={loading || !cleanEmail}
+      type="button"
+      style={{
+        width: "100%",
+        padding: 12,
+        borderRadius: 12,
+        border: "1px solid rgba(255,255,255,0.14)",
+        background: "rgba(255,255,255,0.04)",
+        color: "inherit",
+        cursor: loading ? "default" : "pointer",
+        fontWeight: 800,
+      }}
+    >
+      {loading ? t.sending : t.magic}
+    </button>
 
-        <div style={{ marginTop: 10, fontSize: 12, opacity: 0.7 }}>
-          {t.after} <code>{returnTo}</code>
-        </div>
+    <div style={{ marginTop: 10, fontSize: 12, opacity: 0.7 }}>
+      {t.after} <code>{returnTo}</code>
+    </div>
 
-        {sentMagic ? (
-          <div
-            style={{
-              marginTop: 14,
-              padding: "12px 12px",
-              borderRadius: 12,
-              border: "1px solid rgba(61,220,151,0.35)",
-              background: "rgba(61,220,151,0.10)",
-            }}
-          >
-            {locale === "dk"
-              ? "Tjek din inbox. Åbn linket i samme browser, hvis muligt."
-              : "Check your inbox. Open the link in the same browser if possible."}
-          </div>
-        ) : null}
+    {sentMagic ? (
+      <div
+        style={{
+          marginTop: 14,
+          padding: "12px 12px",
+          borderRadius: 12,
+          border: "1px solid rgba(61,220,151,0.35)",
+          background: "rgba(61,220,151,0.10)",
+        }}
+      >
+        {locale === "dk"
+          ? "Tjek din inbox. Åbn linket i samme browser, hvis muligt."
+          : "Check your inbox. Open the link in the same browser if possible."}
+      </div>
+    ) : null}
+  </>
+) : (
+  <div style={{ marginTop: 12, fontSize: 12, opacity: 0.7 }}>
+    {locale === "dk"
+      ? "Magic link er kun til login. Skift til “Log ind” hvis du har en konto."
+      : "Magic link is for sign-in only. Switch to “Sign in” if you already have an account."}
+  </div>
+)}
+
 
         {msg ? (
           <div
