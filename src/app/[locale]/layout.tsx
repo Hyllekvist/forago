@@ -4,6 +4,7 @@ import { LOCALES, isLocale } from "@/lib/i18n/locales";
 import { buildHreflangs } from "@/lib/i18n/hreflang";
 import Shell from "@/components/Shell/Shell";
 import { baseMetadata } from "@/lib/seo/metadata";
+import { supabaseServer } from "@/lib/supabase/server"; // ✅ ADD
 
 type Props = { children: React.ReactNode; params: { locale: string } };
 
@@ -28,8 +29,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
 }
 
-export default function LocaleLayout({ children, params }: Props) {
+export default async function LocaleLayout({ children, params }: Props) {
   if (!isLocale(params.locale)) return notFound();
 
-  return <Shell locale={params.locale}>{children}</Shell>;
+  const supabase = await supabaseServer();
+  const { data } = await supabase.auth.getUser();
+  const user = data?.user ?? null;
+
+  return (
+    <Shell locale={params.locale} user={user}>
+      {children}
+    </Shell>
+  );
 }
