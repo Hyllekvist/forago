@@ -1,175 +1,374 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
-
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  return createClient(url, key);
-}
+import { useMemo, useState, useCallback } from "react";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
+import { supabaseBrowser } from "@/lib/supabase/browser";
 
 type Mode = "signin" | "signup";
 
-export default function LoginPanel() {
-  const router = useRouter();
-  const params = useParams<{ locale?: string }>();
-  const locale = (params?.locale as string) || "dk";
+function inferLocaleFromPath(pathname: string) {
+  const seg = (pathname.split("/")[1] || "").toLowerCase();
+  return seg === "dk" || seg === "en" || seg === "se" || seg === "de" ? seg : "dk";
+}
 
-  const supabase = useMemo(() => getSupabase(), []);
+function safeLocalReturnTo(value: string | null) {
+  if (!value) return null;
+  if (!value.startsWith("/")) return null;
+  if (value.startsWith("//")) return null;
+  return value;
+}
+
+function safeLocalUrlWithQuery(path: string, query: string) {
+  if (!path.startsWith("/")) return "/";
+  if (!query) return path;
+  return path.includes("?") ? `${path}&${query}` : `${path}?${query}`;
+}
+
+export function LoginPanel() {
+  const supabase = useMemo(() => supabaseBrowser(), []);
+
+  const router = useRouter();
+  const pathname = usePathname() || "/dk/login";
+  const searchParams = useSearchParams();
+
+  const locale = useMemo(() => inferLocaleFromPath(pathname), [pathname]);
+
+  const returnToBase = useMemo(() => {
+    const fromQuery =
+      safeLocalReturnTo(searchParams?.get("returnTo")) ||
+      safeLocalReturnTo(searchParams?.get("next"));
+
+    return fromQuery ?? `/${locale}/today`;
+  }, [searchParams, locale]);
+
+  // carry drop payload (fra map gate)
+  const returnTo = useMemo(() => {
+    const dropRaw = searchParams?.get("drop");
+    const dropParam = typeof dropRaw === "string" && dropRaw.length > 0 ? dropRaw : null;
+    return dropParam
+      ? safeLocalUrlWithQuery(returnToBase, `drop=${encodeURIComponent(dropParam)}`)
+      : returnToBase;
+  }, [returnToBase, searchParams]);
 
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const [busy, setBusy] = useState(false);
+  const [sentMagic, setSentMagic] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const origin =
-    typeof window !== "undefined" ? window.location.origin : "";
-  const afterLogin = `/${locale}/map`; // <-- justér til din “første side efter login”
-  const resetRedirectTo = `${origin}/${locale}/reset`;
+  const t = useMemo(() => {
+    const dk = locale === "dk";
+    return {
+      title: dk ? "Login" : "Login",
+      subtitle: dk ? "Log ind med password – eller brug magic link som fallback." : "Sign in with password — or use magic link as fallback.",
+      email: dk ? "Email" : "Email",
+      password: dk ? "Password" : "Password",
+      signin: dk ? "Log ind" : "Sign in",
+      signup: dk ? "Opret konto" : "Create account",
+      haveAccount: dk ? "Har du allerede konto? Log ind" : "Already have an account? Sign in",
+      noAccount: dk ? "Ingen konto? Opret konto" : "No account? Create one",
+      forgot: dk ? "Glemt password?" : "Forgot password?",
+      magic: dk ? "Send magic link (fallback)" : "Send magic link (fallback)",
+      sending: dk ? "Arbejder…" : "Working…",
+      after: dk ? "Efter login sendes du tilbage til:" : "After login you’ll return to:",
+    };
+  }, [locale]);
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setMsg(null);
-    setBusy(true);
+  const cleanEmail = email.trim().toLowerCase();
 
-    try {
-      if (!email.trim()) throw new Error("Indtast email.");
-      if (!password.trim()) throw new Error("Indtast password.");
+  const onPasswordSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      setErr(null);
+      setMsg(null);
+      setSentMagic(false);
 
-      if (mode === "signin") {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
-
-        router.replace(afterLogin);
-        router.refresh();
+      if (!cleanEmail) return;
+      if (!password.trim()) {
+        setErr(locale === "dk" ? "Indtast password." : "Enter password.");
         return;
       }
 
-      // signup
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          // hvis du kræver email confirmation i Supabase
-          emailRedirectTo: `${origin}/${locale}/auth/callback`,
-        },
+      setLoading(true);
+      try {
+        if (mode === "signin") {
+          const { error } = await supabase.auth.signInWithPassword({
+            email: cleanEmail,
+            password,
+          });
+          if (error) throw error;
+
+          router.replace(returnTo);
+          router.refresh();
+          return;
+        }
+
+        // signup
+        const origin = window.location.origin;
+
+        // Bemærk: signup kan kræve email confirmation afhængigt af Supabase settings.
+        // Hvis confirmation er ON, får brugeren en mail og ender via callback (token_hash/type) eller code (afhængigt af template).
+        const { error } = await supabase.auth.signUp({
+          email: cleanEmail,
+          password,
+          options: {
+            emailRedirectTo: `${origin}/${locale}/callback?returnTo=${encodeURIComponent(returnTo)}`,
+          },
+        });
+        if (error) throw error;
+
+        setMsg(locale === "dk"
+          ? "Konto oprettet. Hvis email-bekræftelse er slået til, så tjek din inbox."
+          : "Account created. If email confirmation is enabled, check your inbox."
+        );
+      } catch (e: any) {
+        const m =
+          e?.message ||
+          e?.error_description ||
+          e?.details ||
+          (typeof e === "string" ? e : null) ||
+          "Noget gik galt";
+        setErr(String(m));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [cleanEmail, password, mode, supabase, router, returnTo, locale]
+  );
+
+  const onForgotPassword = useCallback(async () => {
+    setErr(null);
+    setMsg(null);
+    setSentMagic(false);
+
+    if (!cleanEmail) return;
+
+    setLoading(true);
+    try {
+      const origin = window.location.origin;
+      const redirectTo = `${origin}/${locale}/reset`;
+
+      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+        redirectTo,
       });
       if (error) throw error;
 
-      setMsg(
-        "Konto oprettet. Hvis email-bekræftelse er slået til, så tjek din inbox."
+      setMsg(locale === "dk"
+        ? "Tjek din mail for link til at vælge nyt password."
+        : "Check your email for a link to set a new password."
       );
-    } catch (err: any) {
-      setMsg(err?.message ?? "Noget gik galt.");
+    } catch (e: any) {
+      const m =
+        e?.message ||
+        e?.error_description ||
+        e?.details ||
+        (typeof e === "string" ? e : null) ||
+        "Noget gik galt";
+      setErr(String(m));
     } finally {
-      setBusy(false);
+      setLoading(false);
     }
-  }
+  }, [cleanEmail, supabase, locale]);
 
-  async function onForgotPassword() {
+  const onMagicLinkFallback = useCallback(async () => {
+    setErr(null);
     setMsg(null);
-    setBusy(true);
+    setSentMagic(false);
+
+    if (!cleanEmail) return;
+
+    setLoading(true);
     try {
-      if (!email.trim()) throw new Error("Skriv din email først.");
+      const origin = window.location.origin;
 
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: resetRedirectTo,
-      });
-      if (error) throw error;
-
-      setMsg("Tjek din mail for link til at vælge nyt password.");
-    } catch (err: any) {
-      setMsg(err?.message ?? "Noget gik galt.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function onMagicLinkFallback() {
-    setMsg(null);
-    setBusy(true);
-
-    try {
-      if (!email.trim()) throw new Error("Indtast email.");
+      // VIGTIGT: hold redirectTo præcis som før (+ returnTo)
+      const redirectTo = `${origin}/${locale}/callback?returnTo=${encodeURIComponent(returnTo)}`;
 
       const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${origin}/${locale}/auth/callback`,
-        },
+        email: cleanEmail,
+        options: { emailRedirectTo: redirectTo },
       });
       if (error) throw error;
 
-      setMsg("Magic link sendt. Åbn linket i samme browser som du logger ind i.");
-    } catch (err: any) {
-      setMsg(err?.message ?? "Noget gik galt.");
+      setSentMagic(true);
+    } catch (e: any) {
+      const m =
+        e?.message ||
+        e?.error_description ||
+        e?.details ||
+        (typeof e === "string" ? e : null) ||
+        "Noget gik galt";
+      setErr(String(m));
     } finally {
-      setBusy(false);
+      setLoading(false);
     }
-  }
+  }, [cleanEmail, supabase, locale, returnTo]);
 
   return (
-    <div style={{ maxWidth: 420 }}>
-      <h1 style={{ margin: 0, fontSize: 22 }}>
-        {mode === "signin" ? "Log ind" : "Opret konto"}
-      </h1>
+    <div style={{ maxWidth: 420, margin: "40px auto", padding: 16 }}>
+      <h1 style={{ margin: 0 }}>{t.title}</h1>
+      <p style={{ opacity: 0.75, marginTop: 6 }}>{t.subtitle}</p>
 
-      <form onSubmit={onSubmit} style={{ display: "grid", gap: 10, marginTop: 14 }}>
-        <label style={{ display: "grid", gap: 6 }}>
-          <span>Email</span>
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
-            inputMode="email"
-            placeholder="mail@domæne.dk"
-          />
-        </label>
+      <form onSubmit={onPasswordSubmit} style={{ marginTop: 14 }}>
+        <input
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder={t.email}
+          inputMode="email"
+          autoComplete="email"
+          style={{
+            width: "100%",
+            padding: 12,
+            borderRadius: 12,
+            border: "1px solid rgba(255,255,255,0.12)",
+            background: "rgba(255,255,255,0.04)",
+            color: "inherit",
+            outline: "none",
+          }}
+        />
 
-        <label style={{ display: "grid", gap: 6 }}>
-          <span>Password</span>
-          <input
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            type="password"
-            autoComplete={mode === "signin" ? "current-password" : "new-password"}
-            placeholder="••••••••"
-          />
-        </label>
+        <input
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder={t.password}
+          type="password"
+          autoComplete={mode === "signin" ? "current-password" : "new-password"}
+          style={{
+            width: "100%",
+            marginTop: 10,
+            padding: 12,
+            borderRadius: 12,
+            border: "1px solid rgba(255,255,255,0.12)",
+            background: "rgba(255,255,255,0.04)",
+            color: "inherit",
+            outline: "none",
+          }}
+        />
 
-        <button type="submit" disabled={busy}>
-          {busy ? "Arbejder..." : mode === "signin" ? "Log ind" : "Opret konto"}
+        <button
+          disabled={loading || !cleanEmail || !password.trim()}
+          type="submit"
+          style={{
+            width: "100%",
+            marginTop: 12,
+            padding: 12,
+            borderRadius: 12,
+            border: "1px solid rgba(255,255,255,0.14)",
+            background: "rgba(255,255,255,0.06)",
+            color: "inherit",
+            cursor: loading ? "default" : "pointer",
+            opacity: loading ? 0.75 : 1,
+            fontWeight: 800,
+          }}
+        >
+          {loading ? t.sending : mode === "signin" ? t.signin : t.signup}
         </button>
 
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 10 }}>
           <button
             type="button"
             onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-            disabled={busy}
+            disabled={loading}
+            style={{
+              padding: "10px 12px",
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.14)",
+              background: "rgba(255,255,255,0.04)",
+              color: "inherit",
+              cursor: loading ? "default" : "pointer",
+              fontWeight: 700,
+            }}
           >
-            {mode === "signin" ? "Opret konto" : "Har du allerede konto? Log ind"}
+            {mode === "signin" ? t.noAccount : t.haveAccount}
           </button>
 
-          <button type="button" onClick={onForgotPassword} disabled={busy}>
-            Glemt password?
+          <button
+            type="button"
+            onClick={onForgotPassword}
+            disabled={loading || !cleanEmail}
+            style={{
+              padding: "10px 12px",
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.14)",
+              background: "rgba(255,255,255,0.04)",
+              color: "inherit",
+              cursor: loading ? "default" : "pointer",
+              fontWeight: 700,
+            }}
+          >
+            {t.forgot}
           </button>
         </div>
 
-        <hr style={{ opacity: 0.25 }} />
+        <hr style={{ opacity: 0.25, margin: "14px 0" }} />
 
-        <button type="button" onClick={onMagicLinkFallback} disabled={busy}>
-          Send magic link (fallback)
+        <button
+          onClick={onMagicLinkFallback}
+          disabled={loading || !cleanEmail}
+          type="button"
+          style={{
+            width: "100%",
+            padding: 12,
+            borderRadius: 12,
+            border: "1px solid rgba(255,255,255,0.14)",
+            background: "rgba(255,255,255,0.04)",
+            color: "inherit",
+            cursor: loading ? "default" : "pointer",
+            fontWeight: 800,
+          }}
+        >
+          {loading ? t.sending : t.magic}
         </button>
 
+        <div style={{ marginTop: 10, fontSize: 12, opacity: 0.7 }}>
+          {t.after} <code>{returnTo}</code>
+        </div>
+
+        {sentMagic ? (
+          <div
+            style={{
+              marginTop: 14,
+              padding: "12px 12px",
+              borderRadius: 12,
+              border: "1px solid rgba(61,220,151,0.35)",
+              background: "rgba(61,220,151,0.10)",
+            }}
+          >
+            {locale === "dk"
+              ? "Tjek din inbox. Åbn linket i samme browser, hvis muligt."
+              : "Check your inbox. Open the link in the same browser if possible."}
+          </div>
+        ) : null}
+
         {msg ? (
-          <p style={{ margin: "8px 0 0", opacity: 0.9 }}>{msg}</p>
+          <div
+            style={{
+              marginTop: 10,
+              padding: "10px 12px",
+              borderRadius: 12,
+              border: "1px solid rgba(61,220,151,0.35)",
+              background: "rgba(61,220,151,0.10)",
+            }}
+          >
+            {msg}
+          </div>
+        ) : null}
+
+        {err ? (
+          <div
+            style={{
+              marginTop: 10,
+              padding: "10px 12px",
+              borderRadius: 12,
+              border: "1px solid rgba(255, 80, 80, 0.35)",
+              background: "rgba(255, 80, 80, 0.10)",
+            }}
+          >
+            {err}
+          </div>
         ) : null}
       </form>
     </div>
