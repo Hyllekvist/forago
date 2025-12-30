@@ -1,4 +1,4 @@
-import styles from "./Me.module.css";
+import styles from "./Me.module.css"; 
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
 import LogoutButton from "@/components/Auth/LogoutButton";
