@@ -78,7 +78,11 @@ export function DropSpotSheet({
 
     try {
       setSpeciesBusy(true);
-      const res = await fetch(`/api/species/search?q=${encodeURIComponent(q)}`, {
+      const res = await fetch(
+  `/api/species/search?locale=${locale}&q=${encodeURIComponent(q)}`,
+  { cache: "no-store" }
+);
+
         cache: "no-store",
         signal: ac.signal,
       });
