@@ -1,0 +1,11 @@
+/* src/components/Auth/LogoutButton.module.css */
+.btn{
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 94, 98, .35);
+  background: rgba(255, 94, 98, .10);
+  color: var(--ink);
+  padding: 10px 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn:hover{ filter: brightness(1.05); }
