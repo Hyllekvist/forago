@@ -1,85 +1,207 @@
-.card{
-  width: 100%;
-  max-width: 420px;
-  border-radius: var(--radius);
-  background: var(--panel);
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow-2);
-  padding: 16px;
+.wrap {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 28px var(--pad);
+  background: var(--bg);
+  color: var(--ink);
   position: relative;
   overflow: hidden;
 }
 
-/* mode overlay */
-.card::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-  border-radius: inherit;
+/* Mode-styret “ambient” – fungerer i både dark/light fordi det er translucency + dine tokens */
+.wrap::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(60% 45% at 18% 22%, rgba(255, 153, 102, 0.18), transparent 55%),
+              radial-gradient(55% 40% at 82% 18%, rgba(255, 94, 98, 0.14), transparent 52%),
+              radial-gradient(60% 55% at 55% 85%, rgba(61, 220, 151, 0.10), transparent 58%);
+  filter: blur(14px);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.wrap[data-mode="signup"]::before {
+  background: radial-gradient(65% 50% at 20% 25%, rgba(61, 220, 151, 0.16), transparent 56%),
+              radial-gradient(55% 40% at 82% 18%, rgba(255, 153, 102, 0.12), transparent 55%),
+              radial-gradient(60% 55% at 55% 85%, rgba(255, 94, 98, 0.10), transparent 62%);
+}
+
+.card {
+  width: 100%;
+  max-width: 440px;
+  border-radius: calc(var(--radius) + 6px);
+  background: color-mix(in oklab, var(--panel) 92%, transparent);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-2);
+  padding: 16px;
+  position: relative;
+  backdrop-filter: blur(10px);
+}
+
+.head {
+  margin-bottom: 12px;
+}
+
+.h1 {
+  margin: 0 0 6px;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+}
+
+.sub {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.segment {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: color-mix(in oklab, var(--panel) 70%, transparent);
+}
+
+.segBtn,
+.segActive {
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 12px;
+  font-weight: 800;
+  cursor: pointer;
+  color: var(--ink);
+  background: transparent;
+  opacity: 0.7;
+}
+
+.segActive {
   opacity: 1;
-  transition: opacity 220ms ease, filter 220ms ease;
+  border: 1px solid color-mix(in oklab, var(--line) 55%, transparent);
+  background: color-mix(in oklab, var(--panel) 86%, transparent);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
 }
 
-/* login: neutral */
-.modeSignin::before{
-  background: radial-gradient(120% 80% at 50% 0%, rgba(255,255,255,0.06), transparent 60%);
+.wrap[data-mode="signup"] .segActive {
+  border-color: rgba(61, 220, 151, 0.35);
+  background: rgba(61, 220, 151, 0.10);
 }
 
-/* signup: lidt mere “alive”, men stadig subtilt */
-.modeSignup::before{
-  background: radial-gradient(120% 80% at 50% 0%, rgba(61,220,151,0.12), transparent 60%);
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
 }
 
-/* sørg for indhold ligger over overlay */
-.h1,.sub,.form{ position: relative; z-index: 1; }
+.label {
+  font-size: 13px;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
 
-.form{ display:flex; flex-direction:column; gap: 12px; }
-.row{ display:flex; gap: 10px; flex-wrap: wrap; }
+.input {
+  border-radius: calc(var(--radius) + 2px);
+  border: 1px solid var(--line);
+  background: color-mix(in oklab, var(--panel) 60%, transparent);
+  padding: 12px 12px;
+  color: var(--ink);
+  outline: none;
+}
 
-.hr{
+.input:focus {
+  border-color: rgba(255, 153, 102, 0.45);
+  box-shadow: 0 0 0 3px rgba(255, 153, 102, 0.12);
+}
+
+.wrap[data-mode="signup"] .input:focus {
+  border-color: rgba(61, 220, 151, 0.45);
+  box-shadow: 0 0 0 3px rgba(61, 220, 151, 0.12);
+}
+
+.primary {
+  border-radius: calc(var(--radius) + 2px);
+  border: 1px solid rgba(255, 153, 102, 0.35);
+  background: linear-gradient(90deg, rgba(255, 153, 102, 0.18), rgba(255, 94, 98, 0.14));
+  color: var(--ink);
+  padding: 12px 12px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.wrap[data-mode="signup"] .primary {
+  border-color: rgba(61, 220, 151, 0.35);
+  background: linear-gradient(90deg, rgba(61, 220, 151, 0.14), rgba(61, 220, 151, 0.08));
+}
+
+.primary:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ghost {
+  padding: 10px 12px;
+  border-radius: calc(var(--radius) + 2px);
+  border: 1px solid var(--line);
+  background: color-mix(in oklab, var(--panel) 55%, transparent);
+  color: var(--ink);
+  cursor: pointer;
+  font-weight: 750;
+  opacity: 0.95;
+}
+
+.ghost:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.divider {
   height: 1px;
   background: var(--line);
-  opacity: .6;
-  margin: 2px 0;
+  opacity: 0.75;
+  margin: 4px 0;
 }
 
-.meta{ font-size: 12px; color: var(--muted); opacity: .9; }
-
-/* CTA variants */
-.btn{
-  border-radius: var(--radius);
-  padding: 12px 12px;
-  font-weight: 650;
-  border: 1px solid rgba(255,153,102,.35);
-  background: linear-gradient(90deg, rgba(255,153,102,.18), rgba(255,94,98,.14));
-  color: var(--ink);
-}
-
-.btnSignup{
-  border: 1px solid rgba(61,220,151,.35);
-  background: linear-gradient(90deg, rgba(61,220,151,.18), rgba(61,220,151,.08));
-}
-
-.btnSignin{
-  /* behold din default */
-}
-
-.btnGhost{
-  border-radius: var(--radius);
+.secondary {
+  border-radius: calc(var(--radius) + 2px);
   border: 1px solid var(--line);
-  background: rgba(255,255,255,.04);
-  color: var(--ink);
-  padding: 10px 12px;
-  font-weight: 650;
-}
-
-.btnGhostWide{
-  width: 100%;
-  border-radius: var(--radius);
-  border: 1px solid var(--line);
-  background: rgba(255,255,255,.04);
+  background: color-mix(in oklab, var(--panel) 55%, transparent);
   color: var(--ink);
   padding: 12px 12px;
-  font-weight: 650;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.hint {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--muted);
+  opacity: 0.95;
+}
+
+.ok {
+  border-radius: calc(var(--radius) + 2px);
+  border: 1px solid rgba(61, 220, 151, 0.35);
+  background: rgba(61, 220, 151, 0.10);
+  padding: 12px;
+}
+
+.err {
+  border-radius: calc(var(--radius) + 2px);
+  border: 1px solid rgba(255, 94, 98, 0.35);
+  background: rgba(255, 94, 98, 0.10);
+  padding: 12px;
 }
