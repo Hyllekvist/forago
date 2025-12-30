@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import styles from "./Season.module.css";
+import { SeasonRadar } from "./_ui/SeasonRadar";
+import { MonthStrip } from "./_ui/MonthStrip";
 
 export const revalidate = 3600;
 
@@ -14,14 +16,13 @@ function isLocale(x: string): x is Locale {
 }
 
 function countryForLocale(_locale: string) {
-  return "DK";
+  return "DK"; // MVP
 }
 
 function monthName(locale: Locale, m: number) {
   const dk = ["", "januar", "februar", "marts", "april", "maj", "juni", "juli", "august", "september", "oktober", "november", "december"];
   const en = ["", "january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
-  const arr = locale === "dk" ? dk : en;
-  return arr[m] ?? String(m);
+  return (locale === "dk" ? dk : en)[m] ?? String(m);
 }
 
 function monthSlug(m: number) {
@@ -33,29 +34,31 @@ function currentMonthUTC() {
   return new Date().getUTCMonth() + 1;
 }
 
+function inMonth(month: number, from: number, to: number) {
+  if (from <= to) return month >= from && month <= to;
+  return month >= from || month <= to;
+}
+
 export async function generateMetadata({ params }: { params: { locale: string } }) {
-  const localeParam = params.locale;
-  if (!isLocale(localeParam)) return { title: "Forago" };
-  const locale = localeParam;
+  const locale = params.locale;
+  if (!isLocale(locale)) return { title: "Forago" };
 
   return {
     title: locale === "dk" ? "Sæson nu — Forago" : "In season now — Forago",
     description:
       locale === "dk"
-        ? "Se hvad der er i sæson lige nu (uden at udlevere spots)."
-        : "See what’s in season right now (privacy-first).",
+        ? "Sæsonradar og artsoversigt — privatliv først (ingen spots)."
+        : "Season radar and species overview — privacy-first (no spots).",
     alternates: { canonical: `/${locale}/season` },
   };
 }
 
 export default async function SeasonNowPage({ params }: { params: { locale: string } }) {
-  const localeParam = params.locale;
-  if (!isLocale(localeParam)) return notFound();
-  const locale = localeParam;
+  if (!isLocale(params.locale)) return notFound();
+  const locale = params.locale;
 
   const month = currentMonthUTC();
   const country = countryForLocale(locale);
-
   const supabase = await supabaseServer();
 
   const { data: rows, error } = await supabase
@@ -66,14 +69,12 @@ export default async function SeasonNowPage({ params }: { params: { locale: stri
 
   if (error) throw error;
 
-  const inSeason = (rows ?? []).filter((r) => {
-    const a = r.month_from as number;
-    const b = r.month_to as number;
-    if (a <= b) return month >= a && month <= b;
-    return month >= a || month <= b;
-  });
+  const inSeasonRows = (rows ?? []).filter((r: any) =>
+    inMonth(month, r.month_from as number, r.month_to as number)
+  );
 
-  const ids = inSeason.map((r) => r.species_id as string);
+  const ids = inSeasonRows.map((r: any) => r.species_id as string);
+  const highConfidence = inSeasonRows.filter((r: any) => ((r.confidence as number) ?? 0) >= 80).length;
 
   const { data: species } = ids.length
     ? await supabase.from("species").select("id, slug, primary_group, scientific_name").in("id", ids)
@@ -87,12 +88,12 @@ export default async function SeasonNowPage({ params }: { params: { locale: stri
         .in("species_id", ids)
     : { data: [] as any[] };
 
-  const trMap = new Map((tr ?? []).map((t) => [t.species_id as string, t]));
-  const confMap = new Map(inSeason.map((s) => [s.species_id as string, (s.confidence as number) ?? 0]));
+  const trMap = new Map((tr ?? []).map((t: any) => [t.species_id as string, t]));
 
   const items = (species ?? [])
-    .map((s) => {
-      const t = trMap.get(s.id);
+    .map((s: any) => {
+      const t = trMap.get(s.id as string);
+      const season = inSeasonRows.find((x: any) => x.species_id === s.id);
       return {
         id: s.id as string,
         slug: s.slug as string,
@@ -100,106 +101,110 @@ export default async function SeasonNowPage({ params }: { params: { locale: stri
         scientific: (s.scientific_name as string) || "",
         name: (t?.common_name as string) || s.slug,
         desc: (t?.short_description as string) || "",
-        confidence: confMap.get(s.id) ?? 0,
+        confidence: ((season?.confidence as number) ?? 0) as number,
       };
     })
-    .sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0));
+    .sort((a, b) => b.confidence - a.confidence);
 
-  const highSafety = items.filter((x) => (x.confidence ?? 0) >= 80).length;
+  const title = locale === "dk" ? "I sæson nu" : "In season now";
+  const subtitle =
+    locale === "dk"
+      ? "Sæsonbaseret overblik. Privatliv først — ingen spots."
+      : "Season-based overview. Privacy-first — no spots.";
+
+  const monthLabel = monthName(locale, month);
   const monthHref = `/${locale}/season/${monthSlug(month)}`;
 
   return (
-    <main className={styles.wrap}>
-      <header className={styles.hero}>
-        <div className={styles.heroTop}>
-          <div className={styles.heroText}>
-            <h1 className={styles.h1}>{locale === "dk" ? "I sæson nu" : "In season now"}</h1>
-            <p className={styles.sub}>
-              {locale === "dk"
-                ? "Sæsonbaseret overblik. Privatliv først — ingen spots."
-                : "Season-first overview. Privacy-first — no spots."}
-            </p>
+    <main className={styles.page}>
+      <SeasonRadar
+        locale={locale}
+        title={title}
+        subtitle={subtitle}
+        monthLabel={monthLabel}
+        totalInSeason={items.length}
+        highConfidence={highConfidence}
+      />
+
+      <MonthStrip locale={locale} activeMonth={month} />
+
+      <section className={styles.cards} aria-label={locale === "dk" ? "Overblik" : "Overview"}>
+        <div className={styles.card}>
+          <div className={styles.cardTitle}>{locale === "dk" ? "I sæson" : "In season"}</div>
+          <div className={styles.big}>{items.length}</div>
+          <div className={styles.small}>
+            {locale === "dk" ? "arter denne måned" : "species this month"}
           </div>
-
-          <Link className={styles.monthChip} href={monthHref}>
-            <span className={styles.monthChipKicker}>{locale === "dk" ? "Måned" : "Month"}</span>
-            <span className={styles.monthChipVal}>{monthName(locale, month)}</span>
-            <span className={styles.arrow} aria-hidden="true">→</span>
-          </Link>
-        </div>
-
-        <div className={styles.stats}>
-          <div className={styles.statCard}>
-            <div className={styles.statLabel}>{locale === "dk" ? "I sæson" : "In season"}</div>
-            <div className={styles.statValue}>{items.length}</div>
-            <div className={styles.statHint}>{locale === "dk" ? "arter denne måned" : "species this month"}</div>
-          </div>
-
-          <div className={styles.statCard}>
-            <div className={styles.statLabel}>{locale === "dk" ? "Høj sikkerhed" : "High confidence"}</div>
-            <div className={styles.statValue}>{highSafety}</div>
-            <div className={styles.statHint}>{locale === "dk" ? "≥ 80% confidence" : "≥ 80% confidence"}</div>
-          </div>
-
-          <div className={styles.statCard}>
-            <div className={styles.statLabel}>{locale === "dk" ? "Princip" : "Principle"}</div>
-            <div className={styles.statValueSm}>{locale === "dk" ? "Ingen spots" : "No spots"}</div>
-            <div className={styles.statHint}>{locale === "dk" ? "privatliv først" : "privacy-first"}</div>
+          <div className={styles.linkRow}>
+            <Link className={styles.pillLink} href={monthHref}>
+              {locale === "dk" ? `Se ${monthLabel} →` : `View ${monthLabel} →`}
+            </Link>
           </div>
         </div>
-      </header>
 
-      <section className={styles.sectionHead}>
-        <h2 className={styles.h2}>{locale === "dk" ? "Arter i sæson" : "Species in season"}</h2>
-        <div className={styles.sectionActions}>
-          <Link className={styles.ghostBtn} href={monthHref}>
-            {locale === "dk" ? "Se hele måneden" : "See full month"} <span aria-hidden="true">→</span>
-          </Link>
+        <div className={styles.card}>
+          <div className={styles.cardTitle}>{locale === "dk" ? "Høj sikkerhed" : "High confidence"}</div>
+          <div className={styles.big}>{highConfidence}</div>
+          <div className={styles.small}>
+            {locale === "dk" ? "≥ 80% confidence" : "≥ 80% confidence"}
+          </div>
+          <div className={styles.linkRow}>
+            <Link className={styles.pillLink} href={`/${locale}/guides/safety-basics`}>
+              {locale === "dk" ? "Sikkerhed →" : "Safety →"}
+            </Link>
+            <Link className={styles.pillLink} href={`/${locale}/guides/lookalikes`}>
+              {locale === "dk" ? "Forvekslinger →" : "Look-alikes →"}
+            </Link>
+          </div>
+        </div>
+
+        <div className={styles.card}>
+          <div className={styles.cardTitle}>{locale === "dk" ? "Princip" : "Principle"}</div>
+          <div className={styles.princip}>
+            <div>
+              <div className={styles.principStrong}>{locale === "dk" ? "Ingen spots" : "No spots"}</div>
+              <div className={styles.small}>{locale === "dk" ? "privatliv først" : "privacy-first"}</div>
+            </div>
+            <span className={styles.badge} aria-hidden="true">★</span>
+          </div>
         </div>
       </section>
 
+      <div className={styles.speciesHeader}>
+        <div>
+          <h2 className={styles.h2}>{locale === "dk" ? "I sæson nu" : "In season now"}</h2>
+          <p className={styles.h2sub}>
+            {locale === "dk"
+              ? "Sorteret efter confidence. Tryk for artsprofil."
+              : "Sorted by confidence. Tap to open species profile."}
+          </p>
+        </div>
+        <Link className={styles.pillLink} href={monthHref}>
+          {locale === "dk" ? "Månedsside →" : "Month page →"}
+        </Link>
+      </div>
+
       {items.length ? (
-        <section className={styles.grid}>
+        <section className={styles.list} aria-label={locale === "dk" ? "Arter" : "Species"}>
           {items.map((s) => (
-            <Link key={s.id} href={`/${locale}/species/${s.slug}`} className={styles.card}>
-              <div className={styles.cardTop}>
-                <div className={styles.titleBlock}>
-                  <div className={styles.cardTitle}>{s.name}</div>
-                  <div className={styles.cardMeta}>
-                    {s.scientific ? <em>{s.scientific}</em> : <span>{s.slug}</span>}
-                    <span className={styles.dot}>•</span>
-                    <span>{s.group}</span>
-                  </div>
-                </div>
-
-                <span className={styles.confChip} aria-label={`confidence ${s.confidence}%`}>
-                  {s.confidence}%
-                </span>
+            <Link key={s.id} href={`/${locale}/species/${s.slug}`} className={styles.item}>
+              <span className={styles.badge}>{s.confidence}%</span>
+              <div className={styles.name}>{s.name}</div>
+              <div className={styles.meta}>
+                {s.scientific ? <em>{s.scientific}</em> : <span>{s.slug}</span>}
+                <span className={styles.group}>{s.group}</span>
               </div>
-
-              <div className={styles.cardDesc}>
+              <div className={styles.desc}>
                 {s.desc || (locale === "dk" ? "Tilføj beskrivelse i DB." : "Add description in DB.")}
-              </div>
-
-              <div className={styles.cardFoot}>
-                <span className={styles.pathPill}>/{locale}/species/{s.slug}</span>
-                <span className={styles.chev} aria-hidden="true">→</span>
               </div>
             </Link>
           ))}
         </section>
       ) : (
         <div className={styles.empty}>
-          <div className={styles.emptyTitle}>
-            {locale === "dk"
-              ? "Ingen arter markeret i sæson for denne måned endnu."
-              : "No species marked in season for this month yet."}
-          </div>
-          <div className={styles.emptySub}>
-            {locale === "dk"
-              ? "Tilføj rækker i seasonality (country=DK, region='')."
-              : "Add rows in seasonality (country=DK, region='')."}
-          </div>
+          {locale === "dk"
+            ? "Ingen arter markeret i sæson for denne måned endnu (tilføj seasonality)."
+            : "No species marked in season for this month yet (add seasonality rows)."}
         </div>
       )}
     </main>
