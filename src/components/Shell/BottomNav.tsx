@@ -3,14 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import styles from "./BottomNav.module.css";
+import type { User } from "@supabase/supabase-js";
 
-const items = [
-  { key: "feed", label: "Feed", icon: "feed" },
-  { key: "season", label: "Season", icon: "season" },
-  { key: "log", label: "Log", icon: "log" },
-  { key: "map", label: "Map", icon: "map" },
-  { key: "me", label: "Me", icon: "me" },
-] as const;
+type Item = {
+  key: "feed" | "season" | "log" | "map" | "me";
+  icon: "feed" | "season" | "log" | "map" | "me";
+  href: (locale: string) => string;
+  label: (locale: string) => string;
+};
 
 function Icon({ kind }: { kind: string }) {
   const common = {
@@ -70,6 +70,7 @@ function Icon({ kind }: { kind: string }) {
       </svg>
     );
 
+  // feed/default
   return (
     <svg {...common}>
       <path
@@ -83,15 +84,67 @@ function Icon({ kind }: { kind: string }) {
   );
 }
 
-export function BottomNav({ locale }: { locale: string }) {
+function isActivePath(pathname: string | null, href: string) {
+  if (!pathname) return false;
+  return pathname === href || pathname.startsWith(href + "/");
+}
+
+export function BottomNav({
+  locale,
+  user,
+}: {
+  locale: string;
+  user?: User | null;
+}) {
   const pathname = usePathname();
+  const authed = !!user;
+
+  const items: Item[] = [
+    {
+      key: "feed",
+      icon: "feed",
+      href: (l) => `/${l}/feed`,
+      label: (l) => (l === "dk" ? "Feed" : "Feed"),
+    },
+    {
+      key: "season",
+      icon: "season",
+      href: (l) => `/${l}/season`,
+      label: (l) => (l === "dk" ? "Sæson" : "Season"),
+    },
+    {
+      key: "log",
+      icon: "log",
+      href: (l) => `/${l}/log`,
+      label: (l) => (l === "dk" ? "Log" : "Log"),
+    },
+    {
+      key: "map",
+      icon: "map",
+      href: (l) => `/${l}/map`,
+      label: (l) => (l === "dk" ? "Kort" : "Map"),
+    },
+    {
+      key: "me",
+      icon: "me",
+      href: (l) => (authed ? `/${l}/me` : `/${l}/login`),
+      label: (l) => {
+        if (!authed) return l === "dk" ? "Login" : "Login";
+        return l === "dk" ? "Me" : "Me";
+      },
+    },
+  ];
 
   return (
-    <nav className={styles.nav} aria-label="Bottom navigation">
+    <nav
+      className={styles.nav}
+      aria-label="Bottom navigation"
+      data-auth={authed ? "in" : "out"}
+    >
       <div className={styles.inner}>
         {items.map((it) => {
-          const href = `/${locale}/${it.key}`;
-          const active = pathname === href;
+          const href = it.href(locale);
+          const active = isActivePath(pathname, href);
 
           return (
             <Link
@@ -103,9 +156,10 @@ export function BottomNav({ locale }: { locale: string }) {
                 "pressable",
                 active ? styles.itemActive : "",
               ].join(" ")}
+              aria-current={active ? "page" : undefined}
             >
               <Icon kind={it.icon} />
-              <span className={styles.label}>{it.label}</span>
+              <span className={styles.label}>{it.label(locale)}</span>
             </Link>
           );
         })}
