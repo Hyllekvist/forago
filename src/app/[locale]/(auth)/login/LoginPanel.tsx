@@ -115,7 +115,7 @@ export function LoginPanel() {
           email: cleanEmail,
           password,
           options: {
-            emailRedirectTo: `${origin}/${locale}/callback?returnTo=${encodeURIComponent(returnTo)}`,
+            emailRedirectTo: `${origin}/${locale}/confirm?returnTo=${encodeURIComponent(returnTo)}`,
           },
         });
         if (error) throw error;
