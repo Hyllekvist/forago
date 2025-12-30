@@ -1,13 +1,18 @@
+/* src/app/[locale]/season/Season.module.css */
+
 .wrap {
   padding: 22px var(--pad) calc(var(--bottom-nav-h) + 26px);
   max-width: var(--maxw);
   margin: 0 auto;
-} 
+}
 
-/* Hero */
+/* =========================
+   HERO
+   ========================= */
+
 .hero {
   position: relative;
-  padding: 26px 18px 18px;
+  padding: 26px 18px 16px;
   border-radius: var(--r-xl);
   border: var(--stroke) solid var(--glassLine);
   background: var(--glassBg);
@@ -20,22 +25,17 @@
 .hero::before {
   content: "";
   position: absolute;
-  inset: -80px;
+  inset: -90px;
   pointer-events: none;
   background:
-    radial-gradient(900px 420px at 20% 0%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 60%),
-    radial-gradient(900px 520px at 80% 10%, rgba(255, 255, 255, 0.06), transparent 60%);
-  opacity: 0.9;
+    radial-gradient(900px 420px at 18% 0%,
+      color-mix(in srgb, var(--accent) 24%, transparent),
+      transparent 62%),
+    radial-gradient(900px 520px at 82% 12%,
+      rgba(255, 255, 255, 0.06),
+      transparent 60%);
+  opacity: 0.95;
   filter: saturate(1.05);
-}
-
-.kicker {
-  position: relative;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  font-size: 12px;
-  color: var(--muted2);
-  margin-bottom: 10px;
 }
 
 .heroTop {
@@ -43,7 +43,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 14px;
 }
 
 .h1 {
@@ -60,238 +60,92 @@
   font-size: 16px;
 }
 
-.star {
+/* Primary CTA (right side) */
+.primaryCta {
   position: relative;
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  border: var(--stroke) solid var(--glassLine);
-  background: color-mix(in srgb, var(--glassBg) 72%, transparent);
-  box-shadow: var(--shadow-0);
-  font-size: 18px;
-}
-
-/* KPI row */
-.kpis {
-  position: relative;
-  margin-top: 16px;
-  display: grid;
-  grid-template-columns: 1.2fr 1fr 1fr;
-  gap: 12px;
-}
-
-.kpi {
-  border-radius: var(--r-lg);
-  border: var(--stroke) solid var(--line);
-  background: color-mix(in srgb, var(--panel) 92%, transparent);
-  padding: 14px 14px 12px;
-  min-height: 86px;
-  box-shadow: var(--shadow-0);
-}
-
-.kpiLabel {
-  font-size: 12px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--muted2);
-}
-
-.kpiValue {
-  margin-top: 6px;
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
-.kpiHint {
-  margin-top: 6px;
-  font-size: 13px;
-  color: var(--muted);
-}
-
-/* Gauge card */
-.gaugeCard {
-  position: relative;
-  margin-top: 12px;
-  border-radius: var(--r-xl);
-  border: var(--stroke) solid var(--line);
-  background: color-mix(in srgb, var(--panel) 90%, transparent);
-  padding: 16px 16px 14px;
-  overflow: hidden;
-}
-
-.gaugeHead {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-.gaugeTitle {
-  font-weight: 800;
-  letter-spacing: -0.01em;
-}
-
-.gaugeMeta {
-  color: var(--muted2);
-  font-size: 13px;
-}
-
-.gauge {
-  position: relative;
-  height: 170px;
-  display: grid;
-  place-items: center;
-}
-
-.gaugeRing {
-  --p: 0;
-  width: 170px;
-  height: 170px;
-  border-radius: 999px;
-  background:
-    conic-gradient(var(--accent) calc(var(--p) * 1%), rgba(255,255,255,0.14) 0);
-  -webkit-mask: radial-gradient(circle, transparent 56%, #000 57%);
-  mask: radial-gradient(circle, transparent 56%, #000 57%);
-  filter: drop-shadow(0 18px 40px color-mix(in srgb, var(--accent) 16%, transparent));
-}
-
-.gaugeCenter {
-  position: absolute;
-  text-align: center;
-}
-
-.gaugeNum {
-  font-size: 54px;
-  font-weight: 900;
-  letter-spacing: -0.03em;
-}
-
-.gaugeCap {
-  margin-top: -6px;
-  color: var(--muted);
-  font-size: 14px;
-}
-
-.gaugeLegend {
-  display: flex;
+  flex: 0 0 auto;
+  display: inline-flex;
   align-items: center;
   gap: 10px;
-  color: var(--muted);
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: var(--stroke) solid var(--line);
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  color: var(--ink);
+  font-weight: 900;
   font-size: 13px;
+  text-decoration: none;
+  box-shadow: var(--shadow-0);
 }
 
-.dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 99px;
-  background: var(--accent);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
+.primaryCta:hover {
+  filter: brightness(1.03);
 }
 
-.sepDot {
-  width: 6px;
-  height: 6px;
-  border-radius: 99px;
-  background: color-mix(in srgb, var(--ink) 30%, transparent);
+.primaryCta:active {
+  transform: translateY(1px);
 }
 
-.dim {
-  color: var(--muted2);
+.arrow {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 12px;
+  border: var(--stroke) solid var(--line);
+  background: color-mix(in srgb, var(--panel2) 78%, transparent);
+  color: var(--muted);
 }
 
-/* Month nav */
-.monthNav {
+/* =========================
+   MONTH STRIP (in hero)
+   ========================= */
+
+.monthStrip {
   position: relative;
   margin-top: 14px;
-  padding-top: 12px;
-}
-
-.monthNavTop {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.kicker2 {
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  font-size: 12px;
-  color: var(--muted2);
-}
-
-.monthTitle {
-  margin-top: 6px;
-  font-size: 20px;
-  font-weight: 900;
-  letter-spacing: -0.02em;
-}
-
-.monthHint {
-  color: var(--muted2);
-  font-size: 13px;
-}
-
-.monthRow {
-  margin-top: 10px;
   display: flex;
   gap: 10px;
   overflow-x: auto;
-  padding-bottom: 6px;
+  padding: 2px 2px 6px;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
 
-.monthPill {
+.monthStrip::-webkit-scrollbar {
+  display: none;
+}
+
+.monthChip {
   flex: 0 0 auto;
-  padding: 10px 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  padding: 0 12px;
   border-radius: 999px;
   border: var(--stroke) solid var(--line);
-  background: color-mix(in srgb, var(--panel) 85%, transparent);
+  background: color-mix(in srgb, var(--panel) 86%, transparent);
   color: var(--muted);
-  font-weight: 800;
+  font-weight: 900;
+  font-size: 12px;
+  text-decoration: none;
 }
 
-.monthPillActive {
+.monthChip:hover {
+  filter: brightness(1.03);
+}
+
+.monthChipActive {
   color: var(--ink);
   background: color-mix(in srgb, var(--accent) 18%, transparent);
   border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
 }
 
-/* List head */
-.listHead {
-  margin-top: 18px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px;
-}
+/* =========================
+   GRID + CARDS
+   ========================= */
 
-.h2 {
-  margin: 6px 0 0;
-  font-size: 22px;
-  letter-spacing: -0.02em;
-}
-
-.note {
-  margin: 8px 0 0;
-  color: var(--muted);
-  max-width: 60ch;
-}
-
-.monthCta {
-  border-radius: 999px;
-  border: var(--stroke) solid var(--line);
-  background: color-mix(in srgb, var(--panel) 86%, transparent);
-  padding: 10px 12px;
-  font-size: 13px;
-  color: var(--muted);
-}
-
-/* Cards grid */
 .grid {
   margin-top: 14px;
   display: grid;
@@ -305,7 +159,17 @@
   background: color-mix(in srgb, var(--panel) 92%, transparent);
   padding: 14px 14px 12px;
   position: relative;
+  text-decoration: none;
+  color: inherit;
   box-shadow: var(--shadow-0);
+}
+
+.card:hover {
+  filter: brightness(1.02);
+}
+
+.card:active {
+  transform: translateY(1px);
 }
 
 .cardTop {
@@ -321,12 +185,14 @@
   letter-spacing: -0.02em;
 }
 
-.badge {
+.confBadge {
   border-radius: 999px;
   padding: 7px 10px;
   font-weight: 900;
+  font-size: 12px;
   border: var(--stroke) solid color-mix(in srgb, var(--accent) 35%, var(--line));
   background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--ink);
 }
 
 .meta {
@@ -338,63 +204,105 @@
   font-size: 13px;
 }
 
-.metaItalic {
-  font-style: italic;
-  opacity: 0.95;
-}
-
-.bullet {
+.dot {
   opacity: 0.55;
 }
 
-.pill {
-  padding: 6px 10px;
+.group {
+  padding: 5px 9px;
   border-radius: 999px;
   border: var(--stroke) solid var(--line);
   background: color-mix(in srgb, var(--panel2) 80%, transparent);
   color: var(--muted);
-  font-weight: 700;
+  font-weight: 800;
+  font-size: 12px;
 }
 
-.cardDesc {
+.desc {
   margin-top: 10px;
   color: var(--muted);
   line-height: 1.45;
   min-height: 44px;
 }
 
-.arrow {
+.cardFoot {
   margin-top: 12px;
-  display: inline-flex;
-  width: 34px;
-  height: 34px;
-  border-radius: 12px;
-  border: var(--stroke) solid var(--line);
-  align-items: center;
-  justify-content: center;
-  color: var(--muted);
+  display: flex;
+  justify-content: flex-start;
 }
 
-/* Empty */
+.pathPill {
+  display: inline-flex;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: var(--stroke) solid var(--line);
+  background: color-mix(in srgb, var(--panel2) 82%, transparent);
+  color: var(--muted2);
+  font-weight: 800;
+  font-size: 12px;
+}
+
+/* =========================
+   EMPTY
+   ========================= */
+
 .empty {
   margin-top: 14px;
   border-radius: var(--r-xl);
   border: var(--stroke) dashed var(--line);
   padding: 14px;
   color: var(--muted);
+  background: color-mix(in srgb, var(--panel) 85%, transparent);
 }
 
-/* Responsive */
+/* =========================
+   RESPONSIVE
+   ========================= */
+
 @media (max-width: 740px) {
-  .h1 { font-size: 34px; }
-  .kpis { grid-template-columns: 1fr; }
-  .listHead { flex-direction: column; align-items: flex-start; }
+  .h1 {
+    font-size: 34px;
+  }
+
+  .heroTop {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .primaryCta {
+    align-self: flex-start;
+  }
 }
 
-/* 🔥 VIGTIGT: theme overrides i CSS modules skal indeholde en lokal klasse */
+/* =========================
+   LIGHT MODE PUNCH
+   (theme overrides need local class)
+   ========================= */
+
+:global(html[data-theme="light"]) .hero {
+  /* stærkere “panel”-følelse i light mode */
+  background: color-mix(in srgb, var(--panel) 70%, transparent);
+  border-color: color-mix(in srgb, var(--ink) 10%, transparent);
+  box-shadow: var(--shadow-2);
+}
+
 :global(html[data-theme="light"]) .hero::before {
-  opacity: 0.75;
+  opacity: 0.85;
   background:
-    radial-gradient(900px 420px at 20% 0%, rgba(14, 163, 113, 0.18), transparent 60%),
-    radial-gradient(900px 520px at 80% 10%, rgba(0, 0, 0, 0.04), transparent 60%);
+    radial-gradient(900px 420px at 18% 0%,
+      rgba(14, 163, 113, 0.16),
+      transparent 62%),
+    radial-gradient(900px 520px at 82% 12%,
+      rgba(0, 0, 0, 0.05),
+      transparent 60%);
+}
+
+:global(html[data-theme="light"]) .card {
+  border-color: color-mix(in srgb, var(--ink) 10%, transparent);
+  background: color-mix(in srgb, var(--panel) 96%, transparent);
+}
+
+:global(html[data-theme="light"]) .monthChip {
+  border-color: color-mix(in srgb, var(--ink) 10%, transparent);
+  background: color-mix(in srgb, var(--panel) 94%, transparent);
 }
