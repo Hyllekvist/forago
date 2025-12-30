@@ -342,7 +342,7 @@ setMsg(
           >
             {mode === "signin" ? t.noAccount : t.haveAccount}
           </button>
-
+{mode === "signin" ? (
           <button
             type="button"
             onClick={onForgotPassword}
@@ -359,6 +359,7 @@ setMsg(
           >
             {t.forgot}
           </button>
+  ) : null}
         </div>
 
         {mode === "signin" ? (
