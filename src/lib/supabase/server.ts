@@ -1,5 +1,6 @@
-import { createServerClient } from "@supabase/ssr";
+// src/lib/supabase/server.ts
 import { cookies } from "next/headers";
+import { createServerClient } from "@supabase/ssr";
 
 export async function supabaseServer() {
   const cookieStore = cookies();
@@ -12,11 +13,13 @@ export async function supabaseServer() {
         get(name: string) {
           return cookieStore.get(name)?.value;
         },
-        set(name: string, value: string, options: any) {
-          cookieStore.set({ name, value, ...options });
+        // IMPORTANT: in Server Components, Next disallows setting cookies.
+        // So we provide setters, but they will only be used in Route Handlers / Server Actions.
+        set() {
+          // no-op in Server Components
         },
-        remove(name: string, options: any) {
-          cookieStore.set({ name, value: "", ...options });
+        remove() {
+          // no-op in Server Components
         },
       },
     }
