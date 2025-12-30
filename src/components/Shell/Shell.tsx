@@ -33,7 +33,7 @@ export default function Shell({
 
       <div className={styles.stack}>{children}</div>
 
-      {/* ✅ send user ned så vi kan vise Login/Me korrekt */}
+      {/* ✅ send user videre */}
       <BottomNav locale={locale} user={user} />
     </div>
   );
