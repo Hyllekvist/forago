@@ -1,23 +1,21 @@
+// src/components/Shell/BottomNav.tsx
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import styles from "./BottomNav.module.css";
 import type { User } from "@supabase/supabase-js";
+import styles from "./BottomNav.module.css";
 
-type Props = {
-  locale: string;
-  user?: User | null;
-};
+type Locale = string;
 
-type Item = {
+type NavItem = {
   key: "feed" | "season" | "log" | "map" | "me";
   label: string;
-  icon: "feed" | "season" | "log" | "map" | "me" | "login";
   href: string;
+  icon: "feed" | "season" | "log" | "map" | "me" | "login";
 };
 
-function Icon({ kind }: { kind: Item["icon"] }) {
+function Icon({ kind }: { kind: NavItem["icon"] }) {
   const common = {
     className: styles.icon,
     viewBox: "0 0 24 24",
@@ -79,15 +77,14 @@ function Icon({ kind }: { kind: Item["icon"] }) {
     return (
       <svg {...common}>
         <path
-          d="M10 7V5a2 2 0 0 1 2-2h7v18h-7a2 2 0 0 1-2-2v-2"
+          d="M10 7V6a2 2 0 0 1 2-2h7v16h-7a2 2 0 0 1-2-2v-1"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.8"
           strokeLinecap="round"
-          strokeLinejoin="round"
         />
         <path
-          d="M3 12h10m0 0-3-3m3 3-3 3"
+          d="M12 12H4m0 0 3-3M4 12l3 3"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.8"
@@ -97,7 +94,7 @@ function Icon({ kind }: { kind: Item["icon"] }) {
       </svg>
     );
 
-  // feed fallback
+  // feed (default)
   return (
     <svg {...common}>
       <path
@@ -111,40 +108,39 @@ function Icon({ kind }: { kind: Item["icon"] }) {
   );
 }
 
-function normalizePath(p?: string | null) {
-  if (!p) return "";
-  const noQuery = p.split("?")[0].split("#")[0];
-  if (noQuery.length > 1 && noQuery.endsWith("/")) return noQuery.slice(0, -1);
-  return noQuery;
+function isActivePath(pathname: string | null, href: string) {
+  if (!pathname) return false;
+  if (href.endsWith("/")) href = href.slice(0, -1);
+
+  // root feed: match både /{locale} og /{locale}/
+  if (href.split("/").filter(Boolean).length === 1) {
+    const a = href;
+    return pathname === a || pathname === `${a}/`;
+  }
+
+  return pathname === href || pathname.startsWith(href + "/");
 }
 
-// robust active check: exact match or nested routes
-function isActivePath(pathname: string, href: string) {
-  const p = normalizePath(pathname);
-  const h = normalizePath(href);
-  if (p === h) return true;
-  if (h !== "/" && p.startsWith(h + "/")) return true;
-  return false;
-}
-
-export function BottomNav({ locale, user }: Props) {
+export function BottomNav({ locale, user }: { locale: Locale; user: User | null }) {
   const pathname = usePathname();
 
-  const items: Item[] = [
-    { key: "feed", label: "Feed", icon: "feed", href: `/${locale}/feed` },
-    { key: "season", label: "Season", icon: "season", href: `/${locale}/season` },
-    { key: "log", label: "Log", icon: "log", href: `/${locale}/log` },
-    { key: "map", label: locale === "dk" ? "Kort" : "Map", icon: "map", href: `/${locale}/map` },
-    user
-      ? { key: "me", label: "Me", icon: "me", href: `/${locale}/me` }
-      : { key: "me", label: "Login", icon: "login", href: `/${locale}/login` },
+  const meHref = user ? `/${locale}/me` : `/${locale}/login`;
+  const meLabel = user ? "Me" : "Login";
+  const meIcon: NavItem["icon"] = user ? "me" : "login";
+
+  const items: NavItem[] = [
+    { key: "feed", label: "Feed", href: `/${locale}`, icon: "feed" },
+    { key: "season", label: "Season", href: `/${locale}/season`, icon: "season" },
+    { key: "log", label: "Log", href: `/${locale}/log`, icon: "log" },
+    { key: "map", label: locale === "dk" ? "Kort" : "Map", href: `/${locale}/map`, icon: "map" },
+    { key: "me", label: meLabel, href: meHref, icon: meIcon },
   ];
 
   return (
     <nav
       className={styles.nav}
+      data-variant={user ? "authed" : "guest"}
       aria-label="Bottom navigation"
-      data-auth={user ? "in" : "out"}
     >
       <div className={styles.inner}>
         {items.map((it) => {
@@ -154,10 +150,10 @@ export function BottomNav({ locale, user }: Props) {
             <Link
               key={it.key}
               href={it.href}
-              aria-current={active ? "page" : undefined}
               className={[styles.item, active ? styles.itemActive : ""].join(" ")}
+              aria-current={active ? "page" : undefined}
             >
-              <span className={styles.iconWrap} aria-hidden="true">
+              <span className={styles.icoWrap} aria-hidden="true">
                 <Icon kind={it.icon} />
               </span>
               <span className={styles.label}>{it.label}</span>
