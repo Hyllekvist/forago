@@ -510,91 +510,98 @@ export default function MapClient({ spots }: Props) {
 
 
 
-  const onCreateAndLogFromDrop = useCallback(
-    async ({ name, speciesSlug }: { name: string; speciesSlug: string | null }) => {
-      if (!drop) return;
-      if (dropBusy) return;
+const onCreateAndLogFromDrop = useCallback(
+  async ({ name, speciesSlug }: { name: string; speciesSlug: string | null }) => {
+    if (!drop) return;
+    if (dropBusy) return;
 
-      try {
-        setDropBusy(true);
-        setDropErr(null);
+    try {
+      setDropBusy(true);
+      setDropErr(null);
 
-        const resPlace = await fetch("/api/places/create", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            lat: drop.lat,
-            lng: drop.lng,
-            name,
-            country: "dk",
-            region: "",
-            habitat: "unknown",
-            description: "",
-            ...(speciesSlug ? { species_slug: speciesSlug } : {}),
-            confidence: 60,
-          }),
-        });
+      const resPlace = await fetch("/api/places/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lat: drop.lat,
+          lng: drop.lng,
+          name,
+          country: "dk",
+          region: "",
+          habitat: "unknown",
+          description: "",
+          ...(speciesSlug ? { species_slug: speciesSlug } : {}),
+          confidence: 60,
+        }),
+      });
 
-        const jPlace = await resPlace.json();
-        if (!resPlace.ok || !jPlace?.ok || !jPlace?.place?.slug) {
-          throw new Error(jPlace?.error ?? "Kunne ikke oprette spot");
-        }
-
-        const place = jPlace.place as { slug: string; name: string; lat: number; lng: number };
-
-        const resFind = await fetch("/api/finds/create", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            spot_id: place.slug,
-            species_slug: speciesSlug ?? null,
-            observed_at: new Date().toISOString(),
-            visibility: "public_aggregate",
-            country: "DK",
-            geo_precision_km: 1,
-            photo_urls: [],
-          }),
-        });
-
-        const jFind = await resFind.json();
-        if (!resFind.ok || !jFind?.ok) {
-          throw new Error(jFind?.error ?? "Kunne ikke logge fund");
-        }
-
-        const newSpot: Spot = {
-          id: place.slug,
-          lat: Number(place.lat),
-          lng: Number(place.lng),
-          title: place.name ?? "Nyt spot",
-          species_slug: speciesSlug ?? null,
-        };
-
-        setSpotsLocal((prev) => {
-          if (prev.some((s) => String(s.id) === String(newSpot.id))) return prev;
-          return [newSpot, ...prev];
-        });
-
-        setCountsMap((prev) => ({
-          ...prev,
-          [String(newSpot.id)]: {
-            total: Math.max(prev[String(newSpot.id)]?.total ?? 0, 1),
-            qtr: Math.max(prev[String(newSpot.id)]?.qtr ?? 0, 1),
-          },
-        }));
-
-        setSelectedId(String(newSpot.id));
-        setDrop(null);
-
-        setLogOk(true);
-        window.setTimeout(() => setLogOk(false), 1200);
-      } catch (e: any) {
-        setDropErr(e?.message ?? "Ukendt fejl");
-      } finally {
-        setDropBusy(false);
+      const jPlace = await resPlace.json();
+      if (!resPlace.ok || !jPlace?.ok || !jPlace?.place?.slug) {
+        throw new Error(jPlace?.error ?? "Kunne ikke oprette spot");
       }
-    },
-    [drop, dropBusy]
-  );
+
+      const place = jPlace.place as { slug: string; name: string; lat: number; lng: number };
+
+      // ✅ Flyt kortet til det nye spot (tydelig feedback)
+      if (mapApi) {
+        mapApi.flyTo(place.lat, place.lng, Math.max(mapApi.getZoom(), 14));
+        mapApi.panBy?.(0, isDesktopNow() ? -60 : -140);
+      }
+
+      const resFind = await fetch("/api/finds/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          spot_id: place.slug,
+          species_slug: speciesSlug ?? null,
+          observed_at: new Date().toISOString(),
+          visibility: "public_aggregate",
+          country: "DK",
+          geo_precision_km: 1,
+          photo_urls: [],
+        }),
+      });
+
+      const jFind = await resFind.json();
+      if (!resFind.ok || !jFind?.ok) {
+        throw new Error(jFind?.error ?? "Kunne ikke logge fund");
+      }
+
+      const newSpot: Spot = {
+        id: place.slug,
+        lat: Number(place.lat),
+        lng: Number(place.lng),
+        title: place.name ?? "Nyt spot",
+        species_slug: speciesSlug ?? null,
+      };
+
+      setSpotsLocal((prev) => {
+        if (prev.some((s) => String(s.id) === String(newSpot.id))) return prev;
+        return [newSpot, ...prev];
+      });
+
+      setCountsMap((prev) => ({
+        ...prev,
+        [String(newSpot.id)]: {
+          total: Math.max(prev[String(newSpot.id)]?.total ?? 0, 1),
+          qtr: Math.max(prev[String(newSpot.id)]?.qtr ?? 0, 1),
+        },
+      }));
+
+      setSelectedId(String(newSpot.id));
+      setDrop(null);
+
+      setLogOk(true);
+      window.setTimeout(() => setLogOk(false), 1200);
+    } catch (e: any) {
+      setDropErr(e?.message ?? "Ukendt fejl");
+    } finally {
+      setDropBusy(false);
+    }
+  },
+  [drop, dropBusy, mapApi] // ✅ vigtig (ellers kan mapApi være stale/null)
+);
+
 
   const mobileDockMode: "peek" | "sheet" | "none" = useMemo(() => {
     if (drop) return "none";
