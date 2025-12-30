@@ -1,109 +1,91 @@
-.nav{
+/* src/components/Nav/BottomNav.module.css */
+
+.nav {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 80;
-
+  z-index: 50;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
   pointer-events: none;
-  padding: 0 var(--pad) calc(10px + env(safe-area-inset-bottom));
 }
 
-.inner{
+.inner {
   pointer-events: auto;
-
-  max-width: var(--maxw);
+  max-width: 980px;
   margin: 0 auto;
-
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: var(--s-1);
+  gap: 6px;
 
-  padding: 8px 10px;
-  border-radius: var(--r-xl);
+  border-radius: 22px;
+  padding: 10px 10px;
 
-  border: var(--stroke) solid var(--glassLine);
-  background: var(--glassBg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-
-  box-shadow: var(--shadow-2);
+  /* base glass */
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(20, 22, 26, 0.55);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 45px rgba(0,0,0,0.35);
 }
 
-.item{
+/* Logged-out: lidt “koldere” og mere neutral (hint: login) */
+.loggedOut .inner {
+  border-color: rgba(255,255,255,0.14);
+  background: rgba(18, 20, 24, 0.52);
+}
+
+/* Logged-in: en anelse mere “aktiv/varm” (uden at blive grøn neon) */
+.loggedIn .inner {
+  border-color: rgba(34,197,94,0.22);
+  background: rgba(16, 24, 20, 0.50);
+}
+
+/* Light mode: cards/nav skal være synlige */
+@media (prefers-color-scheme: light) {
+  .inner {
+    border: 1px solid rgba(10, 12, 16, 0.12);
+    background: rgba(255, 255, 255, 0.78);
+    box-shadow: 0 18px 45px rgba(0,0,0,0.12);
+  }
+  .loggedIn .inner {
+    border-color: rgba(16, 185, 129, 0.22);
+    background: rgba(255, 255, 255, 0.84);
+  }
+  .loggedOut .inner {
+    background: rgba(255, 255, 255, 0.82);
+  }
+}
+
+.item {
   display: grid;
-  place-items: center;
-  gap: 4px;
-
-  padding: 6px 6px;
-  border-radius: var(--r-lg);
-
-  color: var(--muted);
-  border: 1px solid transparent;
-
-  min-height: 44px;
+  justify-items: center;
+  gap: 6px;
+  padding: 10px 8px;
+  border-radius: 16px;
+  color: inherit;
+  text-decoration: none;
+  opacity: 0.88;
+  transition: transform 120ms ease, opacity 120ms ease, background 120ms ease;
 }
 
-.icon{
+.itemActive {
+  opacity: 1;
+  background: rgba(255,255,255,0.08);
+}
+
+@media (prefers-color-scheme: light) {
+  .itemActive {
+    background: rgba(10,12,16,0.06);
+  }
+}
+
+.icon {
   width: 22px;
   height: 22px;
-  display: block;
 }
 
-.label{
-  font-size: 11px;
+.label {
+  font-size: 12px;
   line-height: 1;
-  letter-spacing: -0.01em;
-}
-
-.itemActive{
-  color: var(--ink);
-  background: color-mix(in srgb, var(--panel2) 70%, transparent);
-  border-color: color-mix(in srgb, var(--line) 90%, transparent);
-}
-
-.item:active,
-.itemActive:active{
-  transform: translateY(1px);
-}
-
-@media (max-width: 640px){
-  .nav{
-    padding: 0 12px calc(10px + env(safe-area-inset-bottom));
-  }
-  .inner{
-    padding: 7px 9px;
-    border-radius: var(--r-xl);
-  }
-  .icon{
-    width: 21px;
-    height: 21px;
-  }
-  .label{
-    font-size: 10.5px;
-  }
-}
-
-/* Light: mindre “dirty” */
-:global(:root[data-theme="light"]) .inner{
-  box-shadow: 0 14px 34px rgba(15,23,42,0.10);
-}
-:global(:root[data-theme="light"]) .item{
-  color: color-mix(in srgb, var(--ink) 70%, rgba(15,23,42,0.30));
-}
-:global(:root[data-theme="light"]) .itemActive{
-  background: rgba(15,23,42,0.06);
-  border-color: rgba(15,23,42,0.12);
-}
-
-
-/* Different overlay mood when logged out vs logged in */
-.nav[data-auth="out"] {
-  background: var(--bottomnav-guest-bg);
-  border-top-color: var(--bottomnav-guest-border);
-}
-
-.nav[data-auth="in"] {
-  background: var(--bottomnav-auth-bg);
-  border-top-color: var(--bottomnav-auth-border);
+  opacity: 0.9;
 }
