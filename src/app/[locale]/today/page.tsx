@@ -11,13 +11,13 @@ function safeLocale(v: unknown): Locale {
   return v === "dk" || v === "en" || v === "se" || v === "de" ? v : "dk";
 }
 
-function monthUTC() {
-  return new Date().getUTCMonth() + 1; // 1-12
+function monthLocal() {
+  return new Date().getMonth() + 1; // 1-12 (lokal tid)
 }
 
 function inSeasonForMonth(a: number, b: number, m: number) {
   if (a <= b) return m >= a && m <= b;
-  return m >= a || m <= b; // wrap-around
+  return m >= a || m <= b; // wrap-around (fx nov->feb)
 }
 
 type SeasonalityRow = {
@@ -55,12 +55,18 @@ export default async function TodayPage({
   params: { locale: string };
 }) {
   const locale = safeLocale(params?.locale);
+
+  // ✅ Locale ≠ country. Today er nationalt (privacy-first) → hardcode DK for nu.
+  // Senere kan I gøre det dynamisk via user settings/geo.
+  const country = "DK";
+  const region = ""; // jeres schema bruger tom string som "ingen region"
+
   const supabase = await supabaseServer();
 
   const [{ data: auth }, feedRes] = await Promise.all([
     supabase.auth.getUser(),
     supabase.rpc("feed_top_species", {
-      p_country: "DK",
+      p_country: country,
       p_locale: locale,
       p_days: 14,
       p_limit: 6,
@@ -71,14 +77,13 @@ export default async function TodayPage({
   const uid = auth?.user?.id ?? null;
 
   // -------- In season now (privacy-first, national) --------
-  const month = monthUTC();
+  const month = monthLocal();
 
   const { data: seasonRowsRaw } = await supabase
     .from("seasonality")
     .select("species_id, month_from, month_to, confidence")
-    // behold din eksisterende logik – men TS-safe
-    .eq("country", locale)
-    .eq("region", "");
+    .eq("country", country)
+    .eq("region", region);
 
   const seasonRows = (seasonRowsRaw ?? []) as SeasonalityRow[];
 
@@ -125,7 +130,7 @@ export default async function TodayPage({
         scientific_name: String(s.scientific_name ?? ""),
         common_name: String(t?.common_name ?? s.slug ?? ""),
         short_description: String(t?.short_description ?? ""),
-        confidence: Number(season?.confidence ?? 0), // ✅ TS-safe
+        confidence: Number(season?.confidence ?? 0),
       };
     })
     .sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0))
@@ -156,7 +161,8 @@ export default async function TodayPage({
 
   const title =
     locale === "dk" ? "Naturen omkring dig i dag" : "Nature around you today";
-  const sub = locale === "dk" ? "Opdateret · Sæsonbaseret" : "Updated · Season-based";
+  const sub =
+    locale === "dk" ? "Opdateret · Sæsonbaseret" : "Updated · Season-based";
 
   return (
     <main className={styles.page}>
@@ -188,25 +194,35 @@ export default async function TodayPage({
             href={`/${locale}/map`}
             className={`${styles.chip} ${styles.chipLink} hoverable pressable`}
           >
-            <div className={styles.chipTop}>🗺️ {locale === "dk" ? "Kort" : "Map"}</div>
-            <div className={styles.chipValue}>{locale === "dk" ? "Udforsk" : "Explore"} →</div>
+            <div className={styles.chipTop}>
+              🗺️ {locale === "dk" ? "Kort" : "Map"}
+            </div>
+            <div className={styles.chipValue}>
+              {locale === "dk" ? "Udforsk" : "Explore"} →
+            </div>
           </Link>
 
           <Link
             href={`/${locale}/ask`}
             className={`${styles.chip} ${styles.chipLink} hoverable pressable`}
           >
-            <div className={styles.chipTop}>❓ {locale === "dk" ? "Spørg" : "Ask"}</div>
-            <div className={styles.chipValue}>{locale === "dk" ? "Få svar" : "Get answers"} →</div>
+            <div className={styles.chipTop}>
+              ❓ {locale === "dk" ? "Spørg" : "Ask"}
+            </div>
+            <div className={styles.chipValue}>
+              {locale === "dk" ? "Få svar" : "Get answers"} →
+            </div>
           </Link>
 
           <Link
             href={`/${locale}/log`}
             className={`${styles.chip} ${styles.chipLink} hoverable pressable`}
           >
-            <div className={styles.chipTop}>📓 {locale === "dk" ? "Mine fund" : "My finds"}</div>
+            <div className={styles.chipTop}>
+              📓 {locale === "dk" ? "Mine fund" : "My finds"}
+            </div>
             <div className={styles.chipValue}>
-              {uid ? `${myTotal}` : (locale === "dk" ? "Log ind" : "Sign in")} →
+              {uid ? `${myTotal}` : locale === "dk" ? "Log ind" : "Sign in"} →
             </div>
           </Link>
         </div>
@@ -214,8 +230,13 @@ export default async function TodayPage({
 
       <section className={styles.section} aria-label="In season now">
         <div className={styles.sectionHead}>
-          <h2 className={styles.h2}>{locale === "dk" ? "I sæson nu" : "In season now"}</h2>
-          <Link className={`${styles.more} hoverable pressable`} href={`/${locale}/season`}>
+          <h2 className={styles.h2}>
+            {locale === "dk" ? "I sæson nu" : "In season now"}
+          </h2>
+          <Link
+            className={`${styles.more} hoverable pressable`}
+            href={`/${locale}/season`}
+          >
             {locale === "dk" ? "Se mere →" : "See more →"}
           </Link>
         </div>
@@ -259,8 +280,13 @@ export default async function TodayPage({
 
       <section className={styles.section} aria-label="What’s hot">
         <div className={styles.sectionHead}>
-          <h2 className={styles.h2}>{locale === "dk" ? "Hvad sker der" : "What’s happening"}</h2>
-          <Link className={`${styles.more} hoverable pressable`} href={`/${locale}/feed`}>
+          <h2 className={styles.h2}>
+            {locale === "dk" ? "Hvad sker der" : "What’s happening"}
+          </h2>
+          <Link
+            className={`${styles.more} hoverable pressable`}
+            href={`/${locale}/feed`}
+          >
             {locale === "dk" ? "Åbn feed →" : "Open feed →"}
           </Link>
         </div>
@@ -269,16 +295,28 @@ export default async function TodayPage({
           {(topSpecies ?? []).slice(0, 4).map((t: any) => (
             <Link
               key={`${t.spot_id}-${t.species_slug}`}
-              href={t.species_slug ? `/${locale}/species/${t.species_slug}` : `/${locale}/feed`}
+              href={
+                t.species_slug
+                  ? `/${locale}/species/${t.species_slug}`
+                  : `/${locale}/feed`
+              }
               className={`${styles.row} hoverable pressable`}
             >
               <div className={styles.rowLeft}>
                 <div className={styles.rowKicker}>
-                  {t.spot_id ? `Spot ${t.spot_id}` : (locale === "dk" ? "Spot" : "Spot")}
+                  {t.spot_id
+                    ? `Spot ${t.spot_id}`
+                    : locale === "dk"
+                    ? "Spot"
+                    : "Spot"}
                   <span className={styles.dot}>·</span>
-                  <span>{t.finds_count ?? 0} {locale === "dk" ? "fund" : "finds"}</span>
+                  <span>
+                    {t.finds_count ?? 0} {locale === "dk" ? "fund" : "finds"}
+                  </span>
                 </div>
-                <div className={styles.rowTitle}>{t.common_name ?? t.species_slug ?? ""}</div>
+                <div className={styles.rowTitle}>
+                  {t.common_name ?? t.species_slug ?? ""}
+                </div>
                 <div className={styles.rowMeta}>
                   <span>{t.primary_group ?? ""}</span>
                   {t.scientific_name ? (
@@ -307,8 +345,13 @@ export default async function TodayPage({
       {uid ? (
         <section className={styles.section} aria-label="My activity">
           <div className={styles.sectionHead}>
-            <h2 className={styles.h2}>{locale === "dk" ? "Din aktivitet" : "Your activity"}</h2>
-            <Link className={`${styles.more} hoverable pressable`} href={`/${locale}/log`}>
+            <h2 className={styles.h2}>
+              {locale === "dk" ? "Din aktivitet" : "Your activity"}
+            </h2>
+            <Link
+              className={`${styles.more} hoverable pressable`}
+              href={`/${locale}/log`}
+            >
               {locale === "dk" ? "Se log →" : "See log →"}
             </Link>
           </div>
