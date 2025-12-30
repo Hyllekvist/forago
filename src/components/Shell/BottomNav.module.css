@@ -95,3 +95,15 @@
   background: rgba(15,23,42,0.06);
   border-color: rgba(15,23,42,0.12);
 }
+
+
+/* Different overlay mood when logged out vs logged in */
+.nav[data-auth="out"] {
+  background: var(--bottomnav-guest-bg);
+  border-top-color: var(--bottomnav-guest-border);
+}
+
+.nav[data-auth="in"] {
+  background: var(--bottomnav-auth-bg);
+  border-top-color: var(--bottomnav-auth-border);
+}
