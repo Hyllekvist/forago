@@ -7,6 +7,12 @@ export const revalidate = 3600;
 const SUPPORTED_LOCALES = ["dk", "en"] as const;
 type Locale = (typeof SUPPORTED_LOCALES)[number];
 
+function countryForLocale(locale: string) {
+  // MVP: Danmark, men klar til udvidelse senere
+  return "DK";
+}
+
+
 function isLocale(x: string): x is Locale {
   return (SUPPORTED_LOCALES as readonly string[]).includes(x);
 }
@@ -54,7 +60,8 @@ export default async function SeasonNowPage({ params }: { params: { locale: stri
   const locale = localeParam;
 
   const month = currentMonthCopenhagen();
-  const country = locale; // dk -> dk
+ const country = countryForLocale(locale);
+
 
 const supabase = await supabaseServer();
 
