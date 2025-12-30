@@ -59,18 +59,43 @@
   --muted2: color-mix(in srgb, var(--ink) 55%, transparent);
 }
 
-:root {
-  --bottomnav-guest-bg: rgba(255,255,255,0.88);
-  --bottomnav-guest-border: rgba(0,0,0,0.08);
-
-  --bottomnav-auth-bg: rgba(255,255,255,0.82);
-  --bottomnav-auth-border: rgba(0,0,0,0.10);
-}
+/* BottomNav tokens (global) */
 
 html[data-theme="dark"] {
-  --bottomnav-guest-bg: rgba(12,14,16,0.86);
-  --bottomnav-guest-border: rgba(255,255,255,0.08);
+  --bnav-bg: rgba(10, 14, 18, 0.72);
+  --bnav-border: rgba(255, 255, 255, 0.10);
+  --bnav-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
 
-  --bottomnav-auth-bg: rgba(12,14,16,0.78);
-  --bottomnav-auth-border: rgba(255,255,255,0.10);
+  --bnav-ink: rgba(255, 255, 255, 0.88);
+  --bnav-active-ink: rgba(255, 255, 255, 0.95);
+
+  --bnav-active-bg: rgba(255, 255, 255, 0.06);
+  --bnav-active-pill: rgba(255, 255, 255, 0.07);
+}
+
+html[data-theme="light"] {
+  --bnav-bg: rgba(255, 255, 255, 0.78);
+  --bnav-border: rgba(10, 20, 30, 0.10);
+  --bnav-shadow: 0 18px 50px rgba(10, 20, 30, 0.12);
+
+  --bnav-ink: rgba(10, 20, 30, 0.78);
+  --bnav-active-ink: rgba(10, 20, 30, 0.92);
+
+  --bnav-active-bg: rgba(10, 20, 30, 0.05);
+  --bnav-active-pill: rgba(10, 20, 30, 0.06);
+}
+
+/* Logged out overlay: mere “CTA” */
+html[data-auth="out"][data-theme="dark"] {
+  --bnav-bg: rgba(10, 14, 18, 0.78);
+  --bnav-border: rgba(255, 255, 255, 0.12);
+  --bnav-active-bg: rgba(34, 197, 94, 0.12);
+  --bnav-active-pill: rgba(34, 197, 94, 0.14);
+}
+
+html[data-auth="out"][data-theme="light"] {
+  --bnav-bg: rgba(255, 255, 255, 0.86);
+  --bnav-border: rgba(10, 20, 30, 0.12);
+  --bnav-active-bg: rgba(34, 197, 94, 0.14);
+  --bnav-active-pill: rgba(34, 197, 94, 0.16);
 }
