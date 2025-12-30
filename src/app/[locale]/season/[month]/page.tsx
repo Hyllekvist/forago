@@ -1,4 +1,3 @@
-// src/app/[locale]/season/[month]/page.tsx
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -11,41 +10,17 @@ const SUPPORTED_LOCALES = ["dk", "en"] as const;
 type Locale = (typeof SUPPORTED_LOCALES)[number];
 
 const MONTH_SLUG_TO_NUM: Record<string, number> = {
-  january: 1,
-  february: 2,
-  march: 3,
-  april: 4,
-  may: 5,
-  june: 6,
-  july: 7,
-  august: 8,
-  september: 9,
-  october: 10,
-  november: 11,
-  december: 12,
+  january: 1, february: 2, march: 3, april: 4, may: 5, june: 6,
+  july: 7, august: 8, september: 9, october: 10, november: 11, december: 12,
 };
 
 const MONTH_NUM_TO_DK: Record<number, string> = {
-  1: "januar",
-  2: "februar",
-  3: "marts",
-  4: "april",
-  5: "maj",
-  6: "juni",
-  7: "juli",
-  8: "august",
-  9: "september",
-  10: "oktober",
-  11: "november",
-  12: "december",
+  1:"januar",2:"februar",3:"marts",4:"april",5:"maj",6:"juni",
+  7:"juli",8:"august",9:"september",10:"oktober",11:"november",12:"december",
 };
 
 function isLocale(x: string): x is Locale {
   return (SUPPORTED_LOCALES as readonly string[]).includes(x);
-}
-
-function countryForLocale(_locale: Locale) {
-  return "DK";
 }
 
 function inMonth(month: number, from: number, to: number) {
@@ -55,7 +30,6 @@ function inMonth(month: number, from: number, to: number) {
 
 export async function generateMetadata({ params }: { params: { locale: string; month: string } }) {
   if (!isLocale(params.locale)) return { title: "Forago" };
-
   const monthNum = MONTH_SLUG_TO_NUM[params.month];
   if (!monthNum) return { title: "Forago" };
 
@@ -89,7 +63,6 @@ export default async function SeasonMonthPage({ params }: { params: { locale: st
   if (!monthNum) return notFound();
 
   const supabase = await supabaseServer();
-  const country = countryForLocale(locale);
 
   const { data: mp, error: mpErr } = await supabase
     .from("season_month_pages")
@@ -97,15 +70,13 @@ export default async function SeasonMonthPage({ params }: { params: { locale: st
     .eq("locale", locale)
     .eq("month", monthNum)
     .maybeSingle();
-
   if (mpErr) throw mpErr;
 
   const { data: seas, error: seasErr } = await supabase
     .from("seasonality")
     .select("species_id, month_from, month_to, confidence")
-    .eq("country", country)
+    .eq("country", "DK")
     .eq("region", "");
-
   if (seasErr) throw seasErr;
 
   const ids =
@@ -117,7 +88,10 @@ export default async function SeasonMonthPage({ params }: { params: { locale: st
   let speciesCards: Array<{ slug: string; name: string; conf: number }> = [];
 
   if (uniqueIds.length) {
-    const { data: spRows, error: sp2Err } = await supabase.from("species").select("id, slug").in("id", uniqueIds);
+    const { data: spRows, error: sp2Err } = await supabase
+      .from("species")
+      .select("id, slug")
+      .in("id", uniqueIds);
     if (sp2Err) throw sp2Err;
 
     const { data: trRows, error: tr2Err } = await supabase
@@ -145,64 +119,62 @@ export default async function SeasonMonthPage({ params }: { params: { locale: st
 
   return (
     <main className={styles.wrap}>
-      <Link href={`/${locale}/season`} className={styles.back}>
+      <Link className={styles.back} href={`/${locale}/season`}>
         ← {locale === "dk" ? "Sæson" : "Season"}
       </Link>
 
       <header className={styles.hero}>
-        <div className={styles.kicker}>{locale === "dk" ? "MÅNED" : "MONTH"}</div>
+        <div className={styles.kicker}>{locale === "dk" ? "MÅNEDSSIDE" : "MONTH PAGE"}</div>
         <h1 className={styles.h1}>
           {locale === "dk" ? `I sæson i ${monthLabel}` : `In season in ${monthLabel}`}
         </h1>
         <p className={styles.sub}>
           {locale === "dk"
-            ? "Overblik + SEO-tekst. Privatliv først — ingen spots."
-            : "Overview + SEO text. Privacy first — no spots."}
+            ? "Overblik + SEO-intro. Ingen spots."
+            : "Overview + SEO intro. No spots."}
         </p>
+
+        <section className={styles.panel}>
+          <h2 className={styles.h2}>{locale === "dk" ? "Overblik" : "Overview"}</h2>
+          <div className={styles.intro}>
+            {mp?.intro ||
+              (locale === "dk"
+                ? "Tilføj intro i season_month_pages (det er din SEO-tekst)."
+                : "Add intro in season_month_pages (this is your SEO text).")}
+          </div>
+
+          <div className={styles.links}>
+            <Link className={styles.pillLink} href={`/${locale}/guides/safety-basics`}>
+              {locale === "dk" ? "Sikkerhed →" : "Safety →"}
+            </Link>
+            <Link className={styles.pillLink} href={`/${locale}/guides/lookalikes`}>
+              {locale === "dk" ? "Forvekslinger →" : "Look-alikes →"}
+            </Link>
+          </div>
+        </section>
       </header>
 
-      <section className={styles.panel}>
-        <h2 className={styles.h2}>{locale === "dk" ? "Overblik" : "Overview"}</h2>
-        <div className={styles.intro}>
-          {mp?.intro ||
-            (locale === "dk"
-              ? "Tilføj intro i season_month_pages (det er din SEO-tekst)."
-              : "Add intro in season_month_pages (this is your SEO text).")}
-        </div>
-
-        <div className={styles.links}>
-          <Link href={`/${locale}/guides/safety-basics`} className={styles.pill}>
-            {locale === "dk" ? "Sikkerhed" : "Safety"} →
-          </Link>
-          <Link href={`/${locale}/guides/lookalikes`} className={styles.pill}>
-            {locale === "dk" ? "Forvekslinger" : "Look-alikes"} →
-          </Link>
-        </div>
-      </section>
-
       <section className={styles.section}>
-        <div className={styles.sectionHead}>
+        <div className={styles.sectionTop}>
           <div>
             <div className={styles.sectionKicker}>{locale === "dk" ? "I SÆSON" : "IN SEASON"}</div>
-            <h2 className={styles.h2}>{locale === "dk" ? "Arter" : "Species"}</h2>
+            <h2 className={styles.h2}>{locale === "dk" ? "Arter i sæson" : "Species in season"}</h2>
           </div>
-          <div className={styles.count}>{speciesCards.length}</div>
+          <div className={styles.sectionHint}>{locale === "dk" ? "Sorteret efter confidence" : "Sorted by confidence"}</div>
         </div>
 
         {speciesCards.length ? (
-          <div className={styles.grid}>
+          <div className={styles.cards}>
             {speciesCards.map((s) => (
               <Link key={s.slug} href={`/${locale}/species/${s.slug}`} className={styles.card}>
                 <div className={styles.cardTop}>
                   <div className={styles.cardTitle}>{s.name}</div>
-                  <div className={styles.badge}>{s.conf}%</div>
+                  <div className={styles.pill}>{s.conf}%</div>
                 </div>
-                <div className={styles.cardMeta}>
+                <div className={styles.cardHint}>
                   {locale === "dk" ? "Sæson match" : "Season match"}
                 </div>
-                <div className={styles.cardArrow} aria-hidden="true">
-                  →
-                </div>
+                <div className={styles.cardArrow} aria-hidden="true">→</div>
               </Link>
             ))}
           </div>
