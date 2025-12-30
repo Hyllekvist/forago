@@ -111,19 +111,38 @@ export function LoginPanel() {
 
         // Bemærk: signup kan kræve email confirmation afhængigt af Supabase settings.
         // Hvis confirmation er ON, får brugeren en mail og ender via callback (token_hash/type) eller code (afhængigt af template).
-        const { error } = await supabase.auth.signUp({
-          email: cleanEmail,
-          password,
-          options: {
-            emailRedirectTo: `${origin}/${locale}/confirm?returnTo=${encodeURIComponent(returnTo)}`,
-          },
-        });
-        if (error) throw error;
+const { data, error } = await supabase.auth.signUp({
+  email: cleanEmail,
+  password,
+  options: {
+    emailRedirectTo: `${origin}/${locale}/confirm?returnTo=${encodeURIComponent(returnTo)}`,
+  },
+});
 
-        setMsg(locale === "dk"
-          ? "Konto oprettet. Hvis email-bekræftelse er slået til, så tjek din inbox."
-          : "Account created. If email confirmation is enabled, check your inbox."
-        );
+if (error) throw error;
+
+// Hvis confirmation er OFF → du får session med det samme → send videre
+if (data?.session) {
+  router.replace(returnTo);
+  router.refresh();
+  return;
+}
+
+// Hvis confirmation er ON → user oprettes men skal bekræftes via mail
+if (!data?.user) {
+  throw new Error(
+    locale === "dk"
+      ? "Signup gav ingen bruger. Prøv at logge ind i stedet."
+      : "Signup returned no user. Try signing in instead."
+  );
+}
+
+setMsg(
+  locale === "dk"
+    ? "Konto oprettet. Tjek din inbox + spam for bekræftelsesmail."
+    : "Account created. Check your inbox + spam for the confirmation email."
+);
+
       } catch (e: any) {
         const m =
           e?.message ||
