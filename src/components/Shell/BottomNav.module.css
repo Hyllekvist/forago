@@ -1,91 +1,130 @@
-/* src/components/Nav/BottomNav.module.css */
+/* src/components/Shell/BottomNav.module.css */
 
 .nav {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 50;
-  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-  pointer-events: none;
+
+  display: flex;
+  justify-content: center;
+
+  padding: 10px 12px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
+
+  z-index: 60;
+  pointer-events: none; /* inner tager clicks */
 }
 
 .inner {
-  pointer-events: auto;
-  max-width: 980px;
-  margin: 0 auto;
+  width: min(720px, calc(100vw - 24px));
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 6px;
 
+  pointer-events: auto;
   border-radius: 22px;
-  padding: 10px 10px;
 
-  /* base glass */
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(20, 22, 26, 0.55);
-  backdrop-filter: blur(14px);
-  box-shadow: 0 18px 45px rgba(0,0,0,0.35);
-}
+  background: var(--bnav-bg);
+  border: 1px solid var(--bnav-border);
+  box-shadow: var(--bnav-shadow);
 
-/* Logged-out: lidt “koldere” og mere neutral (hint: login) */
-.loggedOut .inner {
-  border-color: rgba(255,255,255,0.14);
-  background: rgba(18, 20, 24, 0.52);
-}
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 
-/* Logged-in: en anelse mere “aktiv/varm” (uden at blive grøn neon) */
-.loggedIn .inner {
-  border-color: rgba(34,197,94,0.22);
-  background: rgba(16, 24, 20, 0.50);
-}
-
-/* Light mode: cards/nav skal være synlige */
-@media (prefers-color-scheme: light) {
-  .inner {
-    border: 1px solid rgba(10, 12, 16, 0.12);
-    background: rgba(255, 255, 255, 0.78);
-    box-shadow: 0 18px 45px rgba(0,0,0,0.12);
-  }
-  .loggedIn .inner {
-    border-color: rgba(16, 185, 129, 0.22);
-    background: rgba(255, 255, 255, 0.84);
-  }
-  .loggedOut .inner {
-    background: rgba(255, 255, 255, 0.82);
-  }
+  padding: 8px;
 }
 
 .item {
   display: grid;
-  justify-items: center;
   gap: 6px;
+  justify-items: center;
+
   padding: 10px 8px;
   border-radius: 16px;
-  color: inherit;
+
   text-decoration: none;
-  opacity: 0.88;
-  transition: transform 120ms ease, opacity 120ms ease, background 120ms ease;
+  color: var(--bnav-ink);
+  transition: transform 120ms ease, background 120ms ease, color 120ms ease;
 }
 
-.itemActive {
-  opacity: 1;
-  background: rgba(255,255,255,0.08);
+.item:active {
+  transform: scale(0.98);
 }
 
-@media (prefers-color-scheme: light) {
-  .itemActive {
-    background: rgba(10,12,16,0.06);
-  }
+.iconWrap {
+  width: 40px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: transparent;
 }
 
 .icon {
   width: 22px;
   height: 22px;
+  opacity: 0.92;
 }
 
 .label {
   font-size: 12px;
   line-height: 1;
-  opacity: 0.9;
+  opacity: 0.82;
+}
+
+.itemActive {
+  background: var(--bnav-active-bg);
+  color: var(--bnav-active-ink);
+}
+
+.itemActive .iconWrap {
+  background: var(--bnav-active-pill);
+}
+
+.itemActive .label {
+  opacity: 0.95;
+}
+
+/* -------- Theme tokens (drives both light/dark + auth states) -------- */
+
+/* Default = “logged in” feel (mere premium) */
+:global(html[data-theme="dark"]) {
+  --bnav-bg: rgba(10, 14, 18, 0.72);
+  --bnav-border: rgba(255, 255, 255, 0.10);
+  --bnav-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+
+  --bnav-ink: rgba(255, 255, 255, 0.88);
+  --bnav-active-ink: rgba(255, 255, 255, 0.95);
+
+  --bnav-active-bg: rgba(255, 255, 255, 0.06);
+  --bnav-active-pill: rgba(255, 255, 255, 0.07);
+}
+
+:global(html[data-theme="light"]) {
+  /* her er din bug lige nu: nav bliver for “grå og død” */
+  --bnav-bg: rgba(255, 255, 255, 0.78);
+  --bnav-border: rgba(10, 20, 30, 0.10);
+  --bnav-shadow: 0 18px 50px rgba(10, 20, 30, 0.12);
+
+  --bnav-ink: rgba(10, 20, 30, 0.78);
+  --bnav-active-ink: rgba(10, 20, 30, 0.92);
+
+  --bnav-active-bg: rgba(10, 20, 30, 0.05);
+  --bnav-active-pill: rgba(10, 20, 30, 0.06);
+}
+
+/* Logged OUT overlay: mere tydelig “call to action” uden at skrige */
+:global(html[data-auth="out"][data-theme="dark"]) {
+  --bnav-bg: rgba(10, 14, 18, 0.78);
+  --bnav-border: rgba(255, 255, 255, 0.12);
+  --bnav-active-bg: rgba(34, 197, 94, 0.12);
+  --bnav-active-pill: rgba(34, 197, 94, 0.14);
+}
+
+:global(html[data-auth="out"][data-theme="light"]) {
+  --bnav-bg: rgba(255, 255, 255, 0.86);
+  --bnav-border: rgba(10, 20, 30, 0.12);
+  --bnav-active-bg: rgba(34, 197, 94, 0.14);
+  --bnav-active-pill: rgba(34, 197, 94, 0.16);
 }
