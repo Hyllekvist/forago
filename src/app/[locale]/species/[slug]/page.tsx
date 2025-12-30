@@ -76,6 +76,11 @@ function currentMonthUTC() {
   return new Date().getUTCMonth() + 1;
 }
 
+function countryForLocale(locale: string) {
+  // MVP: Danmark, men klar til udvidelse senere
+  return "DK";
+}
+
 function isInSeason(month: number, from: number, to: number) {
   if (from <= to) return month >= from && month <= to;
   return month >= from || month <= to;
@@ -166,7 +171,7 @@ const supabase = await supabaseServer();
   const month = currentMonthUTC();
 
   // midlertidigt: land = locale
-  const country = locale;
+const country = countryForLocale(locale);
 
   const { data: sp, error: spErr } = await supabase
     .from("species")
