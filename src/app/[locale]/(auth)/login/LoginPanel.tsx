@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useCallback } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { supabaseBrowser } from "@/lib/supabase/browser";
 
 
 function inferLocaleFromPath(pathname: string) {
@@ -25,7 +25,7 @@ function safeLocalUrlWithQuery(path: string, query: string) {
 }
 
 export function LoginPanel() {
-  const supabase = useMemo(() => createClient(), []);
+  const supabase = useMemo(() => supabaseBrowser(), []);
 
   const pathname = usePathname() || "/dk/login";
   const searchParams = useSearchParams();
