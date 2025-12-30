@@ -1,0 +1,297 @@
+.page{
+  padding: 16px var(--pad) 96px;
+  max-width: var(--maxw);
+  margin: 0 auto;
+}
+
+.hero{
+  border-radius: 18px;
+  border: 1px solid color-mix(in oklab, var(--cardBorder) 78%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--bg) 88%, var(--accent1) 12%),
+    color-mix(in oklab, var(--bg) 90%, var(--accent2) 10%)
+  );
+  box-shadow: 0 26px 70px rgba(0,0,0,0.18);
+  padding: 16px;
+}
+
+.breadcrumb{ margin-bottom: 10px; }
+.back{
+  text-decoration: none;
+  color: var(--muted);
+  display: inline-flex;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in oklab, var(--cardBorder) 70%, transparent);
+  background: color-mix(in oklab, var(--card) 80%, transparent);
+}
+
+.heroTop{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.h1{
+  margin: 0;
+  font-size: 26px;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.sub{
+  margin: 8px 0 0;
+  color: var(--muted);
+  max-width: 66ch;
+  line-height: 1.35;
+}
+
+.heroRight{
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  min-width: 140px;
+}
+
+.countPill{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--cardBorder) 70%, transparent);
+  background: color-mix(in oklab, var(--card) 80%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.countDot{
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  background: color-mix(in oklab, var(--accent1) 75%, var(--accent2) 25%);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent1) 16%, transparent);
+}
+
+.countTxt{
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.monthStrip{
+  margin-top: 14px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
+}
+.monthStrip::-webkit-scrollbar{ display:none; }
+
+.monthChip{
+  flex: 0 0 auto;
+  text-decoration: none;
+  color: var(--muted);
+  font-weight: 800;
+  font-size: 13px;
+  padding: 9px 11px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--cardBorder) 70%, transparent);
+  background: color-mix(in oklab, var(--card) 82%, transparent);
+}
+
+.monthChipActive{
+  color: var(--ink);
+  border-color: color-mix(in oklab, var(--accent1) 42%, var(--cardBorder) 58%);
+  background: color-mix(in oklab, var(--accent1) 14%, var(--card) 86%);
+}
+
+.overview{
+  margin-top: 12px;
+  border-radius: 18px;
+  border: 1px solid color-mix(in oklab, var(--cardBorder) 76%, transparent);
+  background: color-mix(in oklab, var(--card) 86%, transparent);
+  box-shadow: 0 18px 56px rgba(0,0,0,0.14);
+  padding: 14px;
+}
+
+.overviewTop{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.h2{
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+
+.linkRow{
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pillLink{
+  text-decoration: none;
+  color: var(--ink);
+  border: 1px solid color-mix(in oklab, var(--cardBorder) 76%, transparent);
+  background: color-mix(in oklab, var(--card) 84%, transparent);
+  border-radius: 999px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.intro{
+  margin-top: 10px;
+  color: color-mix(in oklab, var(--ink) 86%, var(--muted) 14%);
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.sectionHead{
+  margin-top: 16px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sectionSub{
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.grid{
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 12px;
+}
+
+.card{
+  grid-column: span 6;
+  text-decoration: none;
+  color: inherit;
+
+  border-radius: 16px;
+  border: 1px solid color-mix(in oklab, var(--cardBorder) 76%, transparent);
+  background: color-mix(in oklab, var(--card) 86%, transparent);
+  box-shadow: 0 18px 56px rgba(0,0,0,0.14);
+  padding: 14px;
+}
+
+.cardTop{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.name{
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.conf{
+  font-size: 12px;
+  font-weight: 900;
+  padding: 6px 8px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.confHigh{ background: rgba(34,197,94,0.14); border-color: rgba(34,197,94,0.26); }
+.confMid{ background: rgba(245,158,11,0.14); border-color: rgba(245,158,11,0.26); }
+.confLow{ background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.22); }
+
+.meta{
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dot{ opacity: 0.6; }
+.group{ text-transform: lowercase; }
+
+.desc{
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.35;
+  color: color-mix(in oklab, var(--ink) 86%, var(--muted) 14%);
+}
+
+.cardFoot{
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pill{
+  font-size: 12px;
+  color: var(--muted);
+  border: 1px solid color-mix(in oklab, var(--cardBorder) 76%, transparent);
+  background: color-mix(in oklab, var(--card) 84%, transparent);
+  padding: 6px 8px;
+  border-radius: 999px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.open{ font-weight: 900; opacity: 0.7; }
+
+.empty{
+  margin-top: 12px;
+  border-radius: 18px;
+  border: 1px dashed color-mix(in oklab, var(--cardBorder) 64%, transparent);
+  background: color-mix(in oklab, var(--card) 84%, transparent);
+  padding: 18px;
+}
+
+.emptyIcon{ font-size: 26px; }
+.emptyTitle{
+  margin-top: 8px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  font-size: 16px;
+}
+.emptyText{
+  margin-top: 6px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+.emptyCta{
+  display: inline-flex;
+  margin-top: 12px;
+  text-decoration: none;
+  color: var(--ink);
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in oklab, var(--cardBorder) 70%, transparent);
+  background: color-mix(in oklab, var(--card) 86%, transparent);
+}
+
+@media (max-width: 720px){
+  .heroTop{ flex-direction: column; align-items: stretch; }
+  .heroRight{ justify-content: flex-start; }
+  .card{ grid-column: span 12; }
+}
+
+@media (min-width: 980px){
+  .card{ grid-column: span 4; }
+}
