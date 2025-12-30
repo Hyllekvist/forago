@@ -2,7 +2,7 @@
   padding: 22px var(--pad) calc(var(--bottom-nav-h) + 26px);
   max-width: var(--maxw);
   margin: 0 auto;
-}
+} 
 
 /* Hero */
 .hero {
