@@ -16,14 +16,14 @@ function safeLocalReturnTo(value: string | null) {
   return value;
 }
 
-export default function ConfirmPage() {
+export default function ConfirmClient() {
   const supabase = useMemo(() => supabaseBrowser(), []);
   const router = useRouter();
   const sp = useSearchParams();
   const pathname = usePathname() || "/dk/confirm";
   const locale = useMemo(() => inferLocaleFromPath(pathname), [pathname]);
 
-  const [msg, setMsg] = useState("Bekræfter…");
+  const [msg, setMsg] = useState(locale === "dk" ? "Bekræfter…" : "Confirming…");
   const [err, setErr] = useState<string | null>(null);
 
   const returnTo = useMemo(() => {
@@ -35,22 +35,21 @@ export default function ConfirmPage() {
       const errorDesc = sp.get("error_description") || sp.get("error");
       if (errorDesc) {
         setErr(errorDesc);
-        setMsg("Noget gik galt.");
+        setMsg(locale === "dk" ? "Noget gik galt." : "Something went wrong.");
         return;
       }
 
       const code = sp.get("code");
       if (!code) {
         setErr("Missing code");
-        setMsg("Noget gik galt.");
+        setMsg(locale === "dk" ? "Noget gik galt." : "Something went wrong.");
         return;
       }
 
-      // ✅ Client exchange (undgår server PKCE-problem)
       const { error } = await supabase.auth.exchangeCodeForSession(code);
       if (error) {
         setErr(error.message);
-        setMsg("Kunne ikke bekræfte.");
+        setMsg(locale === "dk" ? "Kunne ikke bekræfte." : "Could not confirm.");
         return;
       }
 
@@ -64,7 +63,9 @@ export default function ConfirmPage() {
 
   return (
     <main style={{ maxWidth: 520, margin: "40px auto", padding: 16 }}>
-      <h1 style={{ margin: 0, fontSize: 22 }}>Bekræfter konto…</h1>
+      <h1 style={{ margin: 0, fontSize: 22 }}>
+        {locale === "dk" ? "Bekræfter konto…" : "Confirming account…"}
+      </h1>
       <p style={{ opacity: 0.8, marginTop: 8 }}>{msg}</p>
 
       {err ? (
