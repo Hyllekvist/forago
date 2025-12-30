@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
 import { DEFAULT_LOCALE, isLocale } from "@/lib/i18n/locales";
 
-const PUBLIC_FILE = /\.(.*)$/;
+const PUBLIC_FILE = /\.(.*)$/; 
 
 function isPublicPath(pathname: string, locale: string) {
   // public pages
