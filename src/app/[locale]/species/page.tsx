@@ -1,7 +1,7 @@
 // src/app/[locale]/species/page.tsx
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseServerReadOnly } from "@/lib/supabase/server-readonly";
 import styles from "./SpeciesIndex.module.css";
 
 export const dynamic = "force-dynamic";
@@ -16,8 +16,6 @@ function isLocale(x: string): x is Locale {
 
 // Locale = sprog. Country = geografi.
 function countryForLocale(locale: Locale) {
-  // MVP: alt kører på DK data
-  // (senere: map locale->default country eller brugerprofil)
   if (locale === "dk") return "DK";
   if (locale === "en") return "DK";
   return "DK";
@@ -32,7 +30,6 @@ function groupLabel(locale: Locale, g: string) {
     if (key === "mushroom" || key === "fungus") return "Svamp";
     return g || "Art";
   }
-  // en
   if (key === "plant") return "Plant";
   if (key === "berry") return "Berry";
   if (key === "seaweed") return "Seaweed";
@@ -81,9 +78,10 @@ export default async function SpeciesIndexPage({
   const locale = localeParam;
 
   const q = (searchParams?.q ?? "").trim();
-  const group = (searchParams?.group ?? "").trim(); // plant|mushroom|fungus|seaweed|berry
+  const group = (searchParams?.group ?? "").trim();
 
-  const supabase = await supabaseServer();
+  // ✅ IMPORTANT: use read-only server client (no cookies().set)
+  const supabase = supabaseServerReadOnly();
   const country = countryForLocale(locale);
 
   const { data, error } = await supabase.rpc("species_index", {
@@ -115,11 +113,7 @@ export default async function SpeciesIndexPage({
           className={styles.input}
           name="q"
           defaultValue={q}
-          placeholder={
-            locale === "dk"
-              ? "Søg (ramsløg, kantarel…)"
-              : "Search (ramsons, chanterelle…)"
-          }
+          placeholder={locale === "dk" ? "Søg (ramsløg, kantarel…)" : "Search (ramsons, chanterelle…)"}
         />
 
         <select className={styles.select} name="group" defaultValue={group}>
@@ -160,34 +154,21 @@ export default async function SpeciesIndexPage({
 
             return (
               <Link key={r.id} href={`/${locale}/species/${r.slug}`} className={styles.card}>
-                {/* top badges */}
                 <span className={styles.badge}>
                   {gText}
                   {conf !== null ? ` · ${conf}%` : ""}
                 </span>
 
-                {/* OPTIONAL: hvis du vil style “in season” tydeligt i CSS,
-                    så tilføj .badgeSeason og brug den her.
-                    Jeg bruger dine eksisterende classes uden at kræve nye. */}
                 <span className={styles.badge} style={{ marginRight: 8 }}>
-                  {inSeason
-                    ? locale === "dk"
-                      ? "I sæson nu"
-                      : "In season now"
-                    : locale === "dk"
-                    ? "Ikke i sæson"
-                    : "Out of season"}
+                  {inSeason ? (locale === "dk" ? "I sæson nu" : "In season now") : locale === "dk" ? "Ikke i sæson" : "Out of season"}
                 </span>
 
                 <div className={styles.name}>{name}</div>
 
-                <div className={styles.meta}>
-                  {sci ? <em>{sci}</em> : <span>{r.slug}</span>}
-                </div>
+                <div className={styles.meta}>{sci ? <em>{sci}</em> : <span>{r.slug}</span>}</div>
 
                 <div className={styles.desc}>
-                  {r.short_description?.trim() ||
-                    (locale === "dk" ? "Tilføj beskrivelse i DB." : "Add description in DB.")}
+                  {r.short_description?.trim() || (locale === "dk" ? "Tilføj beskrivelse i DB." : "Add description in DB.")}
                 </div>
 
                 <div className={styles.footer}>
