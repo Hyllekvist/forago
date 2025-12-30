@@ -224,3 +224,8 @@ button {
     scroll-behavior: auto !important;
   }
 }
+
+/* app/globals.css */
+input, select, textarea, button {
+  font-size: 16px;
+}
