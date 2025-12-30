@@ -643,6 +643,7 @@ export default function MapClient({ spots }: Props) {
             spots={spotsForMap}
             userPos={userPos}
             selectedId={selectedId}
+            drop={drop}
             onSelect={onSelectSpot}
             onMapReady={setMapApi}
             onVisibleChange={setVisibleIds}
