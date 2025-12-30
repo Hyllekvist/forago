@@ -1,9 +1,13 @@
-// src/app/(auth)/logout/route.ts 
+// src/app/[locale]/(auth)/logout/route.ts
 import { NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseRoute } from "@/lib/supabase/route";
+
+export const dynamic = "force-dynamic";
 
 export async function POST() {
-  const supabase = await supabaseServer();
+  const supabase = supabaseRoute();
   await supabase.auth.signOut();
+
+  // Return JSON (din client kan redirecte bagefter)
   return NextResponse.json({ ok: true });
 }
