@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { LOCALES, isLocale } from "@/lib/i18n/locales";
 import { buildHreflangs } from "@/lib/i18n/hreflang";
 import { baseMetadata } from "@/lib/seo/metadata";
-import { supabaseServer } from "@/lib/supabase/server";
+import { supabaseServerReadOnly } from "@/lib/supabase/server-readonly";
 import Shell from "@/components/Shell/Shell";
 
 type Props = {
@@ -37,13 +37,12 @@ export default async function LocaleLayout({ children, params }: Props) {
   const locale = params.locale;
   if (!isLocale(locale)) return notFound();
 
-  const supabase = await supabaseServer();
-  const { data, error } = await supabase.auth.getUser();
-  if (error) {
-    // hard fail giver bare mere pain i prod – treat as logged out
-    // (du kan logge error server-side hvis du vil)
-  }
-  const user = data?.user ?? null;
+  // ✅ read-only client (never sets cookies)
+  const supabase = supabaseServerReadOnly();
+
+  // ✅ avoid getUser() here (can trigger refresh -> cookies().set)
+  const { data } = await supabase.auth.getSession();
+  const user = data?.session?.user ?? null;
 
   return (
     <Shell locale={locale} user={user}>
