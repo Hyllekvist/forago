@@ -106,15 +106,25 @@ export function SpeciesVisualId(props: Props) {
 
   const safetyLine = firstLine(safetyText);
 
-  const defaultCallouts: Callout[] = [
+  const defaultCallouts = [
     { key: "cap", x: 28, y: 44, label: locale === "dk" ? "Bølget hatkant" : "Wavy cap edge" },
     { key: "funnel", x: 72, y: 44, label: locale === "dk" ? "Tragtet form" : "Funnel shape" },
     { key: "ridges", x: 64, y: 70, label: locale === "dk" ? "Ribber, ikke lameller" : "Ridges, not gills" },
     { key: "flesh", x: 40, y: 78, label: locale === "dk" ? "Fast kød" : "Firm flesh" },
   ];
 
-  const cs = (callouts?.length ? callouts : defaultCallouts).slice(0, 6);
+  const raw = (callouts?.length ? callouts : defaultCallouts) as any[];
 
+  const cs = raw
+    .map((c, i) => ({
+      key: String(c?.key ?? `c${i}`),
+      x: Number(c?.x),
+      y: Number(c?.y),
+      label: String(c?.label ?? ""),
+      text: c?.text ? String(c.text) : undefined,
+    }))
+    .filter((c) => Number.isFinite(c.x) && Number.isFinite(c.y) && c.label.trim().length > 0)
+    .slice(0, 6);
   return (
     <section className={styles.wrap} aria-label={locale === "dk" ? "Visuel identifikation" : "Visual identification"}>
       <header className={styles.head}>
