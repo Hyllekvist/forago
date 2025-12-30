@@ -1,6 +1,8 @@
 import styles from "./Me.module.css";
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
+import LogoutButton from "@/components/Auth/LogoutButton";
+
 
 type Locale = "dk" | "en" | "se" | "de";
 function safeLocale(v: unknown): Locale {
@@ -139,15 +141,15 @@ export default async function MePage({ params }: { params: { locale: string } })
             <div className={styles.divider} />
 
             <div className={styles.danger}>
-              <div>
-                <div className={styles.dangerTitle}>{locale === "dk" ? "Session" : "Session"}</div>
-                <div className={styles.dangerSub}>{locale === "dk" ? "Log ud på denne enhed" : "Sign out on this device"}</div>
-              </div>
+  <div>
+    <div className={styles.dangerTitle}>{locale === "dk" ? "Session" : "Session"}</div>
+    <div className={styles.dangerSub}>
+      {locale === "dk" ? "Log ud på denne enhed" : "Sign out on this device"}
+    </div>
+  </div>
 
-              {/* Client-only logout */}
-              {/* @ts-expect-error Server -> Client boundary */}
-              <LogoutButton locale={locale} />
-            </div>
+  <LogoutButton locale={locale} />
+</div>
           </section>
         </>
       )}
