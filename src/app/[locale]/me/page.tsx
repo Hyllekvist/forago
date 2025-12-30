@@ -157,5 +157,4 @@ export default async function MePage({ params }: { params: { locale: string } })
   );
 }
 
-// Server file kan importere client component sådan her:
-import LogoutButton from "./LogoutButton";
+
