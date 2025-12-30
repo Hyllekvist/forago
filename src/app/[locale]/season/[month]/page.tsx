@@ -1,6 +1,7 @@
-import Link from "next/link"; 
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
+import styles from "./SeasonMonth.module.css";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 3600;
@@ -23,6 +24,10 @@ const MONTH_SLUG_TO_NUM: Record<string, number> = {
   december: 12,
 };
 
+const MONTH_NUM_TO_SLUG: Record<number, string> = Object.fromEntries(
+  Object.entries(MONTH_SLUG_TO_NUM).map(([slug, n]) => [n, slug])
+) as any;
+
 const MONTH_NUM_TO_DK: Record<number, string> = {
   1: "januar",
   2: "februar",
@@ -42,9 +47,18 @@ function isLocale(x: string): x is Locale {
   return (SUPPORTED_LOCALES as readonly string[]).includes(x);
 }
 
+function countryForLocale(_locale: string) {
+  return "DK";
+}
+
 function inMonth(month: number, from: number, to: number) {
   if (from <= to) return month >= from && month <= to;
   return month >= from || month <= to; // wrap-around
+}
+
+function monthLabel(locale: Locale, monthNum: number) {
+  const slug = MONTH_NUM_TO_SLUG[monthNum] ?? String(monthNum);
+  return locale === "dk" ? MONTH_NUM_TO_DK[monthNum] : slug;
 }
 
 export async function generateMetadata({
@@ -57,7 +71,7 @@ export async function generateMetadata({
   const monthNum = MONTH_SLUG_TO_NUM[params.month];
   if (!monthNum) return { title: "Forago" };
 
-const supabase = await supabaseServer();
+  const supabase = await supabaseServer();
   const { data: mp } = await supabase
     .from("season_month_pages")
     .select("title, seo_description")
@@ -65,12 +79,18 @@ const supabase = await supabaseServer();
     .eq("month", monthNum)
     .maybeSingle();
 
-  const title = mp?.title || `Season ${params.month} — Forago`;
+  const fallbackTitle =
+    params.locale === "dk"
+      ? `Sæson i ${MONTH_NUM_TO_DK[monthNum]} — Forago`
+      : `Season in ${params.month} — Forago`;
+
+  const title = mp?.title || fallbackTitle;
+
   const description =
     mp?.seo_description ||
     (params.locale === "dk"
-      ? `Se hvad der er i sæson i ${MONTH_NUM_TO_DK[monthNum]}.`
-      : `See what's in season in ${params.month}.`);
+      ? `Se hvad der typisk er i sæson i ${MONTH_NUM_TO_DK[monthNum]} (privatliv først).`
+      : `See what's typically in season in ${params.month} (privacy-first).`);
 
   return {
     title,
@@ -90,7 +110,8 @@ export default async function SeasonMonthPage({
   const monthNum = MONTH_SLUG_TO_NUM[params.month];
   if (!monthNum) return notFound();
 
-const supabase = await supabaseServer();
+  const supabase = await supabaseServer();
+  const country = countryForLocale(locale);
 
   // Month page intro (SEO text)
   const { data: mp, error: mpErr } = await supabase
@@ -102,158 +123,212 @@ const supabase = await supabaseServer();
 
   if (mpErr) throw mpErr;
 
-  // Species in season in this month (DK national region='')
+  // ✅ BUGFIX: country må ikke være locale — det skal være "DK"
   const { data: seas, error: seasErr } = await supabase
     .from("seasonality")
     .select("species_id, month_from, month_to, confidence")
-    .eq("country", locale)
+    .eq("country", country)
     .eq("region", "");
 
   if (seasErr) throw seasErr;
 
-  const ids =
+  const matches =
     (seas ?? [])
       .filter((r: any) => inMonth(monthNum, r.month_from as number, r.month_to as number))
       .map((r: any) => ({ id: r.species_id as string, conf: (r.confidence as number) ?? 0 })) ?? [];
 
-  // Load species + translations
-  const uniqueIds = Array.from(new Set(ids.map((x) => x.id)));
-  let speciesCards: Array<{ slug: string; name: string; conf: number }> = [];
+  const uniqueIds = Array.from(new Set(matches.map((x) => x.id)));
+
+  type Card = {
+    slug: string;
+    name: string;
+    conf: number;
+  };
+
+  let speciesCards: Card[] = [];
 
   if (uniqueIds.length) {
-    const { data: spRows, error: sp2Err } = await supabase
+    const { data: spRows, error: spErr } = await supabase
       .from("species")
-      .select("id, slug")
+      .select("id, slug, primary_group, scientific_name")
       .in("id", uniqueIds);
 
-    if (sp2Err) throw sp2Err;
+    if (spErr) throw spErr;
 
-    const { data: trRows, error: tr2Err } = await supabase
+    const { data: trRows, error: trErr } = await supabase
       .from("species_translations")
-      .select("species_id, common_name, locale")
+      .select("species_id, common_name, short_description")
       .eq("locale", locale)
       .in("species_id", uniqueIds);
 
-    if (tr2Err) throw tr2Err;
+    if (trErr) throw trErr;
 
-    const slugMap = new Map((spRows ?? []).map((s: any) => [s.id as string, s.slug as string]));
-    const nameMap = new Map((trRows ?? []).map((t: any) => [t.species_id as string, t.common_name as string]));
-    const confMap = new Map(ids.map((x) => [x.id, x.conf]));
+    const slugMap = new Map((spRows ?? []).map((s: any) => [s.id as string, s]));
+    const trMap = new Map((trRows ?? []).map((t: any) => [t.species_id as string, t]));
+    const confMap = new Map(matches.map((x) => [x.id, x.conf]));
 
     speciesCards = uniqueIds
-      .map((id) => ({
-        slug: slugMap.get(id) || "",
-        name: nameMap.get(id) || slugMap.get(id) || "unknown",
-        conf: confMap.get(id) || 0,
-      }))
-      .filter((x) => x.slug)
-      .sort((a, b) => b.conf - a.conf);
+      .map((id) => {
+        const s = slugMap.get(id);
+        if (!s?.slug) return null;
+
+        const t = trMap.get(id);
+        return {
+          slug: s.slug as string,
+          name: (t?.common_name as string) || (s.slug as string),
+          conf: confMap.get(id) || 0,
+          // extra (til UI)
+          group: (s.primary_group as string) || "plant",
+          scientific: (s.scientific_name as string) || "",
+          desc: (t?.short_description as string) || "",
+        };
+      })
+      .filter(Boolean) as any;
+
+    speciesCards.sort((a: any, b: any) => (b.conf ?? 0) - (a.conf ?? 0));
   }
 
-  const monthLabel = locale === "dk" ? MONTH_NUM_TO_DK[monthNum] : params.month;
+  const label = monthLabel(locale, monthNum);
+
+  // Month switcher
+  const monthItems = Array.from({ length: 12 }).map((_, i) => {
+    const n = i + 1;
+    const slug = MONTH_NUM_TO_SLUG[n];
+    return {
+      n,
+      slug,
+      label: locale === "dk" ? MONTH_NUM_TO_DK[n].slice(0, 3) : slug.slice(0, 3),
+      href: `/${locale}/season/${slug}`,
+      active: n === monthNum,
+    };
+  });
 
   return (
-    <main style={{ padding: 16, maxWidth: 980, margin: "0 auto" }}>
-      <p style={{ margin: 0 }}>
-        <Link href={`/${locale}/season`} style={{ textDecoration: "none" }}>
-          ← {locale === "dk" ? "Sæson" : "Season"}
-        </Link>
-      </p>
+    <main className={styles.page}>
+      <header className={styles.hero}>
+        <div className={styles.breadcrumb}>
+          <Link className={styles.back} href={`/${locale}/season`}>
+            ← {locale === "dk" ? "Sæson" : "Season"}
+          </Link>
+        </div>
 
-      <h1 style={{ margin: "10px 0 8px" }}>
-        {locale === "dk" ? `I sæson i ${monthLabel}` : `In season in ${monthLabel}`}
-      </h1>
+        <div className={styles.heroTop}>
+          <div>
+            <h1 className={styles.h1}>
+              {locale === "dk" ? `I sæson i ${label}` : `In season in ${label}`}
+            </h1>
+            <p className={styles.sub}>
+              {locale === "dk"
+                ? "Typiske arter for måneden. Privatliv først — ingen spots."
+                : "Typical species for the month. Privacy-first — no spots."}
+            </p>
+          </div>
 
-      <section
-        style={{
-          border: "1px solid rgba(255,255,255,0.10)",
-          borderRadius: 14,
-          padding: 14,
-          background: "rgba(255,255,255,0.03)",
-          marginTop: 10,
-        }}
-      >
-        <h2 style={{ margin: "0 0 10px", fontSize: 16 }}>
-          {locale === "dk" ? "Overblik" : "Overview"}
-        </h2>
-        <div style={{ opacity: 0.92, lineHeight: 1.55, whiteSpace: "pre-wrap" }}>
+          <div className={styles.heroRight}>
+            <div className={styles.countPill}>
+              <span className={styles.countDot} aria-hidden="true" />
+              <span className={styles.countTxt}>
+                {speciesCards.length} {locale === "dk" ? "arter" : "species"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <nav className={styles.monthStrip} aria-label={locale === "dk" ? "Vælg måned" : "Pick month"}>
+          {monthItems.map((m) => (
+            <Link
+              key={m.slug}
+              href={m.href}
+              className={[styles.monthChip, m.active ? styles.monthChipActive : ""].join(" ")}
+              aria-current={m.active ? "page" : undefined}
+            >
+              {m.label}
+            </Link>
+          ))}
+        </nav>
+      </header>
+
+      <section className={styles.overview}>
+        <div className={styles.overviewTop}>
+          <h2 className={styles.h2}>{locale === "dk" ? "Overblik" : "Overview"}</h2>
+
+          <div className={styles.linkRow}>
+            <Link className={styles.pillLink} href={`/${locale}/guides/safety-basics`}>
+              {locale === "dk" ? "Sikkerhed →" : "Safety →"}
+            </Link>
+            <Link className={styles.pillLink} href={`/${locale}/guides/lookalikes`}>
+              {locale === "dk" ? "Forvekslinger →" : "Look-alikes →"}
+            </Link>
+          </div>
+        </div>
+
+        <div className={styles.intro}>
           {mp?.intro ||
             (locale === "dk"
               ? "Tilføj intro i season_month_pages (det er din SEO-tekst)."
               : "Add intro in season_month_pages (this is your SEO text).")}
         </div>
-
-        {/* Interlinking → Guides */}
-        <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <Link
-            href={`/${locale}/guides/safety-basics`}
-            style={{
-              textDecoration: "none",
-              color: "inherit",
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: "rgba(255,255,255,0.04)",
-              borderRadius: 999,
-              padding: "8px 10px",
-              fontSize: 13,
-            }}
-          >
-            {locale === "dk" ? "Sikkerhed →" : "Safety →"}
-          </Link>
-          <Link
-            href={`/${locale}/guides/lookalikes`}
-            style={{
-              textDecoration: "none",
-              color: "inherit",
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: "rgba(255,255,255,0.04)",
-              borderRadius: 999,
-              padding: "8px 10px",
-              fontSize: 13,
-            }}
-          >
-            {locale === "dk" ? "Forvekslinger →" : "Look-alikes →"}
-          </Link>
-        </div>
       </section>
 
-      <h2 style={{ margin: "16px 0 10px", fontSize: 16 }}>
-        {locale === "dk" ? "Arter i sæson" : "Species in season"}
-      </h2>
+      <section className={styles.sectionHead}>
+        <h2 className={styles.h2}>{locale === "dk" ? "Arter i sæson" : "Species in season"}</h2>
+        <p className={styles.sectionSub}>
+          {locale === "dk"
+            ? "Sorterede efter confidence (højeste først)."
+            : "Sorted by confidence (highest first)."}
+        </p>
+      </section>
 
       {speciesCards.length ? (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
-            gap: 10,
-          }}
-        >
-          {speciesCards.map((s) => (
-            <Link
-              key={s.slug}
-              href={`/${locale}/species/${s.slug}`}
-              style={{
-                textDecoration: "none",
-                color: "inherit",
-                border: "1px solid rgba(255,255,255,0.10)",
-                borderRadius: 14,
-                padding: 12,
-                background: "rgba(255,255,255,0.03)",
-              }}
-            >
-              <div style={{ fontWeight: 800, marginBottom: 6 }}>{s.name}</div>
-              <div style={{ opacity: 0.78, fontSize: 13 }}>
-                {locale === "dk" ? "Sæson match" : "Season match"} · {s.conf}%
+        <section className={styles.grid} aria-label={locale === "dk" ? "Arter" : "Species"}>
+          {speciesCards.map((s: any) => (
+            <Link key={s.slug} href={`/${locale}/species/${s.slug}`} className={styles.card}>
+              <div className={styles.cardTop}>
+                <div className={styles.name}>{s.name}</div>
+                <span
+                  className={[
+                    styles.conf,
+                    s.conf >= 80 ? styles.confHigh : s.conf >= 50 ? styles.confMid : styles.confLow,
+                  ].join(" ")}
+                >
+                  {s.conf}%
+                </span>
+              </div>
+
+              <div className={styles.meta}>
+                {s.scientific ? <em>{s.scientific}</em> : <span>{s.slug}</span>}
+                <span className={styles.dot} aria-hidden="true">·</span>
+                <span className={styles.group}>{s.group}</span>
+              </div>
+
+              <div className={styles.desc}>
+                {s.desc || (locale === "dk" ? "Tilføj beskrivelse i DB." : "Add description in DB.")}
+              </div>
+
+              <div className={styles.cardFoot}>
+                <span className={styles.pill}>/{locale}/species/{s.slug}</span>
+                <span className={styles.open} aria-hidden="true">→</span>
               </div>
             </Link>
           ))}
-        </div>
+        </section>
       ) : (
-        <p style={{ opacity: 0.75, margin: 0 }}>
-          {locale === "dk"
-            ? "Ingen arter er knyttet til denne måned endnu. Tilføj seasonality-rækker."
-            : "No species linked to this month yet. Add seasonality rows."}
-        </p>
+        <section className={styles.empty}>
+          <div className={styles.emptyIcon} aria-hidden="true">🗓️</div>
+          <div className={styles.emptyTitle}>
+            {locale === "dk"
+              ? "Ingen arter er knyttet til denne måned endnu"
+              : "No species linked to this month yet"}
+          </div>
+          <div className={styles.emptyText}>
+            {locale === "dk"
+              ? "Tilføj seasonality-rækker for DK national (region='') for at få indhold her."
+              : "Add seasonality rows for DK national (region='') to populate this page."}
+          </div>
+          <Link className={styles.emptyCta} href={`/${locale}/season`}>
+            {locale === "dk" ? "Tilbage til sæson nu →" : "Back to season now →"}
+          </Link>
+        </section>
       )}
     </main>
   );
