@@ -1,4 +1,4 @@
-"use client"; 
+"use client";
 
 import { useMemo, useState, useCallback } from "react";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
@@ -11,12 +11,14 @@ function inferLocaleFromPath(pathname: string) {
   const seg = (pathname.split("/")[1] || "").toLowerCase();
   return seg === "dk" || seg === "en" || seg === "se" || seg === "de" ? seg : "dk";
 }
+
 function safeLocalReturnTo(value: string | null) {
   if (!value) return null;
   if (!value.startsWith("/")) return null;
   if (value.startsWith("//")) return null;
   return value;
 }
+
 function safeLocalUrlWithQuery(path: string, query: string) {
   if (!path.startsWith("/")) return "/";
   if (!query) return path;
@@ -28,12 +30,14 @@ export function LoginPanel() {
   const router = useRouter();
   const pathname = usePathname() || "/dk/login";
   const searchParams = useSearchParams();
+
   const locale = useMemo(() => inferLocaleFromPath(pathname), [pathname]);
 
   const returnToBase = useMemo(() => {
     const fromQuery =
       safeLocalReturnTo(searchParams?.get("returnTo")) ||
       safeLocalReturnTo(searchParams?.get("next"));
+
     return fromQuery ?? `/${locale}/today`;
   }, [searchParams, locale]);
 
@@ -57,12 +61,14 @@ export function LoginPanel() {
   const t = useMemo(() => {
     const dk = locale === "dk";
     return {
-      title: dk ? "Login" : "Login",
-      subtitle: dk
+      signinTitle: dk ? "Login" : "Login",
+      signupTitle: dk ? "Opret konto" : "Create account",
+      signinSub: dk
         ? "Log ind med password – eller brug magic link som fallback."
         : "Sign in with password — or use magic link as fallback.",
-      signupTitle: dk ? "Opret konto" : "Create account",
-      signupSub: dk ? "Du opretter en ny konto med email og password." : "Create a new account with email and password.",
+      signupSub: dk
+        ? "Du opretter en ny konto med email og password."
+        : "You’re creating a new account with email and password.",
       email: "Email",
       password: dk ? "Password" : "Password",
       signin: dk ? "Log ind" : "Sign in",
@@ -73,6 +79,9 @@ export function LoginPanel() {
       magic: dk ? "Send magic link (fallback)" : "Send magic link (fallback)",
       sending: dk ? "Arbejder…" : "Working…",
       after: dk ? "Efter login sendes du tilbage til:" : "After login you’ll return to:",
+      magicHintSignup: dk
+        ? "Magic link er kun til login. Skift til “Log ind” hvis du har en konto."
+        : "Magic link is for sign-in only. Switch to “Sign in” if you already have an account.",
     };
   }, [locale]);
 
@@ -94,34 +103,58 @@ export function LoginPanel() {
       setLoading(true);
       try {
         if (mode === "signin") {
-          const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+          const { error } = await supabase.auth.signInWithPassword({
+            email: cleanEmail,
+            password,
+          });
           if (error) throw error;
+
           router.replace(returnTo);
           router.refresh();
           return;
         }
 
         const origin = window.location.origin;
+
         const { data, error } = await supabase.auth.signUp({
           email: cleanEmail,
           password,
-          options: { emailRedirectTo: `${origin}/${locale}/confirm?returnTo=${encodeURIComponent(returnTo)}` },
+          options: {
+            emailRedirectTo: `${origin}/${locale}/confirm?returnTo=${encodeURIComponent(returnTo)}`,
+          },
         });
+
         if (error) throw error;
 
+        // confirmation OFF -> session med det samme
         if (data?.session) {
           router.replace(returnTo);
           router.refresh();
           return;
         }
 
+        // confirmation ON -> user oprettet, afventer mail
         if (!data?.user) {
-          throw new Error(locale === "dk" ? "Signup gav ingen bruger. Prøv at logge ind i stedet." : "Signup returned no user.");
+          throw new Error(
+            locale === "dk"
+              ? "Signup gav ingen bruger. Prøv at logge ind i stedet."
+              : "Signup returned no user. Try signing in instead."
+          );
         }
 
-        setMsg(locale === "dk" ? "Konto oprettet. Tjek din inbox + spam for bekræftelsesmail." : "Account created. Check inbox + spam.");
+        setMsg(
+          locale === "dk"
+            ? "Konto oprettet. Tjek din inbox + spam for bekræftelsesmail."
+            : "Account created. Check your inbox + spam for the confirmation email."
+        );
       } catch (e: any) {
-        setErr(String(e?.message || e?.error_description || e?.details || "Noget gik galt"));
+        const m =
+          e?.message ||
+          e?.error_description ||
+          e?.details ||
+          (typeof e === "string" ? e : null) ||
+          "Noget gik galt";
+        setErr(String(m));
       } finally {
         setLoading(false);
       }
@@ -133,16 +166,32 @@ export function LoginPanel() {
     setErr(null);
     setMsg(null);
     setSentMagic(false);
+
     if (!cleanEmail) return;
 
     setLoading(true);
     try {
       const origin = window.location.origin;
-      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, { redirectTo: `${origin}/${locale}/reset` });
+      const redirectTo = `${origin}/${locale}/reset`;
+
+      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+        redirectTo,
+      });
       if (error) throw error;
-      setMsg(locale === "dk" ? "Tjek din mail for link til at vælge nyt password." : "Check email for reset link.");
+
+      setMsg(
+        locale === "dk"
+          ? "Tjek din mail for link til at vælge nyt password."
+          : "Check your email for a link to set a new password."
+      );
     } catch (e: any) {
-      setErr(String(e?.message || e?.error_description || e?.details || "Noget gik galt"));
+      const m =
+        e?.message ||
+        e?.error_description ||
+        e?.details ||
+        (typeof e === "string" ? e : null) ||
+        "Noget gik galt";
+      setErr(String(m));
     } finally {
       setLoading(false);
     }
@@ -152,50 +201,110 @@ export function LoginPanel() {
     setErr(null);
     setMsg(null);
     setSentMagic(false);
+
     if (!cleanEmail) return;
 
     setLoading(true);
     try {
       const origin = window.location.origin;
       const redirectTo = `${origin}/${locale}/callback?returnTo=${encodeURIComponent(returnTo)}`;
-      const { error } = await supabase.auth.signInWithOtp({ email: cleanEmail, options: { emailRedirectTo: redirectTo } });
+
+      const { error } = await supabase.auth.signInWithOtp({
+        email: cleanEmail,
+        options: { emailRedirectTo: redirectTo },
+      });
       if (error) throw error;
+
       setSentMagic(true);
     } catch (e: any) {
-      setErr(String(e?.message || e?.error_description || e?.details || "Noget gik galt"));
+      const m =
+        e?.message ||
+        e?.error_description ||
+        e?.details ||
+        (typeof e === "string" ? e : null) ||
+        "Noget gik galt";
+      setErr(String(m));
     } finally {
       setLoading(false);
     }
   }, [cleanEmail, supabase, locale, returnTo]);
 
-  return (
-    <div className={styles.wrap}>
-      <div className={`${styles.card} ${mode === "signup" ? styles.modeSignup : styles.modeSignin}`}>
-        <h1 className={styles.h1}>{mode === "signup" ? t.signupTitle : t.title}</h1>
-        <p className={styles.sub}>{mode === "signup" ? t.signupSub : t.subtitle}</p>
+  const heading = mode === "signup" ? t.signupTitle : t.signinTitle;
+  const sub = mode === "signup" ? t.signupSub : t.signinSub;
 
-        <form onSubmit={onPasswordSubmit} className={styles.form}>
+  return (
+    <div className={styles.wrap} data-mode={mode}>
+      <div className={styles.card}>
+        <div className={styles.head}>
+          <h1 className={styles.h1}>{heading}</h1>
+          <p className={styles.sub}>{sub}</p>
+
+          <div className={styles.segment}>
+            <button
+              type="button"
+              className={mode === "signin" ? styles.segActive : styles.segBtn}
+              onClick={() => setMode("signin")}
+              disabled={loading}
+            >
+              {locale === "dk" ? "Log ind" : "Sign in"}
+            </button>
+            <button
+              type="button"
+              className={mode === "signup" ? styles.segActive : styles.segBtn}
+              onClick={() => setMode("signup")}
+              disabled={loading}
+            >
+              {locale === "dk" ? "Opret" : "Sign up"}
+            </button>
+          </div>
+        </div>
+
+        <form className={styles.form} onSubmit={onPasswordSubmit}>
           <label className={styles.label}>
             {t.email}
-            <input className={styles.input} value={email} onChange={(e) => setEmail(e.target.value)} inputMode="email" autoComplete="email" />
+            <input
+              className={styles.input}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              inputMode="email"
+              autoComplete="email"
+              placeholder={t.email}
+            />
           </label>
 
           <label className={styles.label}>
             {t.password}
-            <input className={styles.input} value={password} onChange={(e) => setPassword(e.target.value)} type="password" autoComplete={mode === "signin" ? "current-password" : "new-password"} />
+            <input
+              className={styles.input}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              type="password"
+              autoComplete={mode === "signin" ? "current-password" : "new-password"}
+              placeholder={t.password}
+            />
           </label>
 
-          <button className={`${styles.btn} ${mode === "signup" ? styles.btnSignup : styles.btnSignin}`} disabled={loading || !cleanEmail || !password.trim()} type="submit">
+          <button className={styles.primary} disabled={loading || !cleanEmail || !password.trim()} type="submit">
             {loading ? t.sending : mode === "signin" ? t.signin : t.signup}
           </button>
 
           <div className={styles.row}>
-            <button className={styles.btnGhost} type="button" onClick={() => setMode(mode === "signin" ? "signup" : "signin")} disabled={loading}>
+            <button
+              type="button"
+              className={styles.ghost}
+              onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+              disabled={loading}
+            >
               {mode === "signin" ? t.noAccount : t.haveAccount}
             </button>
 
             {mode === "signin" ? (
-              <button className={styles.btnGhost} type="button" onClick={onForgotPassword} disabled={loading || !cleanEmail}>
+              <button
+                type="button"
+                className={styles.ghost}
+                onClick={onForgotPassword}
+                disabled={loading || !cleanEmail}
+              >
                 {t.forgot}
               </button>
             ) : null}
@@ -203,23 +312,33 @@ export function LoginPanel() {
 
           {mode === "signin" ? (
             <>
-              <div className={styles.hr} />
-              <button className={styles.btnGhostWide} type="button" onClick={onMagicLinkFallback} disabled={loading || !cleanEmail}>
+              <div className={styles.divider} />
+
+              <button
+                onClick={onMagicLinkFallback}
+                disabled={loading || !cleanEmail}
+                type="button"
+                className={styles.secondary}
+              >
                 {loading ? t.sending : t.magic}
               </button>
-              <div className={styles.meta}>
+
+              <div className={styles.hint}>
                 {t.after} <code>{returnTo}</code>
               </div>
+
+              {sentMagic ? (
+                <div className={styles.ok}>
+                  {locale === "dk"
+                    ? "Tjek din inbox. Åbn linket i samme browser, hvis muligt."
+                    : "Check your inbox. Open the link in the same browser if possible."}
+                </div>
+              ) : null}
             </>
           ) : (
-            <div className={styles.meta}>
-              {locale === "dk"
-                ? "Magic link er kun til login. Skift til “Log ind” hvis du har en konto."
-                : "Magic link is for sign-in only."}
-            </div>
+            <div className={styles.hint}>{t.magicHintSignup}</div>
           )}
 
-          {sentMagic ? <div className={styles.ok}>{locale === "dk" ? "Tjek din inbox." : "Check your inbox."}</div> : null}
           {msg ? <div className={styles.ok}>{msg}</div> : null}
           {err ? <div className={styles.err}>{err}</div> : null}
         </form>
