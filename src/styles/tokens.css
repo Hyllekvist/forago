@@ -58,3 +58,19 @@
 
   --muted2: color-mix(in srgb, var(--ink) 55%, transparent);
 }
+
+:root {
+  --bottomnav-guest-bg: rgba(255,255,255,0.88);
+  --bottomnav-guest-border: rgba(0,0,0,0.08);
+
+  --bottomnav-auth-bg: rgba(255,255,255,0.82);
+  --bottomnav-auth-border: rgba(0,0,0,0.10);
+}
+
+html[data-theme="dark"] {
+  --bottomnav-guest-bg: rgba(12,14,16,0.86);
+  --bottomnav-guest-border: rgba(255,255,255,0.08);
+
+  --bottomnav-auth-bg: rgba(12,14,16,0.78);
+  --bottomnav-auth-border: rgba(255,255,255,0.10);
+}
