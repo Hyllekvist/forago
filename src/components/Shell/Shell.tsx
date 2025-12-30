@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect } from "react";
+import type { User } from "@supabase/supabase-js";
 import styles from "./Shell.module.css";
 
 import { TopNav } from "./TopNav";
@@ -12,9 +13,11 @@ type Locale = "dk" | "en" | "se" | "de";
 export default function Shell({
   children,
   locale,
+  user,
 }: {
   children: React.ReactNode;
   locale: Locale;
+  user: User | null;
 }) {
   useEffect(() => {
     document.documentElement.lang = locale === "dk" ? "da" : locale;
@@ -26,7 +29,8 @@ export default function Shell({
       <div className={styles.bg} aria-hidden="true" />
       <div className={styles.noise} aria-hidden="true" />
 
-      <TopNav locale={locale} />
+      {/* 👇 user sendes videre til headeren */}
+      <TopNav locale={locale} user={user} />
 
       <div className={styles.stack}>{children}</div>
 
