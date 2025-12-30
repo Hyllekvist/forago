@@ -4,43 +4,40 @@ import styles from "./SpeciesVisualId.module.css";
 type Locale = "dk" | "en";
 
 type Feature = {
-  icon?: string;         // fx "🍄"
-  title: string;         // fx "Underside"
-  text: string;          // fx "False gills (ridges), not true gills"
+  icon?: string;
+  title: string;
+  text: string;
 };
 
 type Callout = {
-  x: number;             // 0-100 (percent)
-  y: number;             // 0-100 (percent)
-  label: string;
+  key: string;     // unik id, fx "cap", "ridges"
+  x: number;       // 0-100
+  y: number;       // 0-100
+  label: string;   // kort (max 40-50 tegn)
+  text?: string;   // valgfri 1-2 linjer ekstra
 };
 
 type Props = {
   locale: Locale;
 
-  speciesName: string;   // "Tragtkantarel"
+  speciesName: string;
   scientificName?: string | null;
 
-  // Seasonality (DK national, region="")
-  monthFrom?: number | null; // 1-12
-  monthTo?: number | null;   // 1-12
+  monthFrom?: number | null;
+  monthTo?: number | null;
   confidence?: number | null;
   inSeasonNow?: boolean;
 
-  // Content (fra species_translations)
   identificationText?: string | null;
   lookalikesText?: string | null;
   safetyText?: string | null;
 
-  // Curated “quick cues” (super nice til felt-identifikation)
   features?: Feature[];
 
-  // Optional links
-  seasonHref?: string;   // fx `/${locale}/season`
-  lookalikesHref?: string; // fx `/${locale}/guides/lookalikes`
-  safetyHref?: string;     // fx `/${locale}/guides/safety-basics`
+  seasonHref?: string;
+  lookalikesHref?: string;
+  safetyHref?: string;
 
-  // Diagram callouts (lav en specifik for kantarel)
   callouts?: Callout[];
 };
 
@@ -50,22 +47,18 @@ const MONTHS_DK = ["", "Jan", "Feb", "Mar", "Apr", "Maj", "Jun", "Jul", "Aug", "
 function monthLabel(locale: Locale, m: number) {
   return (locale === "dk" ? MONTHS_DK : MONTHS_EN)[m] ?? String(m);
 }
-
 function isInSeason(month: number, from: number, to: number) {
   if (from <= to) return month >= from && month <= to;
-  return month >= from || month <= to; // wrap-around
+  return month >= from || month <= to;
 }
-
 function currentMonthUTC() {
   return new Date().getUTCMonth() + 1;
 }
-
 function clampInt(n: any, min: number, max: number) {
   const v = Number(n);
   if (!Number.isFinite(v)) return null;
   return Math.max(min, Math.min(max, Math.round(v)));
 }
-
 function firstLine(text?: string | null) {
   const t = (text ?? "").trim();
   if (!t) return "";
@@ -94,46 +87,58 @@ export function SpeciesVisualId(props: Props) {
   const from = clampInt(monthFrom, 1, 12);
   const to = clampInt(monthTo, 1, 12);
   const conf = clampInt(confidence, 0, 100);
-
   const nowM = currentMonthUTC();
   const hasSeason = !!from && !!to;
 
-  // Default features (brug dem til tragtkantarel, og override via props.features senere)
   const defaultFeatures: Feature[] = [
     { icon: "🍄", title: locale === "dk" ? "Hat" : "Cap", text: locale === "dk" ? "Bølget kant, tragtet form" : "Wavy edge, funnel shape" },
-    { icon: "🔻", title: locale === "dk" ? "Underside" : "Underside", text: locale === "dk" ? "Ribber (false gills) – ikke tætte lameller" : "Ridges (false gills) – not true gills" },
-    { icon: "🎨", title: locale === "dk" ? "Farve" : "Color", text: locale === "dk" ? "Gylden til gul-orange" : "Golden to yellow-orange" },
-    { icon: "👃", title: locale === "dk" ? "Duft" : "Smell", text: locale === "dk" ? "Frugtig/abrikos-agtig" : "Fruity / apricot-like" },
-    { icon: "🤏", title: locale === "dk" ? "Konsistens" : "Texture", text: locale === "dk" ? "Fast kød – ikke svampet" : "Firm flesh – not spongy" },
+    { icon: "🔻", title: locale === "dk" ? "Underside" : "Underside", text: locale === "dk" ? "Ribber (false gills) – ikke lameller" : "Ridges (false gills) – not gills" },
+    { icon: "🎨", title: locale === "dk" ? "Farve" : "Color", text: locale === "dk" ? "Gul til gul-orange" : "Yellow to yellow-orange" },
+    { icon: "👃", title: locale === "dk" ? "Duft" : "Smell", text: locale === "dk" ? "Frugtig / mild" : "Fruity / mild" },
+    { icon: "🤏", title: locale === "dk" ? "Konsistens" : "Texture", text: locale === "dk" ? "Fast kød" : "Firm flesh" },
   ];
 
-  const feats = (features && features.length ? features : defaultFeatures).slice(0, 8);
+  const feats = (features?.length ? features : defaultFeatures).slice(0, 6);
 
-  const lookLine = firstLine(lookalikesText) || (locale === "dk" ? "Tjek look-alikes før du spiser noget." : "Check look-alikes before eating.");
+  const lookLine =
+    firstLine(lookalikesText) ||
+    (locale === "dk" ? "Tjek look-alikes før du spiser noget." : "Check look-alikes before eating.");
+
   const safetyLine = firstLine(safetyText);
+
+  const defaultCallouts: Callout[] = [
+    { key: "cap", x: 28, y: 44, label: locale === "dk" ? "Bølget hatkant" : "Wavy cap edge" },
+    { key: "funnel", x: 72, y: 44, label: locale === "dk" ? "Tragtet form" : "Funnel shape" },
+    { key: "ridges", x: 64, y: 70, label: locale === "dk" ? "Ribber, ikke lameller" : "Ridges, not gills" },
+    { key: "flesh", x: 40, y: 78, label: locale === "dk" ? "Fast kød" : "Firm flesh" },
+  ];
+
+  const cs = (callouts?.length ? callouts : defaultCallouts).slice(0, 6);
 
   return (
     <section className={styles.wrap} aria-label={locale === "dk" ? "Visuel identifikation" : "Visual identification"}>
       <header className={styles.head}>
-        <div>
+        <div className={styles.leftHead}>
           <div className={styles.kicker}>{locale === "dk" ? "VISUAL ID" : "VISUAL ID"}</div>
           <h2 className={styles.h2}>{locale === "dk" ? "Identifikation i felten" : "Field identification"}</h2>
           <p className={styles.sub}>
             {locale === "dk"
-              ? "Hurtige cues + sæsonbar. Privatliv først — ingen spots."
-              : "Quick cues + season bar. Privacy-first — no spots."}
+              ? "Hurtige cues + sæson. Privatliv først — ingen spots."
+              : "Quick cues + season. Privacy-first — no spots."}
           </p>
         </div>
 
-        <div className={styles.metaBlock}>
+        <div className={styles.metaCard}>
           <div className={styles.metaTitle}>{speciesName}</div>
-          {scientificName ? <div className={styles.metaSub}><em>{scientificName}</em></div> : null}
+          {scientificName ? (
+            <div className={styles.metaSub}>
+              <em>{scientificName}</em>
+            </div>
+          ) : null}
 
           <div className={styles.badgeRow}>
             <span className={`${styles.badge} ${inSeasonNow ? styles.badgeGood : styles.badgeNeutral}`}>
-              {inSeasonNow
-                ? (locale === "dk" ? "I sæson nu" : "In season now")
-                : (locale === "dk" ? "Ikke i sæson" : "Out of season")}
+              {inSeasonNow ? (locale === "dk" ? "I sæson nu" : "In season now") : (locale === "dk" ? "Ikke i sæson" : "Out of season")}
               {conf !== null ? ` · ${conf}%` : ""}
             </span>
 
@@ -143,6 +148,13 @@ export function SpeciesVisualId(props: Props) {
               </Link>
             ) : null}
           </div>
+
+          {hasSeason ? (
+            <div className={styles.metaFine}>
+              {locale === "dk" ? "Typisk:" : "Typical:"}{" "}
+              <strong>{monthLabel(locale, from!)}</strong> – <strong>{monthLabel(locale, to!)}</strong>
+            </div>
+          ) : null}
         </div>
       </header>
 
@@ -151,21 +163,20 @@ export function SpeciesVisualId(props: Props) {
         <div className={styles.diagramCard}>
           <div className={styles.diagramTop}>
             <div className={styles.diagramTitle}>{locale === "dk" ? "Hurtigt blik" : "Quick glance"}</div>
-            <div className={styles.diagramHint}>{locale === "dk" ? "De vigtigste kendetegn" : "Most important cues"}</div>
+            <div className={styles.diagramHint}>{locale === "dk" ? "Se markører + listen" : "See markers + list"}</div>
           </div>
 
-          <div className={styles.diagram}>
-            {/* Simple inline SVG “chantarelle-ish” silhouette */}
+          <div className={styles.diagramStage}>
+            {/* SVG med markører (ingen tekst labels ovenpå!) */}
             <svg viewBox="0 0 480 300" className={styles.svg} aria-hidden="true">
               <defs>
-                <radialGradient id="g" cx="40%" cy="35%" r="70%">
-                  <stop offset="0%" stopColor="currentColor" stopOpacity="0.14" />
+                <radialGradient id="bg" cx="40%" cy="35%" r="70%">
+                  <stop offset="0%" stopColor="currentColor" stopOpacity="0.10" />
                   <stop offset="100%" stopColor="currentColor" stopOpacity="0.02" />
                 </radialGradient>
               </defs>
 
-              {/* background */}
-              <rect x="0" y="0" width="480" height="300" fill="url(#g)" />
+              <rect x="0" y="0" width="480" height="300" fill="url(#bg)" />
 
               {/* cap */}
               <path
@@ -176,7 +187,7 @@ export function SpeciesVisualId(props: Props) {
               <path
                 d="M130 138 C168 90, 312 90, 350 138"
                 stroke="currentColor"
-                strokeOpacity="0.22"
+                strokeOpacity="0.24"
                 strokeWidth="4"
                 fill="none"
                 strokeLinecap="round"
@@ -189,50 +200,59 @@ export function SpeciesVisualId(props: Props) {
                 opacity="0.10"
               />
 
-              {/* ridges / false gills */}
+              {/* ridges */}
               <path d="M195 170 C220 190, 235 210, 235 245" stroke="currentColor" strokeOpacity="0.22" strokeWidth="3" fill="none" />
               <path d="M225 170 C245 190, 260 210, 262 245" stroke="currentColor" strokeOpacity="0.20" strokeWidth="3" fill="none" />
               <path d="M255 170 C275 190, 290 210, 292 245" stroke="currentColor" strokeOpacity="0.18" strokeWidth="3" fill="none" />
 
               {/* ground */}
               <path d="M80 280 C140 255, 340 255, 400 280" stroke="currentColor" strokeOpacity="0.14" strokeWidth="3" fill="none" />
-            </svg>
 
-            {/* Callouts */}
-            {(callouts?.length
-              ? callouts
-              : [
-                  { x: 22, y: 44, label: locale === "dk" ? "Bølget hatkant" : "Wavy cap edge" },
-                  { x: 70, y: 44, label: locale === "dk" ? "Tragtet form" : "Funnel shape" },
-                  { x: 62, y: 70, label: locale === "dk" ? "Ribber, ikke lameller" : "Ridges, not gills" },
-                  { x: 38, y: 78, label: locale === "dk" ? "Fast kød" : "Firm flesh" },
-                ]
-            ).map((c, idx) => (
-              <div
-                key={`${c.label}-${idx}`}
-                className={styles.callout}
-                style={{ left: `${c.x}%`, top: `${c.y}%` }}
-              >
-                <span className={styles.dot} aria-hidden="true" />
-                <span className={styles.calloutLabel}>{c.label}</span>
-              </div>
-            ))}
+              {/* Markers 1..n */}
+              {cs.map((c, idx) => {
+                const cx = (c.x / 100) * 480;
+                const cy = (c.y / 100) * 300;
+                const n = idx + 1;
+                return (
+                  <g key={c.key} data-key={c.key}>
+                    <circle cx={cx} cy={cy} r="12" fill="currentColor" opacity="0.16" />
+                    <circle cx={cx} cy={cy} r="10" className={styles.marker} />
+                    <text x={cx} y={cy + 4} textAnchor="middle" className={styles.markerText}>
+                      {n}
+                    </text>
+                  </g>
+                );
+              })}
+            </svg>
           </div>
 
-          {/* Optional: pull from identificationText */}
+          {/* Callout list (stabil mobil) */}
+          <ol className={styles.calloutList}>
+            {cs.map((c, idx) => (
+              <li key={c.key} className={styles.calloutItem}>
+                <span className={styles.calloutNum}>{idx + 1}</span>
+                <div className={styles.calloutBody}>
+                  <div className={styles.calloutLabel}>{c.label}</div>
+                  {c.text ? <div className={styles.calloutText}>{c.text}</div> : null}
+                </div>
+              </li>
+            ))}
+          </ol>
+
           {identificationText ? (
-            <div className={styles.textBlock}>
-              <div className={styles.textTitle}>{locale === "dk" ? "Noter" : "Notes"}</div>
-              <div className={styles.text}>{identificationText}</div>
+            <div className={styles.notes}>
+              <div className={styles.notesTitle}>{locale === "dk" ? "Noter" : "Notes"}</div>
+              <div className={styles.notesText}>{identificationText}</div>
             </div>
           ) : null}
         </div>
 
-        {/* Right column */}
+        {/* Side column */}
         <aside className={styles.side}>
-          {/* Season bar */}
+          {/* Season */}
           <div className={styles.sideCard}>
             <div className={styles.sideTitle}>{locale === "dk" ? "Sæson (DK)" : "Season (DK)"}</div>
+
             <div className={styles.seasonBar} role="img" aria-label={locale === "dk" ? "Sæson bar" : "Season bar"}>
               {Array.from({ length: 12 }).map((_, i) => {
                 const m = i + 1;
@@ -258,13 +278,13 @@ export function SpeciesVisualId(props: Props) {
                 </span>
               ) : (
                 <span className={styles.seasonLineMuted}>
-                  {locale === "dk" ? "Sæson ikke sat endnu (seasonality)." : "Season not set yet (seasonality)."}
+                  {locale === "dk" ? "Sæson ikke sat endnu." : "Season not set yet."}
                 </span>
               )}
             </div>
           </div>
 
-          {/* Quick cues */}
+          {/* Features */}
           <div className={styles.sideCard}>
             <div className={styles.sideTitle}>{locale === "dk" ? "Quick cues" : "Quick cues"}</div>
             <div className={styles.features}>
@@ -280,7 +300,7 @@ export function SpeciesVisualId(props: Props) {
             </div>
           </div>
 
-          {/* Look-alikes + safety */}
+          {/* Lookalikes + safety */}
           <div className={styles.sideCard}>
             <div className={styles.sideTitle}>{locale === "dk" ? "Look-alikes + safety" : "Look-alikes + safety"}</div>
 
