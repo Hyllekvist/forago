@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Script from "next/script";
 import { supabaseServer } from "@/lib/supabase/server";
 import styles from "./SpeciesPage.module.css";
+import { SpeciesVisualId } from "./SpeciesVisualId";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 3600;
@@ -374,6 +375,22 @@ const country = countryForLocale(locale);
           </div>
         ) : null}
       </header>
+
+      <SpeciesVisualId
+  locale={locale}
+  speciesName={name}
+  scientificName={scientific}
+  monthFrom={from ?? null}
+  monthTo={to ?? null}
+  confidence={conf ?? null}
+  inSeasonNow={inSeasonNow}
+  identificationText={tr?.identification ?? null}
+  lookalikesText={tr?.lookalikes ?? null}
+  safetyText={tr?.safety_notes ?? null}
+  seasonHref={`/${locale}/season`}
+  lookalikesHref={`/${locale}/guides/lookalikes`}
+  safetyHref={`/${locale}/guides/safety-basics`}
+/>
 
       <Section title={locale === "dk" ? "Identifikation" : "Identification"}>
         {tr?.identification ? (
