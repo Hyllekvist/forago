@@ -1,6 +1,7 @@
-/* Desktop first. Works with FieldHero (100svh hero) + content below. 
-   Requires your tokens/themes/typo already loaded globally.
-*/ 
+/* src/app/[locale]/species/[slug]/SpeciesPage.module.css
+   Desktop first. Works with FieldHero (full-screen hero) + content below.
+   Uses your existing global tokens (var(--panel), --line, --accent etc.)
+*/
 
 .page{
   width: 100%;
@@ -12,83 +13,6 @@
   margin: 0 auto;
   display: grid;
   gap: clamp(14px, 1.6vw, 22px);
-}
-
-/* =========================
-   HERO ACTIONS (overlay)
-   - these are passed as left/right slots into FieldHero
-   ========================= */
-
-.heroLeft{
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 160px;
-}
-
-.heroRight{
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  min-width: 220px;
-}
-
-/* Back button */
-.backBtn{
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-
-  padding: 10px 12px;
-  border-radius: 999px;
-
-  border: var(--stroke) solid var(--glassLine);
-  background: color-mix(in srgb, var(--ink) 4%, transparent);
-
-  color: var(--ink);
-  font-weight: 780;
-  letter-spacing: -0.01em;
-
-  transition:
-    transform var(--t, 180ms) var(--ease, ease),
-    background var(--t, 180ms) var(--ease, ease),
-    border-color var(--t, 180ms) var(--ease, ease);
-}
-
-.backBtn:active{
-  transform: translateY(1px);
-}
-
-/* Hero actions (Season / Save etc.) */
-.actionBtn{
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-
-  padding: 10px 12px;
-  border-radius: 999px;
-
-  border: var(--stroke) solid var(--glassLine);
-  background: color-mix(in srgb, var(--ink) 6%, transparent);
-
-  color: var(--ink);
-  font-weight: 740;
-  letter-spacing: -0.01em;
-
-  transition:
-    transform var(--t, 180ms) var(--ease, ease),
-    background var(--t, 180ms) var(--ease, ease),
-    border-color var(--t, 180ms) var(--ease, ease);
-}
-
-.actionBtn:active{
-  transform: translateY(1px);
-}
-
-.actionPrimary{
-  border-color: color-mix(in srgb, var(--accent) 55%, var(--glassLine));
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
 /* =========================
@@ -104,127 +28,11 @@
   padding: clamp(16px, 2.2vw, 28px);
 }
 
-/* Header block below hero */
-.header{
-  display: grid;
-  gap: 10px;
-}
-
-.title{
-  margin: 0;
-  font-size: clamp(28px, 3.1vw, 42px);
-  line-height: 1.06;
-  letter-spacing: -0.02em;
-  font-weight: 860;
-}
-
-.subline{
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-
-  margin: 0;
-  color: var(--muted);
-  font-size: clamp(14px, 1.2vw, 16px);
-}
-
-.latin{
-  font-style: italic;
-  color: color-mix(in srgb, var(--ink) 70%, transparent);
-}
-
-.dot{
-  opacity: 0.5;
-}
-
-/* =========================
-   META CHIPS ROW (under title)
-   - you can reuse these for extra labels if needed
-   ========================= */
-
-.metaRow{
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-  margin-top: 6px;
-}
-
-.metaChip{
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-
-  padding: 8px 10px;
-  border-radius: 999px;
-
-  border: var(--stroke) solid var(--chipLine);
-  background: var(--chipBg);
-
-  font-size: 13px;
-  line-height: 1;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-
-.metaChipStrong{
-  border-color: color-mix(in srgb, var(--accent) 40%, var(--chipLine));
-  background: color-mix(in srgb, var(--accent) 10%, var(--chipBg));
-}
-
-@media (max-width: 640px){
-  .metaChip{ font-size: 12px; padding: 7px 9px; }
-}
-
-/* =========================
-   KPI STRIP (Fund / 30d)
-   - less “boxy”, more Airbnb-ish
-   ========================= */
-
-.kpis{
-  margin-top: 14px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.kpi{
-  border-radius: 18px;
-  border: var(--stroke) solid var(--line);
-  background: color-mix(in srgb, var(--panel2) 80%, transparent);
-  box-shadow: 0 12px 34px rgba(0,0,0,0.14);
-
-  padding: 14px 16px;
-  display: grid;
-  gap: 6px;
-}
-
-.kpiLabel{
-  font-size: 12px;
-  color: var(--muted);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-.kpiValue{
-  font-size: 22px;
-  font-weight: 860;
-  letter-spacing: -0.02em;
-}
-
-@media (min-width: 900px){
-  .kpis{ grid-template-columns: 1fr 1fr; gap: 14px; }
-  .kpi{ padding: 16px 18px; }
-  .kpiValue{ font-size: 26px; }
-}
-
 /* =========================
    SECTIONS
    ========================= */
 
 .sections{
-  margin-top: 18px;
   display: grid;
   gap: 14px;
 }
@@ -334,13 +142,10 @@
   .page{ padding: 12px; }
   .content{ padding: 16px; border-radius: var(--r-lg); }
   .section{ border-radius: var(--r-lg); }
-  .kpi{ border-radius: 16px; }
-  .title{ font-size: 32px; }
 }
 
 /* =========================
    LIGHT THEME TUNING
-   (fix “flat” look)
    ========================= */
 
 :root[data-theme="light"] .content{
@@ -350,8 +155,4 @@
 
 :root[data-theme="light"] .section{
   background: color-mix(in srgb, var(--panel) 86%, transparent);
-}
-
-:root[data-theme="light"] .kpi{
-  background: color-mix(in srgb, var(--panel) 90%, transparent);
 }
