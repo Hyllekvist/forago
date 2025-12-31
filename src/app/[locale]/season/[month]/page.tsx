@@ -75,7 +75,7 @@ export default async function SeasonMonthPage({ params }: { params: { locale: st
   const { data: seas, error: seasErr } = await supabase
     .from("seasonality")
     .select("species_id, month_from, month_to, confidence")
-    .eq("country", "DK")
+    .eq("country", "dk")
     .eq("region", "");
   if (seasErr) throw seasErr;
 
