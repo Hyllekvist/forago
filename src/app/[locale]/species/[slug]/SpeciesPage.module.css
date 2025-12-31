@@ -1,392 +1,304 @@
-/* src/app/[locale]/species/[slug]/SpeciesPage.module.css
-   Desktop-first. Works with FieldHero (100svh hero) + overlapping content sheet.
-   Assumes your global tokens/typo exist (panel/ink/muted/line/shadows/radii etc.)
+/* SpeciesPage.module.css
+   Ambitiøs hero: full-bleed cover image + constrained content grid + safe-area aware bottom padding
+   Designmål:
+   - Billedet er “center stage” og går visuelt helt ned bag BottomNav
+   - Tekst/badges/chips ligger aldrig i kanten af billedet
+   - Alt er token/theme-friendly (ingen hardcodede farver ud over transparente overlays)
 */
 
-.page{
+/* ===== Page shell ===== */
+
+.page {
   width: 100%;
-  padding: clamp(14px, 1.4vw, 22px);
+  padding: 0; /* vigtigt: hero er full-bleed, vi styrer spacing inde i content */
 }
 
-/* Wrapper around hero + sheet */
-.shell{
+.shell {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  display: grid;
+  gap: 0;
+}
+
+/* ===== HERO (full-bleed) ===== */
+
+.hero {
   position: relative;
+  width: 100%;
+  /* giver “wow” height og plads til content + bundnav overlap */
+  min-height: 100svh;
+  overflow: hidden;
+
+  /* hvis du bruger radius på cards under, så lad hero være ren */
+  border-radius: 0;
+}
+
+/* image wrapper (Next <Image fill /> eller <img>) */
+.heroMedia {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.heroMedia :global(img) {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  transform: translateZ(0);
+}
+
+/* readability layers */
+.heroShade {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  /* mørk top + stærkere bund så tekst “står” */
+  background:
+    radial-gradient(1200px 700px at 20% 10%, rgba(0, 0, 0, 0.10), transparent 60%),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.62));
+}
+
+/* optional subtle grain/noise via pseudo; behold hvis du allerede har global noise */
+.heroNoise {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  opacity: 0.08;
+  pointer-events: none;
+  background-image: url("/noise.png"); /* hvis du har den — ellers fjern hele klassen */
+  background-size: 260px 260px;
+  mix-blend-mode: overlay;
+}
+
+/* ===== HERO CONTENT GRID (constrained) ===== */
+
+.heroContent {
+  position: relative;
+  z-index: 3;
+
+  /* constrained grid */
+  width: 100%;
   max-width: 1180px;
   margin: 0 auto;
+
+  /* “safe” padding: top/side + bottom plads til bundnav */
+  padding:
+    clamp(18px, 4.2vw, 34px)
+    clamp(16px, 4.4vw, 34px)
+    calc(var(--bottom-nav-h, 72px) + env(safe-area-inset-bottom) + clamp(14px, 2.4vw, 22px));
+
+  /* layout */
   display: grid;
-  gap: 0; /* important: hero+sheet should visually connect */
+  grid-template-rows: auto 1fr auto;
+  gap: clamp(14px, 2.8vw, 22px);
+  min-height: 100svh;
 }
 
-/* =========================
-   HERO ACTIONS (optional slots)
-   ========================= */
+/* ===== Top row: actions (left/right slots) ===== */
 
-.heroLeft{
-  display: flex;
+.heroTop {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.heroLeft {
+  display: inline-flex;
   align-items: center;
   gap: 10px;
   min-width: 160px;
 }
 
-.heroRight{
-  display: flex;
+.heroRight {
+  display: inline-flex;
   align-items: center;
+  gap: 10px;
   justify-content: flex-end;
-  gap: 10px;
-  min-width: 220px;
 }
 
-/* Back button */
-.backBtn{
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
+/* ===== Center row: title/meta/chips ===== */
 
-  padding: 10px 12px;
-  border-radius: 999px;
-
-  border: var(--stroke) solid var(--glassLine);
-  background: color-mix(in srgb, var(--ink) 4%, transparent);
-
-  color: var(--ink);
-  font-weight: 780;
-  letter-spacing: -0.01em;
-
-  transition:
-    transform var(--t, 180ms) var(--ease, ease),
-    background var(--t, 180ms) var(--ease, ease),
-    border-color var(--t, 180ms) var(--ease, ease);
-}
-
-.backBtn:active{
-  transform: translateY(1px);
-}
-
-/* Hero actions (Season / Save etc.) */
-.actionBtn{
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-
-  padding: 10px 12px;
-  border-radius: 999px;
-
-  border: var(--stroke) solid var(--glassLine);
-  background: color-mix(in srgb, var(--ink) 6%, transparent);
-
-  color: var(--ink);
-  font-weight: 740;
-  letter-spacing: -0.01em;
-
-  transition:
-    transform var(--t, 180ms) var(--ease, ease),
-    background var(--t, 180ms) var(--ease, ease),
-    border-color var(--t, 180ms) var(--ease, ease);
-}
-
-.actionBtn:active{
-  transform: translateY(1px);
-}
-
-.actionPrimary{
-  border-color: color-mix(in srgb, var(--accent) 55%, var(--glassLine));
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-}
-
-/* =========================
-   CONTENT SHEET (OVERLAP)
-   ========================= */
-
-.content{
-  position: relative;
-  z-index: 2;
-
-  /* 👇 overlap amount (desktop) */
-  margin-top: -28vh;
-
-  border-radius: var(--r-xl) var(--r-xl) 0 0;
-  border: var(--stroke) solid var(--line);
-  background: var(--panel);
-
-  box-shadow:
-    0 -20px 60px rgba(0,0,0,0.25),
-    var(--shadow-1);
-
-  padding: clamp(18px, 2.4vw, 30px);
-}
-
-/* small “grab handle” vibe */
-.content::before{
-  content: "";
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 42px;
-  height: 4px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--ink) 18%, transparent);
-  opacity: 0.5;
-}
-
-/* =========================
-   HEADER (title + meta)
-   ========================= */
-
-.header{
+.heroCenter {
   display: grid;
+  align-content: end;
   gap: 10px;
-  padding-top: 6px;
+  padding-top: clamp(10px, 2.2vw, 18px);
 }
 
-.title{
+/* typografi: brug dine tokens — navne er placeholders */
+.h1 {
   margin: 0;
-  font-size: clamp(28px, 3.1vw, 42px);
-  line-height: 1.06;
-  letter-spacing: -0.02em;
-  font-weight: 860;
+  font-size: clamp(36px, 7.2vw, 56px);
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+  font-weight: 760;
+  color: var(--fg, #fff);
+  text-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
 }
 
-.subline{
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-
-  margin: 0;
-  color: var(--muted);
-  font-size: clamp(14px, 1.2vw, 16px);
-}
-
-.latin{
-  font-style: italic;
-  color: color-mix(in srgb, var(--ink) 70%, transparent);
-}
-
-.dot{
-  opacity: 0.5;
-}
-
-/* =========================
-   META CHIPS ROW
-   ========================= */
-
-.metaRow{
+.metaLine {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
-  margin-top: 6px;
+  opacity: 0.92;
+  color: var(--fg-muted, rgba(255, 255, 255, 0.78));
+  font-size: 14px;
 }
 
-.metaChip{
+.metaDot {
+  opacity: 0.55;
+}
+
+/* chips row */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+/* chip base (glass) */
+.chip {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-
-  padding: 8px 10px;
+  padding: 10px 12px;
   border-radius: 999px;
-
-  border: var(--stroke) solid var(--chipLine);
-  background: var(--chipBg);
-
+  backdrop-filter: blur(10px);
+  background: rgba(20, 24, 28, 0.40);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: rgba(255, 255, 255, 0.92);
   font-size: 13px;
   line-height: 1;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  white-space: nowrap;
 }
 
-.metaChipStrong{
-  border-color: color-mix(in srgb, var(--accent) 40%, var(--chipLine));
-  background: color-mix(in srgb, var(--accent) 10%, var(--chipBg));
+.chipIcon {
+  opacity: 0.9;
 }
 
-@media (max-width: 640px){
-  .metaChip{ font-size: 12px; padding: 7px 9px; }
-}
+/* ===== Bottom row: hero cards (stats) ===== */
 
-/* =========================
-   KPI STRIP (Fund / 30d)
-   ========================= */
-
-.kpis{
-  margin-top: 14px;
+.heroBottom {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: clamp(12px, 2.6vw, 18px);
 }
 
-.kpi{
+/* simple glass cards */
+.heroCard {
   border-radius: 18px;
-  border: var(--stroke) solid var(--line);
-  background: color-mix(in srgb, var(--panel2) 80%, transparent);
-  box-shadow: 0 12px 34px rgba(0,0,0,0.14);
+  padding: 16px 16px;
+  backdrop-filter: blur(12px);
+  background: rgba(20, 24, 28, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow:
+    0 16px 60px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  min-height: 86px;
 
-  padding: 14px 16px;
   display: grid;
-  gap: 6px;
+  align-content: center;
+  gap: 8px;
 }
 
-.kpiLabel{
+.heroCardLabel {
   font-size: 12px;
-  color: var(--muted);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
 }
 
-.kpiValue{
-  font-size: 22px;
-  font-weight: 860;
+.heroCardValue {
+  font-size: 34px;
+  line-height: 1;
+  font-weight: 760;
   letter-spacing: -0.02em;
+  color: rgba(255, 255, 255, 0.96);
 }
 
-@media (min-width: 900px){
-  .kpis{ grid-template-columns: 1fr 1fr; gap: 14px; }
-  .kpi{ padding: 16px 18px; }
-  .kpiValue{ font-size: 26px; }
-}
+/* ===== Below hero content area ===== */
 
-/* =========================
-   SECTIONS
-   ========================= */
+.content {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding:
+    clamp(14px, 3.6vw, 22px)
+    clamp(16px, 4.4vw, 34px)
+    calc(env(safe-area-inset-bottom) + 24px);
 
-.sections{
-  margin-top: 18px;
   display: grid;
   gap: 14px;
 }
 
-.section{
-  border-radius: var(--r-xl);
-  border: var(--stroke) solid var(--line);
-  background: color-mix(in srgb, var(--panel2) 72%, transparent);
-  box-shadow: 0 14px 38px rgba(0,0,0,0.16);
-
-  padding: clamp(14px, 1.6vw, 18px);
+/* cards/sections under hero */
+.sectionCard {
+  border-radius: 20px;
+  background: var(--surface-1, rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
 }
 
-.sectionTitle{
-  margin: 0;
-  font-size: clamp(16px, 1.35vw, 18px);
-  font-weight: 840;
-  letter-spacing: -0.01em;
-}
-
-.sectionSub{
-  margin: 6px 0 0;
-  font-size: 13px;
-  color: var(--muted);
-}
-
-/* Checklist style */
-.checklist{
-  margin-top: 12px;
+.sectionHeader {
+  padding: 16px 16px 10px 16px;
   display: grid;
-  gap: 10px;
+  gap: 6px;
 }
 
-.check{
-  display: grid;
-  grid-template-columns: 14px 1fr;
-  gap: 10px;
-  align-items: start;
-
-  padding: 12px 12px;
-  border-radius: 16px;
-
-  border: var(--stroke) solid color-mix(in srgb, var(--line) 92%, transparent);
-  background: color-mix(in srgb, var(--panel) 80%, transparent);
+.sectionTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--fg, #fff);
 }
 
-.bullet{
-  width: 10px;
-  height: 10px;
-  margin-top: 4px;
-  border-radius: 999px;
-  background: var(--accent);
-  box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 16%, transparent);
-}
-
-.checkText{
+.sectionSub {
   margin: 0;
   font-size: 14px;
-  line-height: 1.45;
-  color: color-mix(in srgb, var(--ink) 88%, transparent);
+  color: var(--fg-muted, rgba(255, 255, 255, 0.72));
 }
 
-/* Warning/callout cards */
-.callout{
-  margin-top: 12px;
-  border-radius: 16px;
-  border: var(--stroke) solid color-mix(in srgb, var(--warnLine) 88%, transparent);
-  background: color-mix(in srgb, var(--warnBg) 72%, transparent);
-  padding: 12px 12px;
+.sectionBody {
+  padding: 0 16px 16px 16px;
 }
 
-.calloutText{
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.45;
-  color: color-mix(in srgb, var(--ink) 88%, transparent);
-}
+/* ===== Responsive tweaks ===== */
 
-/* Paragraph block */
-.paragraph{
-  margin-top: 12px;
-  border-radius: 16px;
-  border: var(--stroke) solid color-mix(in srgb, var(--line) 92%, transparent);
-  background: color-mix(in srgb, var(--panel) 80%, transparent);
-  padding: 12px 12px;
-}
-
-.paragraph p{
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.55;
-  color: color-mix(in srgb, var(--ink) 86%, transparent);
-}
-
-/* Footer meta */
-.footerMeta{
-  margin-top: 16px;
-  font-size: 12px;
-  color: var(--muted2);
-}
-
-/* =========================
-   MOBILE POLISH
-   ========================= */
-
-@media (max-width: 640px){
-  .page{ padding: 12px; }
-
-  /* More overlap on mobile so title is higher */
-  .content{
-    margin-top: -34vh;
-    border-radius: var(--r-lg) var(--r-lg) 0 0;
-    padding: 18px;
+@media (max-width: 680px) {
+  .heroTop {
+    grid-template-columns: 1fr auto;
   }
 
-  .section{ border-radius: var(--r-lg); }
-  .kpi{ border-radius: 16px; }
-  .title{ font-size: 32px; }
+  .heroBottom {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .h1 {
+    font-size: clamp(34px, 10vw, 46px);
+  }
 }
 
-/* =========================
-   LIGHT THEME TUNING
-   ========================= */
-
-:root[data-theme="light"] .content{
-  background: var(--panel);
-  box-shadow:
-    0 -20px 60px rgba(0,0,0,0.10),
-    var(--shadow-2);
+/* very small phones */
+@media (max-width: 380px) {
+  .heroBottom {
+    grid-template-columns: 1fr;
+  }
 }
 
-:root[data-theme="light"] .section{
-  background: color-mix(in srgb, var(--panel) 86%, transparent);
-}
+/* ===== Helpers ===== */
 
-:root[data-theme="light"] .kpi{
-  background: color-mix(in srgb, var(--panel) 90%, transparent);
+/* Brug denne hvis du har et element der skal “flyde” over hero (fx badge stack) */
+.floatLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
 }
