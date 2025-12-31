@@ -241,22 +241,6 @@ export default async function SpeciesPage({ params }: { params: { locale: string
         {JSON.stringify(jsonLd)}
       </Script>
 
-      {/* Sticky chrome */}
-      <div className={`${styles.chrome} surfaceGlass`}>
-        <Link className={`${styles.back} hoverable`} href={`/${locale}/species`}>
-          ← {locale === "dk" ? "Arter" : "Species"}
-        </Link>
-
-        <div className={styles.chromeRight}>
-          <Link className={`${styles.chromeBtn} hoverable`} href={`/${locale}/season`}>
-            {locale === "dk" ? "Sæson" : "Season"}
-          </Link>
-          <Link className={`${styles.chromeBtn} ${styles.chromeBtnPrimary} hoverable`} href={`/${locale}/log`}>
-            {locale === "dk" ? "Gem" : "Save"}
-          </Link>
-        </div>
-      </div>
-
       {/* Full hero + overlap sheet */}
       <FieldHero
         locale={locale}
