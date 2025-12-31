@@ -3,19 +3,13 @@
 import Image from "next/image";
 import styles from "./FieldHero.module.css";
 
-type ChipTone = "neutral" | "good" | "warn" | "danger";
-
-export type FieldChip = {
-  label: string;
-  tone?: ChipTone;
-  icon?: React.ReactNode;
-};
-
 type Props = {
   locale: "dk" | "en";
+
   name: string;
   scientific: string;
   group: string;
+
   imageUrl: string | null;
 
   danger: boolean;
@@ -29,66 +23,97 @@ type Props = {
   finds30d: string;
 };
 
-function toneClass(t?: ChipTone) {
-  if (t === "good") return styles.chipGood;
-  if (t === "warn") return styles.chipWarn;
-  if (t === "danger") return styles.chipDanger;
-  return styles.chipNeutral;
-}
-
 export default function FieldHero({
-  title,
-  imageSrc,
-  imageAlt,
-  left,
-  right,
-  chips = [],
-  hint = "Tryk for fullscreen (pinch-zoom)",
-  fit = "contain",
+  locale,
+  name,
+  scientific,
+  group,
+  imageUrl,
+  danger,
+  dangerLabel,
+  inSeasonNow,
+  confidence,
+  seasonText,
+  totalFinds,
+  finds30d,
 }: Props) {
   return (
-    <section className={styles.hero} aria-label={title ? `Foto: ${title}` : "Foto"}>
-      {/* image */}
+    <section className={styles.hero} aria-label={name}>
+      {/* IMAGE */}
       <div className={styles.media}>
-        <Image
-          src={imageSrc}
-          alt={imageAlt}
-          fill
-          priority
-          sizes="(max-width: 900px) 100vw, 1100px"
-          className={`${styles.img} ${fit === "cover" ? styles.fitCover : styles.fitContain}`}
-        />
-        <div className={styles.vignette} aria-hidden="true" />
-        <div className={styles.grain} aria-hidden="true" />
+        {imageUrl ? (
+          <Image
+            src={imageUrl}
+            alt={name}
+            fill
+            priority
+            sizes="100vw"
+            className={styles.image}
+          />
+        ) : (
+          <div className={styles.noImage}>
+            {locale === "dk" ? "Intet billede endnu" : "No image yet"}
+          </div>
+        )}
+
+        <div className={styles.vignette} aria-hidden />
+        <div className={styles.grain} aria-hidden />
       </div>
 
-      {/* overlay top bar */}
-      <div className={styles.topbar}>
-        <div className={styles.topbarInner}>
-          <div className={styles.left}>{left}</div>
-          <div className={styles.right}>{right}</div>
-        </div>
-      </div>
+      {/* OVERLAY TOP */}
+      <div className={styles.overlayTop}>
+        <div className={styles.titleWrap}>
+          <h1 className={styles.title}>{name}</h1>
 
-      {/* chips */}
-      {chips.length > 0 && (
-        <div className={styles.chipsWrap}>
-          <div className={styles.chips}>
-            {chips.map((c, idx) => (
-              <span key={idx} className={`${styles.chip} ${toneClass(c.tone)}`}>
-                {c.icon ? <span className={styles.chipIcon}>{c.icon}</span> : null}
-                <span className={styles.chipText}>{c.label}</span>
-              </span>
-            ))}
+          <div className={styles.subline}>
+            {scientific ? <em>{scientific}</em> : null}
+            {scientific ? <span className={styles.dot}>•</span> : null}
+            <span>{group}</span>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* hint */}
-      <div className={styles.hintWrap}>
-        <div className={styles.hint}>
-          <span className={styles.hintDot} aria-hidden="true" />
-          <span className={styles.hintText}>{hint}</span>
+      {/* OVERLAY META */}
+      <div className={styles.overlayBottom}>
+        <div className={styles.metaRow}>
+          {danger ? (
+            <span className={`${styles.chip} ${styles.chipDanger}`}>
+              ☠ {dangerLabel}
+            </span>
+          ) : (
+            <span className={styles.chip}>
+              {locale === "dk" ? "Ikke giftig" : "Not toxic"}
+            </span>
+          )}
+
+          <span className={`${styles.chip} ${inSeasonNow ? styles.chipGood : ""}`}>
+            {inSeasonNow
+              ? locale === "dk"
+                ? "I sæson"
+                : "In season"
+              : locale === "dk"
+              ? "Ikke i sæson"
+              : "Out of season"}
+            {confidence !== null ? ` · ${Math.round(confidence)}%` : ""}
+          </span>
+
+          <span className={styles.chip}>
+            {locale === "dk" ? "Sæson:" : "Season:"} {seasonText}
+          </span>
+        </div>
+
+        <div className={styles.stats}>
+          <div className={styles.stat}>
+            <span className={styles.statLabel}>
+              {locale === "dk" ? "Fund" : "Finds"}
+            </span>
+            <span className={styles.statValue}>{totalFinds}</span>
+          </div>
+
+          <div className={styles.stat}>
+            <span className={styles.statLabel}>30d</span>
+            <span className={styles.statValue}>{finds30d}</span>
+          </div>
         </div>
       </div>
     </section>
