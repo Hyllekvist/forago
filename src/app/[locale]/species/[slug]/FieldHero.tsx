@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import styles from "./SpeciesPage.module.css";
 
 export default function FieldHero(props: {
@@ -49,12 +50,30 @@ export default function FieldHero(props: {
     return base + conf;
   }, [inSeasonNow, confidence, locale]);
 
-  const tapHint = locale === "dk" ? "Tryk for fullscreen (pinch-zoom)" : "Tap for fullscreen (pinch-zoom)";
+  const tapHint =
+    locale === "dk" ? "Tryk for fullscreen (pinch-zoom)" : "Tap for fullscreen (pinch-zoom)";
 
   return (
     <>
-      {/* Full-screen hero (clean image only) */}
+      {/* FULL HERO: now goes all the way up */}
       <header className={styles.heroFull} aria-label={locale === "dk" ? "Billede" : "Image"}>
+        {/* Overlay topbar on the image */}
+        <div className={`${styles.heroTopbar} surfaceGlass`}>
+          <Link className={`${styles.heroBack} hoverable`} href={`/${locale}/species`}>
+            ← {locale === "dk" ? "Arter" : "Species"}
+          </Link>
+
+          <div className={styles.heroTopbarRight}>
+            <Link className={`${styles.heroTopBtn} hoverable`} href={`/${locale}/season`}>
+              {locale === "dk" ? "Sæson" : "Season"}
+            </Link>
+            <Link className={`${styles.heroTopBtn} ${styles.heroTopBtnPrimary} hoverable`} href={`/${locale}/log`}>
+              {locale === "dk" ? "Gem" : "Save"}
+            </Link>
+          </div>
+        </div>
+
+        {/* Image button */}
         <button
           type="button"
           className={`${styles.heroMediaBtn} pressable`}
@@ -63,7 +82,6 @@ export default function FieldHero(props: {
           disabled={!imageUrl}
         >
           {imageUrl ? (
-            // use img here for fastest + predictable iOS pinch in fullscreen
             // eslint-disable-next-line @next/next/no-img-element
             <img src={imageUrl} alt={name} className={styles.heroImg} />
           ) : (
@@ -77,7 +95,7 @@ export default function FieldHero(props: {
         </button>
       </header>
 
-      {/* Airbnb-ish info sheet (overlapping) */}
+      {/* Airbnb-ish info sheet */}
       <section className={`${styles.sheet} surface`} aria-label={locale === "dk" ? "Info" : "Info"}>
         <div className={styles.sheetTop}>
           <h1 className="h1">{name}</h1>
@@ -119,16 +137,14 @@ export default function FieldHero(props: {
 
       {/* Fullscreen */}
       {open && imageUrl ? (
-        <div className={styles.fs} role="dialog" aria-modal="true" aria-label={locale === "dk" ? "Fullscreen billede" : "Fullscreen image"}>
+        <div className={styles.fs} role="dialog" aria-modal="true">
           <button className={styles.fsClose} onClick={() => setOpen(false)} aria-label={locale === "dk" ? "Luk" : "Close"}>
             ✕
           </button>
-
           <div className={styles.fsScroll}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={imageUrl} alt={name} className={styles.fsImg} />
           </div>
-
           <div className={styles.fsFooter}>
             <div className={styles.fsName}>{name}</div>
             {scientific ? <div className="meta">{scientific}</div> : null}
