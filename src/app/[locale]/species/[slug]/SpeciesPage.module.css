@@ -24,7 +24,7 @@
   gap: clamp(12px, 2.8vw, 18px);
 
   /* “kontrol-knapper” */
-  --sheet-overlap: clamp(64px, 16vw, 160px); /* 👈 ØG = sheet højere op, MINDRE = længere ned */
+  --sheet-overlap: clamp(140px, 16vw, 160px); /* 👈 ØG = sheet højere op, MINDRE = længere ned */
 }
 
 /* ===== SHEET (glassy panel der overlapper hero) ===== */
