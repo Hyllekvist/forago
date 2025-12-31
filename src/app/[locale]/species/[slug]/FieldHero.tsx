@@ -12,22 +12,21 @@ export type FieldChip = {
 };
 
 type Props = {
-  title?: string;
-  imageSrc: string;
-  imageAlt: string;
+  locale: "dk" | "en";
+  name: string;
+  scientific: string;
+  group: string;
+  imageUrl: string | null;
 
-  // overlay actions
-  left?: React.ReactNode;   // back button etc.
-  right?: React.ReactNode;  // season/save etc.
+  danger: boolean;
+  dangerLabel: string;
 
-  // small chips on hero
-  chips?: FieldChip[];
+  inSeasonNow: boolean;
+  confidence: number | null;
+  seasonText: string;
 
-  // optional hint bottom
-  hint?: string;
-
-  // if your images are mostly studio/isolated: "contain" shows full specimen
-  fit?: "contain" | "cover";
+  totalFinds: string;
+  finds30d: string;
 };
 
 function toneClass(t?: ChipTone) {
