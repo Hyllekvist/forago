@@ -1,14 +1,20 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
 import styles from "./FieldHero.module.css";
 
+type Locale = "dk" | "en";
+
+function t(locale: Locale, dk: string, en: string) {
+  return locale === "dk" ? dk : en;
+}
+
 type Props = {
-  locale: "dk" | "en";
+  locale: Locale;
+
   name: string;
   scientific: string;
-  group: string;
+  group: string; // e.g. "fungus"
   imageUrl: string | null;
 
   danger: boolean;
@@ -22,10 +28,30 @@ type Props = {
   finds30d: string;
 };
 
-function fmtPct(n: number | null) {
-  if (n == null || !Number.isFinite(n)) return null;
-  const v = Math.round(n * 100);
-  return `${v}%`;
+function Chip({
+  label,
+  tone = "neutral",
+  icon,
+}: {
+  label: string;
+  tone?: "neutral" | "good" | "warn" | "danger";
+  icon?: React.ReactNode;
+}) {
+  const toneClass =
+    tone === "good"
+      ? styles.chipGood
+      : tone === "warn"
+      ? styles.chipWarn
+      : tone === "danger"
+      ? styles.chipDanger
+      : styles.chipNeutral;
+
+  return (
+    <span className={`${styles.chip} ${toneClass}`}>
+      {icon ? <span className={styles.chipIcon}>{icon}</span> : null}
+      <span className={styles.chipText}>{label}</span>
+    </span>
+  );
 }
 
 export default function FieldHero({
@@ -42,23 +68,23 @@ export default function FieldHero({
   totalFinds,
   finds30d,
 }: Props) {
-  const t = {
-    back: locale === "dk" ? "Arter" : "Species",
-    season: locale === "dk" ? "Sæson" : "Season",
-    save: locale === "dk" ? "Gem" : "Save",
-    hint: locale === "dk" ? "Tryk for fullscreen (pinch-zoom)" : "Tap for fullscreen (pinch-zoom)",
-    inSeason: locale === "dk" ? "I sæson" : "In season",
-    notInSeason: locale === "dk" ? "Ikke i sæson" : "Out of season",
-    found: locale === "dk" ? "Fund" : "Finds",
-    last30d: locale === "dk" ? "30d" : "30d",
-  };
+  const seasonChip = `${t(locale, "Sæson", "Season")}: ${seasonText}`;
+  const seasonState = inSeasonNow
+    ? t(locale, "I sæson", "In season")
+    : t(locale, "Ikke i sæson", "Out of season");
 
-  const confText = fmtPct(confidence);
-  const seasonState = inSeasonNow ? t.inSeason : t.notInSeason;
+  const confPct =
+    typeof confidence === "number" && Number.isFinite(confidence)
+      ? Math.round(confidence * 100)
+      : null;
+
+  // FIX: din "8000%" bug kommer typisk af at confidence allerede er 0-100.
+  // Her antager vi confidence er 0-1. Hvis din DB er 0-100, så skift til:
+  // Math.round(confidence)
+  const seasonStateLabel = confPct !== null ? `${seasonState} · ${confPct}%` : seasonState;
 
   return (
-    <section className={styles.hero} aria-label={name ? `Foto: ${name}` : "Foto"}>
-      {/* Media */}
+    <section className={styles.hero} aria-label={t(locale, "Foto", "Photo")}>
       <div className={styles.media}>
         {imageUrl ? (
           <Image
@@ -66,95 +92,65 @@ export default function FieldHero({
             alt={name}
             fill
             priority
-            sizes="100vw"
+            sizes="(max-width: 900px) 100vw, 1200px"
             className={styles.img}
           />
         ) : (
           <div className={styles.noImage}>
-            <span className={styles.noImageText}>
-              {locale === "dk" ? "Intet billede endnu" : "No image yet"}
-            </span>
+            <div className={styles.noImageInner}>
+              <div className={styles.noImageTitle}>{name}</div>
+              <div className={styles.noImageMeta}>{scientific}</div>
+            </div>
           </div>
         )}
 
-        {/* Subtle overlays */}
         <div className={styles.vignette} aria-hidden="true" />
         <div className={styles.grain} aria-hidden="true" />
 
-        {/* Topbar overlay */}
-        <div className={styles.topbar}>
-          <div className={styles.topbarInner}>
-            <Link href={`/${locale}/species`} className={styles.back}>
-              <span className={styles.backArrow} aria-hidden="true">←</span>
-              <span className={styles.backText}>{t.back}</span>
-            </Link>
-
-            <div className={styles.actions}>
-              <button type="button" className={styles.actionBtn}>
-                {t.season}
-              </button>
-              <button type="button" className={styles.actionBtnPrimary}>
-                {t.save}
-              </button>
-            </div>
+        {/* badges/chips – låses til top-left så de IKKE “flyver” midt i billedet */}
+        <div className={styles.chipsDock} aria-label={t(locale, "Status", "Status")}>
+          <div className={styles.chips}>
+            {danger ? <Chip label={dangerLabel} tone="danger" icon={<span aria-hidden>☠️</span>} /> : null}
+            <Chip label={seasonStateLabel} tone={inSeasonNow ? "good" : "warn"} />
+            <Chip label={seasonChip} tone="neutral" />
           </div>
         </div>
 
-        {/* Chips (top-left, under topbar) */}
-        <div className={styles.chips}>
-          {danger ? (
-            <span className={`${styles.chip} ${styles.chipDanger}`}>
-              <span className={styles.chipIcon} aria-hidden="true">☠︎</span>
-              <span className={styles.chipText}>{dangerLabel}</span>
+        {/* hint */}
+        <div className={styles.hintWrap}>
+          <div className={styles.hint}>
+            <span className={styles.hintDot} aria-hidden="true" />
+            <span className={styles.hintText}>
+              {t(locale, "Tryk for fullscreen (pinch-zoom)", "Tap for fullscreen (pinch-zoom)")}
             </span>
-          ) : null}
-
-          <span className={`${styles.chip} ${inSeasonNow ? styles.chipGood : styles.chipNeutral}`}>
-            <span className={styles.chipText}>
-              {seasonState}{confText ? ` · ${confText}` : ""}
-            </span>
-          </span>
-
-          <span className={`${styles.chip} ${styles.chipNeutral}`}>
-            <span className={styles.chipText}>{group}</span>
-          </span>
+          </div>
         </div>
 
-        {/* Hint bottom-left */}
-        <div className={styles.hint}>
-          <span className={styles.hintDot} aria-hidden="true" />
-          <span className={styles.hintText}>{t.hint}</span>
-        </div>
-
-        {/* Bottom sheet (overlaps hero, Airbnb-ish) */}
-        <div className={styles.sheet}>
+        {/* bottom sheet overlay – trukket OP over billedet */}
+        <div className={styles.sheet} role="group" aria-label={t(locale, "Overblik", "Overview")}>
           <div className={styles.sheetInner}>
-            <div className={styles.sheetHead}>
-              <h1 className={styles.title}>{name}</h1>
-              <p className={styles.metaLine}>
-                <span className={styles.scientific}>{scientific || ""}</span>
-                <span className={styles.dot} aria-hidden="true">•</span>
-                <span className={styles.metaMuted}>{group}</span>
-                <span className={styles.dot} aria-hidden="true">•</span>
-                <span className={styles.metaMuted}>{t.season}: {seasonText}</span>
-              </p>
+            <div className={styles.head}>
+              <h1 className={styles.h1}>{name}</h1>
+              <div className={styles.metaRow}>
+                {scientific ? <span className={styles.metaEm}>{scientific}</span> : null}
+                {scientific ? <span className={styles.metaDot}>•</span> : null}
+                <span className={styles.meta}>{group}</span>
+              </div>
+              <div className={styles.meta2}>{seasonChip}</div>
             </div>
 
-            <div className={styles.stats}>
-              <div className={styles.statCard}>
-                <div className={styles.statLabel}>{t.found}</div>
-                <div className={styles.statValue}>{totalFinds}</div>
+            <div className={styles.kpis}>
+              <div className={styles.kpi}>
+                <div className={styles.kpiLabel}>{t(locale, "Fund", "Finds")}</div>
+                <div className={styles.kpiValue}>{totalFinds}</div>
               </div>
-              <div className={styles.statCard}>
-                <div className={styles.statLabel}>{t.last30d}</div>
-                <div className={styles.statValue}>{finds30d}</div>
+              <div className={styles.kpi}>
+                <div className={styles.kpiLabel}>30d</div>
+                <div className={styles.kpiValue}>{finds30d}</div>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Spacer so sheet overlap doesn’t hide the image under it */}
-        <div className={styles.sheetSpacer} aria-hidden="true" />
       </div>
     </section>
   );
