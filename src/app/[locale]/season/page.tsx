@@ -15,7 +15,7 @@ function isLocale(x: string): x is Locale {
 
 function countryForLocale(_locale: string) {
   // MVP: Danmark, men klar til udvidelse senere
-  return "DK";
+  return "dk"; // ✅ matcher DB (lowercase)
 }
 
 const MONTHS: { num: number; slug: string; dk: string; en: string }[] = [
@@ -88,13 +88,13 @@ export default async function SeasonNowPage({ params }: { params: { locale: stri
 
   if (error) throw error;
 
-  const inSeasonRows = (rows ?? []).filter((r) => {
+  const inSeasonRows = (rows ?? []).filter((r: any) => {
     const a = r.month_from as number;
     const b = r.month_to as number;
     return isInSeason(month, a, b);
   });
 
-  const ids = inSeasonRows.map((r) => r.species_id as string);
+  const ids = inSeasonRows.map((r: any) => r.species_id as string);
 
   const { data: species } = ids.length
     ? await supabase.from("species").select("id, slug, primary_group, scientific_name").in("id", ids)
@@ -109,7 +109,9 @@ export default async function SeasonNowPage({ params }: { params: { locale: stri
     : { data: [] as any[] };
 
   const trMap = new Map((tr ?? []).map((t: any) => [t.species_id as string, t]));
-  const confMap = new Map((inSeasonRows ?? []).map((r: any) => [r.species_id as string, (r.confidence as number) ?? 0]));
+  const confMap = new Map(
+    (inSeasonRows ?? []).map((r: any) => [r.species_id as string, (r.confidence as number) ?? 0])
+  );
 
   const items = (species ?? [])
     .map((s: any) => {
