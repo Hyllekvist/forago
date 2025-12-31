@@ -47,12 +47,6 @@ function fmtCompact(n: number) {
   return new Intl.NumberFormat("da-DK", { notation: "compact" }).format(n);
 }
 
-function confToPct(conf: number) {
-  // supports both 0.8 and 80
-  const v = conf > 1 ? conf : conf * 100;
-  return Math.max(0, Math.min(100, Math.round(v)));
-}
-
 function pickCues(text: string | null | undefined, locale: Locale) {
   const fallback =
     locale === "dk"
@@ -127,11 +121,7 @@ export async function generateMetadata({ params }: { params: { locale: string; s
       ? `Lær at genkende og bruge ${name}. Sæson, forvekslinger og sikkerhed.`
       : `Learn how to identify and use ${name}. Season, look-alikes and safety.`);
 
-  return {
-    title,
-    description,
-    alternates: { canonical: `/${locParam}/species/${slug}` },
-  };
+  return { title, description, alternates: { canonical: `/${locParam}/species/${slug}` } };
 }
 
 export default async function SpeciesPage({ params }: { params: { locale: string; slug: string } }) {
@@ -228,10 +218,7 @@ export default async function SpeciesPage({ params }: { params: { locale: string
   };
 
   const cues = pickCues(t?.identification, locale);
-
-  const sections = danger
-    ? (["safety", "lookalikes", "identification", "use"] as const)
-    : (["identification", "lookalikes", "use", "safety"] as const);
+  const sections = danger ? (["safety", "lookalikes", "identification", "use"] as const) : (["identification", "lookalikes", "use", "safety"] as const);
 
   return (
     <main className={styles.page}>
@@ -240,30 +227,57 @@ export default async function SpeciesPage({ params }: { params: { locale: string
       </Script>
 
       <div className={styles.shell}>
-        {/* HERO ONLY = header. No duplicate info below. */}
-        <FieldHero
-          locale={locale}
-          name={name}
-          scientific={scientific}
-          group={group}
-          imageUrl={imageUrl}
-          danger={danger}
-          dangerLabel={dangerLabel}
-          inSeasonNow={inSeasonNow}
-          confidence={conf}
-          seasonText={seasonText}
-          totalFinds={fmtCompact(totalFinds)}
-          finds30d={fmtCompact(finds30d)}
-        />
+        {/* BILLEDE (cover) – ingen badges ovenpå billedet */}
+        <FieldHero imageUrl={imageUrl} alt={name} />
 
-        {/* Content starts here */}
-        <section className={styles.content}>
+        {/* SHEET */}
+        <section className={styles.sheet}>
+          <header className={styles.header}>
+            <h1 className={styles.title}>{name}</h1>
+
+            <p className={styles.subline}>
+              {scientific ? <span className={styles.latin}>{scientific}</span> : null}
+              {scientific ? <span className={styles.dot}>•</span> : null}
+              <span>{group}</span>
+              <span className={styles.dot}>•</span>
+              <span>
+                {locale === "dk" ? "Sæson:" : "Season:"} {seasonText}
+              </span>
+            </p>
+
+            <div className={styles.metaRow}>
+              {danger ? (
+                <span className={`${styles.metaChip} ${styles.metaChipDanger}`}>☠️ {dangerLabel}</span>
+              ) : (
+                <span className={styles.metaChip}>{locale === "dk" ? "Ikke giftig" : "Not toxic"}</span>
+              )}
+
+              <span className={`${styles.metaChip} ${inSeasonNow ? styles.metaChipGood : styles.metaChipWarn}`}>
+                {inSeasonNow ? (locale === "dk" ? "I sæson" : "In season") : locale === "dk" ? "Ikke i sæson" : "Out of season"}
+                {typeof conf === "number" ? ` · ${Math.round(conf * 100)}%` : ""}
+              </span>
+
+              <span className={styles.metaChip}>
+                {locale === "dk" ? "Land:" : "Country:"} {country.toUpperCase()}
+              </span>
+            </div>
+
+            <div className={styles.kpis}>
+              <div className={styles.kpi}>
+                <div className={styles.kpiLabel}>{locale === "dk" ? "Fund" : "Finds"}</div>
+                <div className={styles.kpiValue}>{fmtCompact(totalFinds)}</div>
+              </div>
+
+              <div className={styles.kpi}>
+                <div className={styles.kpiLabel}>30d</div>
+                <div className={styles.kpiValue}>{fmtCompact(finds30d)}</div>
+              </div>
+            </div>
+          </header>
+
           <div className={styles.sections}>
-            {/* Quick field checklist */}
-            <section
-              className={styles.section}
-              aria-label={locale === "dk" ? "Hurtig identifikation" : "Quick identification"}
-            >
+            {/* Hurtig identifikation */}
+            <section className={styles.section} aria-label={locale === "dk" ? "Hurtig identifikation" : "Quick identification"}>
               <h2 className={styles.sectionTitle}>{locale === "dk" ? "Hurtig identifikation" : "Quick identification"}</h2>
               <p className={styles.sectionSub}>{locale === "dk" ? "Brug dette som tjekliste i marken." : "Use this as a field checklist."}</p>
 
@@ -277,20 +291,16 @@ export default async function SpeciesPage({ params }: { params: { locale: string
               </div>
             </section>
 
-            {/* Main sections */}
+            {/* Sektioner */}
             {sections.map((key) => {
               if (key === "identification") {
                 return (
                   <section key={key} id="identification" className={styles.section}>
                     <h2 className={styles.sectionTitle}>{locale === "dk" ? "Identifikation" : "Identification"}</h2>
                     {t?.identification ? (
-                      <div className={styles.paragraph}>
-                        <p>{t.identification}</p>
-                      </div>
+                      <div className={styles.paragraph}><p>{t.identification}</p></div>
                     ) : (
-                      <p className={styles.sectionSub}>
-                        {locale === "dk" ? "Tilføj identification i species_translations." : "Add identification in species_translations."}
-                      </p>
+                      <p className={styles.sectionSub}>{locale === "dk" ? "Tilføj identification i species_translations." : "Add identification in species_translations."}</p>
                     )}
                   </section>
                 );
@@ -301,9 +311,7 @@ export default async function SpeciesPage({ params }: { params: { locale: string
                   <section key={key} id="lookalikes" className={styles.section}>
                     <h2 className={styles.sectionTitle}>{locale === "dk" ? "Forvekslinger" : "Look-alikes"}</h2>
                     {t?.lookalikes ? (
-                      <div className={styles.callout}>
-                        <p className={styles.calloutText}>{t.lookalikes}</p>
-                      </div>
+                      <div className={styles.callout}><p className={styles.calloutText}>{t.lookalikes}</p></div>
                     ) : (
                       <p className={styles.sectionSub}>{locale === "dk" ? "Tilføj lookalikes (SEO-guld)." : "Add look-alikes (SEO gold)."}</p>
                     )}
@@ -316,9 +324,7 @@ export default async function SpeciesPage({ params }: { params: { locale: string
                   <section key={key} id="use" className={styles.section}>
                     <h2 className={styles.sectionTitle}>{locale === "dk" ? "Brug" : "Use"}</h2>
                     {t?.usage_notes ? (
-                      <div className={styles.paragraph}>
-                        <p>{t.usage_notes}</p>
-                      </div>
+                      <div className={styles.paragraph}><p>{t.usage_notes}</p></div>
                     ) : (
                       <p className={styles.sectionSub}>{locale === "dk" ? "Tilføj usage_notes." : "Add usage_notes."}</p>
                     )}
@@ -326,14 +332,11 @@ export default async function SpeciesPage({ params }: { params: { locale: string
                 );
               }
 
-              // safety
               return (
                 <section key={key} id="safety" className={styles.section}>
                   <h2 className={styles.sectionTitle}>{locale === "dk" ? "Sikkerhed" : "Safety"}</h2>
                   {t?.safety_notes ? (
-                    <div className={styles.callout}>
-                      <p className={styles.calloutText}>{t.safety_notes}</p>
-                    </div>
+                    <div className={styles.callout}><p className={styles.calloutText}>{t.safety_notes}</p></div>
                   ) : (
                     <p className={styles.sectionSub}>{locale === "dk" ? "Tilføj safety_notes. Vær tydelig." : "Add safety_notes. Be explicit."}</p>
                   )}
@@ -343,8 +346,7 @@ export default async function SpeciesPage({ params }: { params: { locale: string
           </div>
 
           <div className={styles.footerMeta}>
-            {locale === "dk" ? "Sidst opdateret:" : "Last updated:"}{" "}
-            {t?.updated_at ? new Date(t.updated_at).toISOString().slice(0, 10) : "—"}
+            {locale === "dk" ? "Sidst opdateret:" : "Last updated:"} {t?.updated_at ? new Date(t.updated_at).toISOString().slice(0, 10) : "—"}
           </div>
         </section>
       </div>
