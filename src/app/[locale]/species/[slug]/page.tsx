@@ -1,9 +1,10 @@
+// src/app/[locale]/species/[slug]/page.tsx
 import Link from "next/link";
-import Script from "next/script"; 
 import { notFound } from "next/navigation";
+import Script from "next/script";
 import { supabaseServer } from "@/lib/supabase/server";
-import styles from "./SpeciesPage.module.css";
 import FieldHero from "./FieldHero";
+import styles from "./SpeciesPage.module.css";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 3600;
@@ -24,7 +25,6 @@ function isInSeason(month: number, from: number, to: number) {
   if (from <= to) return month >= from && month <= to;
   return month >= from || month <= to;
 }
-
 function monthName(locale: Locale, m: number) {
   const dk = ["", "januar", "februar", "marts", "april", "maj", "juni", "juli", "august", "september", "oktober", "november", "december"];
   const en = ["", "january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
@@ -34,6 +34,7 @@ function seasonLabel(locale: Locale, from: number, to: number) {
   if (from === to) return monthName(locale, from);
   return `${monthName(locale, from)} – ${monthName(locale, to)}`;
 }
+
 function siteUrl() {
   const explicit = process.env.NEXT_PUBLIC_SITE_URL;
   if (explicit) return explicit.replace(/\/$/, "");
@@ -41,28 +42,40 @@ function siteUrl() {
   if (vercel) return `https://${vercel}`.replace(/\/$/, "");
   return "http://localhost:3000";
 }
+
 function fmtCompact(n: number) {
   if (!Number.isFinite(n)) return "0";
   return new Intl.NumberFormat("da-DK", { notation: "compact" }).format(n);
 }
 
-/** Try to extract 3-6 “field cues” from identification text without AI */
-function cuesFromText(locale: Locale, txt?: string | null) {
+function pickCues(text: string | null | undefined, locale: Locale) {
   const fallback =
     locale === "dk"
-      ? ["Se på hat/kant", "Tjek lameller/porer", "Tjek stok og ring", "Lugt (hvis relevant)", "Habitat: skov/eng/kant"]
-      : ["Check cap/edge", "Check gills/pores", "Check stem and ring", "Smell (if relevant)", "Habitat: forest/meadow/edge"];
+      ? [
+          "Start med helhedsformen: hat, stok og basis.",
+          "Tjek undersiden: lameller/porelag + farve.",
+          "Sammenlign altid med forvekslinger før du spiser noget.",
+        ]
+      : [
+          "Start with the overall shape: cap, stem and base.",
+          "Check the underside: gills/pores and color.",
+          "Always compare with look-alikes before consuming anything.",
+        ];
 
-  const s = (txt ?? "").trim();
-  if (!s) return fallback;
+  const raw = (text ?? "").trim();
+  if (!raw) return fallback;
 
-  const lines = s
-    .split(/\r?\n+/)
-    .map((x) => x.replace(/^[-•\s]+/, "").trim())
-    .filter(Boolean);
+  // Split on newline / bullet / sentence-ish and keep short lines
+  const parts = raw
+    .replace(/\r/g, "")
+    .split(/\n+|•|- /g)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .flatMap((s) => (s.length > 140 ? s.split(/\. +/g).map((x) => x.trim()).filter(Boolean) : [s]))
+    .filter((s) => s.length >= 12)
+    .slice(0, 3);
 
-  const bullets = lines.filter((l) => l.length >= 8 && l.length <= 110).slice(0, 6);
-  return bullets.length ? bullets : fallback;
+  return parts.length ? parts : fallback;
 }
 
 type SpeciesRow = {
@@ -103,13 +116,16 @@ export async function generateMetadata({ params }: { params: { locale: string; s
     .maybeSingle();
 
   const name = tr?.common_name || slug;
+  const title = `${name} — Forago`;
+  const description =
+    tr?.short_description ||
+    (locParam === "dk"
+      ? `Lær at genkende og bruge ${name}. Sæson, forvekslinger og sikkerhed.`
+      : `Learn how to identify and use ${name}. Season, look-alikes and safety.`);
+
   return {
-    title: `${name} — Forago`,
-    description:
-      tr?.short_description ||
-      (locParam === "dk"
-        ? `Lær at identificere ${name} i marken. Sæson, forvekslinger og sikkerhed.`
-        : `Identify ${name} in the field. Season, look-alikes and safety.`),
+    title,
+    description,
     alternates: { canonical: `/${locParam}/species/${slug}` },
   };
 }
@@ -145,8 +161,9 @@ export default async function SpeciesPage({ params }: { params: { locale: string
 
   const name = t?.common_name || species.slug;
   const scientific = species.scientific_name || "";
-  const group = species.primary_group || "unknown";
+  const group = species.primary_group || "plant";
 
+  // seasonality
   const { data: seasonRow, error: seasErr } = await supabase
     .from("seasonality")
     .select("month_from, month_to, confidence, notes")
@@ -162,17 +179,26 @@ export default async function SpeciesPage({ params }: { params: { locale: string
   const conf = (seasonRow?.confidence as number | undefined) ?? null;
 
   const inSeasonNow = from && to ? isInSeason(month, from, to) : false;
-  const seasonText = from && to ? seasonLabel(locale, from, to) : (locale === "dk" ? "ukendt" : "unknown");
+  const seasonText = from && to ? seasonLabel(locale, from, to) : locale === "dk" ? "ukendt" : "unknown";
 
+  // image url
   const imageUrl =
     species.image_path
       ? supabase.storage.from("species").getPublicUrl(species.image_path).data.publicUrl +
         `?v=${encodeURIComponent(String(species.image_updated_at ?? species.created_at))}`
       : null;
 
-  const danger =
-    species.is_poisonous || (t?.safety_notes?.toLowerCase().includes("gift") ?? false);
+  // intelligence
+  let totalFinds = 0;
+  let finds30d = 0;
+  const statsRes = await supabase.rpc("species_find_stats", { p_species_id: species.id });
+  if (!statsRes.error && Array.isArray(statsRes.data) && statsRes.data[0]) {
+    totalFinds = Number(statsRes.data[0].total_finds ?? 0);
+    finds30d = Number(statsRes.data[0].finds_30d ?? 0);
+  }
 
+  // danger
+  const danger = species.is_poisonous || (t?.safety_notes?.toLowerCase().includes("gift") ?? false);
   const dangerLabel =
     locale === "dk"
       ? species.danger_level >= 2
@@ -182,17 +208,7 @@ export default async function SpeciesPage({ params }: { params: { locale: string
       ? "HIGHLY TOXIC"
       : "TOXIC";
 
-  let totalFinds = 0;
-  let finds30d = 0;
-
-  const statsRes = await supabase.rpc("species_find_stats", { p_species_id: species.id });
-  if (!statsRes.error && Array.isArray(statsRes.data) && statsRes.data[0]) {
-    totalFinds = Number(statsRes.data[0].total_finds ?? 0);
-    finds30d = Number(statsRes.data[0].finds_30d ?? 0);
-  }
-
-  const cues = cuesFromText(locale, t?.identification);
-
+  // JSON-LD
   const base = siteUrl();
   const canonical = `${base}/${locale}/species/${species.slug}`;
   const jsonLd = {
@@ -212,17 +228,23 @@ export default async function SpeciesPage({ params }: { params: { locale: string
     ],
   };
 
+  const cues = pickCues(t?.identification, locale);
+
+  // section ordering
+  const sections = danger
+    ? (["safety", "lookalikes", "identification", "use"] as const)
+    : (["identification", "lookalikes", "use", "safety"] as const);
+
   return (
     <main className={styles.page}>
       <Script id="species-jsonld" type="application/ld+json">
         {JSON.stringify(jsonLd)}
       </Script>
 
-      {/* sticky field chrome */}
+      {/* Sticky chrome */}
       <div className={`${styles.chrome} surfaceGlass`}>
-        <Link className={`${styles.back} pressable`} href={`/${locale}/species`}>
-          <span aria-hidden="true">←</span>
-          <span>{locale === "dk" ? "Arter" : "Species"}</span>
+        <Link className={`${styles.back} hoverable`} href={`/${locale}/species`}>
+          ← {locale === "dk" ? "Arter" : "Species"}
         </Link>
 
         <div className={styles.chromeRight}>
@@ -235,7 +257,7 @@ export default async function SpeciesPage({ params }: { params: { locale: string
         </div>
       </div>
 
-      {/* FIELD VIEWER HERO (image-first) */}
+      {/* Full hero + overlap sheet */}
       <FieldHero
         locale={locale}
         name={name}
@@ -251,65 +273,88 @@ export default async function SpeciesPage({ params }: { params: { locale: string
         finds30d={fmtCompact(finds30d)}
       />
 
-      {/* Field cues: scannable */}
-      <section className={styles.cues}>
+      {/* Quick identification cues */}
+      <section className={styles.cues} aria-label={locale === "dk" ? "Hurtig identifikation" : "Quick identification"}>
         <div className={styles.cuesHead}>
           <h2 className="h3">{locale === "dk" ? "Hurtig identifikation" : "Quick identification"}</h2>
-          <p className="meta">{locale === "dk" ? "Fokus på detaljer du kan tjekke på stedet." : "Field-check details you can verify on site."}</p>
+          <p className="meta">{locale === "dk" ? "Brug dette som tjekliste i marken." : "Use this as a field checklist."}</p>
         </div>
 
         <div className={`${styles.cuesCard} surface`}>
-          <ol className={styles.cueList}>
+          <ul className={styles.cueList}>
             {cues.map((c, i) => (
-              <li key={`${i}-${c}`} className={styles.cueItem}>
+              <li key={i} className={styles.cueItem}>
                 <span className={styles.cueDot} aria-hidden="true" />
-                <span>{c}</span>
+                <span className="p">{c}</span>
               </li>
             ))}
-          </ol>
+          </ul>
         </div>
       </section>
 
-      {/* Main sections - tighter, more “field manual” */}
-      <section className={styles.sections}>
-        <div className={styles.block}>
-          <h2 className="h3">{locale === "dk" ? "Identifikation" : "Identification"}</h2>
-          <div className="surface">
-            <div className={styles.textBlock}>
-              {t?.identification || (locale === "dk" ? "Tilføj identification i species_translations." : "Add identification in species_translations.")}
-            </div>
-          </div>
-        </div>
+      {/* Main sections */}
+      <div className={styles.sections}>
+        {sections.map((key) => {
+          if (key === "identification") {
+            return (
+              <section key={key} id="identification" className={styles.block}>
+                <h2 className="h3">{locale === "dk" ? "Identifikation" : "Identification"}</h2>
+                <div className={`surface`}>
+                  {t?.identification ? (
+                    <div className={styles.textBlock}>{t.identification}</div>
+                  ) : (
+                    <p className="meta">{locale === "dk" ? "Tilføj identification i species_translations." : "Add identification in species_translations."}</p>
+                  )}
+                </div>
+              </section>
+            );
+          }
 
-        <div className={styles.grid2}>
-          <div className={styles.block}>
-            <h2 className="h3">{locale === "dk" ? "Forvekslinger" : "Look-alikes"}</h2>
-            <div className={`surface ${danger ? styles.warnSurface : ""}`}>
-              <div className={styles.textBlock}>
-                {t?.lookalikes || (locale === "dk" ? "Tilføj lookalikes." : "Add look-alikes.")}
+          if (key === "lookalikes") {
+            return (
+              <section key={key} id="lookalikes" className={styles.block}>
+                <h2 className="h3">{locale === "dk" ? "Forvekslinger" : "Look-alikes"}</h2>
+                <div className={`surface ${danger ? styles.warnSurface : ""}`}>
+                  {t?.lookalikes ? (
+                    <div className={styles.textBlock}>{t.lookalikes}</div>
+                  ) : (
+                    <p className="meta">{locale === "dk" ? "Tilføj lookalikes (SEO-guld)." : "Add look-alikes (SEO gold)."}</p>
+                  )}
+                </div>
+              </section>
+            );
+          }
+
+          if (key === "use") {
+            return (
+              <section key={key} id="use" className={styles.block}>
+                <h2 className="h3">{locale === "dk" ? "Brug" : "Use"}</h2>
+                <div className={`surface`}>
+                  {t?.usage_notes ? (
+                    <div className={styles.textBlock}>{t.usage_notes}</div>
+                  ) : (
+                    <p className="meta">{locale === "dk" ? "Tilføj usage_notes." : "Add usage_notes."}</p>
+                  )}
+                </div>
+              </section>
+            );
+          }
+
+          // safety
+          return (
+            <section key={key} id="safety" className={styles.block}>
+              <h2 className="h3">{locale === "dk" ? "Sikkerhed" : "Safety"}</h2>
+              <div className={`surface ${styles.warnSurface}`}>
+                {t?.safety_notes ? (
+                  <div className={styles.textBlock}>{t.safety_notes}</div>
+                ) : (
+                  <p className="meta">{locale === "dk" ? "Tilføj safety_notes. Vær tydelig." : "Add safety_notes. Be explicit."}</p>
+                )}
               </div>
-            </div>
-          </div>
-
-          <div className={styles.block}>
-            <h2 className="h3">{locale === "dk" ? "Sikkerhed" : "Safety"}</h2>
-            <div className={`surface ${styles.warnSurface}`}>
-              <div className={styles.textBlock}>
-                {t?.safety_notes || (locale === "dk" ? "Tilføj safety_notes. Vær tydelig." : "Add safety_notes. Be explicit.")}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className={styles.block}>
-          <h2 className="h3">{locale === "dk" ? "Brug" : "Use"}</h2>
-          <div className="surface">
-            <div className={styles.textBlock}>
-              {t?.usage_notes || (locale === "dk" ? "Tilføj usage_notes." : "Add usage_notes.")}
-            </div>
-          </div>
-        </div>
-      </section>
+            </section>
+          );
+        })}
+      </div>
 
       <p className={styles.updated}>
         {locale === "dk" ? "Sidst opdateret:" : "Last updated:"}{" "}
