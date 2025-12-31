@@ -1,7 +1,7 @@
 .hero{
   position: relative;
   height: 100svh;                 /* 👈 hele skærmen */
-  min-height: 640px;              /* desktop ro */
+  min-height: 640px;              /* desktop ro */ 
   border-radius: var(--r-xl);
   overflow: clip;
   border: var(--stroke) solid var(--line);
