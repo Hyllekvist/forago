@@ -1,327 +1,300 @@
-.hero{
-  width: 100%;
-}
-
-/* Fullscreen media stage */
-.media{
+.hero {
   position: relative;
   width: 100%;
-  height: 100vh;
-  min-height: 720px;
-  border-radius: var(--r-xl);
-  overflow: hidden;
-
-  /* nice frame on desktop */
-  border: var(--stroke) solid var(--line);
-  background: var(--panel);
-
-  /* keep hero centered inside page padding */
-  margin: 0 auto;
+  /* full-bleed hero der stadig spiller på desktop */
+  margin: 0;
 }
 
-/* Image must NEVER stretch/squash */
-.img{
-  object-fit: contain; /* preserves full mushroom shape */
+.media {
+  position: relative;
+  width: 100%;
+  /* Hovedpointen: billedet må ikke “trykkes sammen”.
+     Vi giver hero’en en kontrolleret højde der føles som Airbnb hero. */
+  height: min(86vh, 820px);
+  max-height: 920px;
+  border-radius: 22px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.12);
+  box-shadow:
+    0 18px 60px rgba(0,0,0,0.22),
+    0 1px 0 rgba(255,255,255,0.06) inset;
+}
+
+/* Next/Image fill */
+.img {
+  object-fit: contain; /* <-- bevarer originalt aspekt uden at klemme */
   object-position: center;
   transform: translateZ(0);
+  filter: saturate(1.02) contrast(1.02);
 }
 
-.noImage{
+.noImage {
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
-  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
-}
-.noImageText{
-  font-size: 14px;
-  color: var(--muted);
+  background: linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0.35));
 }
 
-.vignette{
+.noImageInner {
+  padding: 18px 18px;
+  border-radius: 18px;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.10);
+  backdrop-filter: blur(10px);
+}
+
+.noImageTitle {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.noImageMeta {
+  opacity: 0.75;
+  margin-top: 6px;
+}
+
+.vignette {
   position: absolute;
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(1200px 900px at 50% 40%, rgba(0,0,0,0), rgba(0,0,0,0.22) 62%, rgba(0,0,0,0.42) 100%);
-  opacity: 0.55;
-}
-:root[data-theme="light"] .vignette{
-  opacity: 0.10;
-  background:
-    radial-gradient(1200px 900px at 50% 40%, rgba(0,0,0,0), rgba(15,23,42,0.08) 65%, rgba(15,23,42,0.14) 100%);
+    radial-gradient(1200px 520px at 50% 40%, rgba(0,0,0,0.00), rgba(0,0,0,0.35)),
+    linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.40));
+  mix-blend-mode: multiply;
 }
 
-.grain{
+.grain {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.12;
-  mix-blend-mode: overlay;
-  background:
-    repeating-linear-gradient(0deg, rgba(255,255,255,0.04), rgba(255,255,255,0.04) 1px, transparent 1px, transparent 3px);
-}
-:root[data-theme="light"] .grain{
-  opacity: 0.06;
-  mix-blend-mode: normal;
-  background:
-    repeating-linear-gradient(0deg, rgba(15,23,42,0.03), rgba(15,23,42,0.03) 1px, transparent 1px, transparent 3px);
+  opacity: 0.08;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.28'/%3E%3C/svg%3E");
 }
 
-/* TOPBAR overlay (kills wasted space) */
-.topbar{
+/* --- Chips dock (top-left). Låst, små og “Airbnb-ish” --- */
+.chipsDock {
   position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  z-index: 20;
-  padding: calc(env(safe-area-inset-top) + 12px) 14px 10px;
-}
-
-.topbarInner{
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  border-radius: 999px;
-  border: var(--stroke) solid var(--glassLine);
-  background: var(--glassBg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: var(--shadow-2);
-
-  padding: 10px 10px;
-}
-
-.back{
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 999px;
-}
-.back:active{ transform: translateY(1px); }
-.backArrow{ opacity: 0.9; font-size: 16px; }
-.backText{ font-weight: 750; letter-spacing: -0.01em; }
-
-.actions{
-  display: inline-flex;
-  gap: 10px;
-}
-
-.actionBtn,
-.actionBtnPrimary{
-  height: 40px;
-  padding: 0 14px;
-  border-radius: 999px;
-  border: var(--stroke) solid var(--glassLine);
-  background: color-mix(in srgb, var(--panel) 45%, transparent);
-  box-shadow: var(--shadow-0);
-  font-weight: 720;
-  letter-spacing: -0.01em;
-}
-.actionBtnPrimary{
-  background: color-mix(in srgb, var(--accent) 14%, var(--panel));
-  border-color: color-mix(in srgb, var(--accent) 34%, var(--glassLine));
-}
-
-/* CHIPS – locked to top-left under topbar, small, not intrusive */
-.chips{
-  position: absolute;
-  z-index: 19;
+  top: 14px;
   left: 14px;
-  top: calc(env(safe-area-inset-top) + 72px);
+  right: 14px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  max-width: min(92vw, 740px);
+  justify-content: flex-start;
+  pointer-events: none; /* så det ikke stjæler taps */
 }
 
-.chip{
+.chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  pointer-events: auto;
+}
+
+.chip {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  height: 34px;
-  padding: 0 12px;
+  padding: 8px 10px;
   border-radius: 999px;
-  border: var(--stroke) solid var(--chipLine);
-  background: var(--chipBg);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
-
-.chipIcon{
-  font-size: 14px;
-  opacity: 0.9;
-  line-height: 1;
-}
-
-.chipText{
   font-size: 13px;
-  font-weight: 740;
+  line-height: 1;
   letter-spacing: -0.01em;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.10);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.22);
+}
+
+.chipIcon {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.10);
+}
+
+.chipText {
   white-space: nowrap;
 }
 
-.chipNeutral{
-  background: color-mix(in srgb, var(--bg) 72%, transparent);
-  border-color: color-mix(in srgb, var(--ink) 16%, transparent);
-}
-.chipGood{
-  background: color-mix(in srgb, rgba(34,197,94,0.18) 90%, transparent);
-  border-color: color-mix(in srgb, rgba(34,197,94,0.45) 65%, transparent);
-}
-.chipDanger{
-  background: color-mix(in srgb, rgba(239,68,68,0.16) 90%, transparent);
-  border-color: color-mix(in srgb, rgba(239,68,68,0.42) 70%, transparent);
+.chipNeutral {
+  background: rgba(20, 24, 28, 0.58);
+  color: rgba(255,255,255,0.92);
 }
 
-/* Hint – always bottom-left, above sheet */
-.hint{
+.chipGood {
+  background: rgba(16, 80, 64, 0.62);
+  color: rgba(235,255,248,0.95);
+  border-color: rgba(120, 255, 215, 0.18);
+}
+
+.chipWarn {
+  background: rgba(80, 64, 16, 0.62);
+  color: rgba(255,248,232,0.95);
+  border-color: rgba(255, 210, 120, 0.22);
+}
+
+.chipDanger {
+  background: rgba(90, 26, 28, 0.62);
+  color: rgba(255,235,236,0.95);
+  border-color: rgba(255, 120, 130, 0.22);
+}
+
+/* hint */
+.hintWrap {
   position: absolute;
-  z-index: 18;
-  left: 14px;
-  bottom: calc(150px + env(safe-area-inset-bottom));
+  top: 14px;
+  right: 14px;
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .hintWrap {
+    display: block;
+  }
+}
+
+.hint {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-
   padding: 10px 12px;
   border-radius: 999px;
-  border: var(--stroke) solid var(--glassLine);
-  background: var(--glassBg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-
-  max-width: min(86vw, 520px);
+  background: rgba(20,24,28,0.55);
+  border: 1px solid rgba(255,255,255,0.10);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.22);
 }
 
-.hintDot{
+.hintDot {
   width: 10px;
   height: 10px;
   border-radius: 999px;
-  background: var(--accent);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
-}
-.hintText{
-  font-size: 13px;
-  color: var(--muted2, var(--muted));
+  background: rgba(120, 255, 215, 0.90);
+  box-shadow: 0 0 0 3px rgba(120, 255, 215, 0.20);
 }
 
-/* Bottom sheet (Airbnb-ish) – pulled UP (not too low) */
-.sheet{
+.hintText {
+  font-size: 13px;
+  color: rgba(255,255,255,0.88);
+  white-space: nowrap;
+}
+
+/* --- Bottom sheet overlay --- */
+.sheet {
   position: absolute;
   left: 14px;
   right: 14px;
-  bottom: calc(var(--bottom-nav-h, 92px) + 12px + env(safe-area-inset-bottom));
-  z-index: 21;
+
+  /* Træk den OP over billedet (så du slipper for “spild i toppen”) */
+  bottom: 18px;
+
+  border-radius: 22px;
+  background: rgba(18, 22, 26, 0.68);
+  border: 1px solid rgba(255,255,255,0.10);
+  backdrop-filter: blur(16px);
+  box-shadow:
+    0 28px 80px rgba(0,0,0,0.35),
+    0 1px 0 rgba(255,255,255,0.06) inset;
 }
 
-.sheetInner{
-  border-radius: 20px;
-  border: var(--stroke) solid var(--glassLine);
-  background: var(--glassBg);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  box-shadow: var(--shadow-2);
-  padding: 14px 14px 12px;
+.sheetInner {
+  padding: 16px 16px;
 }
 
-.sheetHead{
+.head {
   display: grid;
   gap: 6px;
-  margin-bottom: 10px;
 }
 
-.title{
+.h1 {
   margin: 0;
-  font-size: clamp(26px, 3.2vw, 44px);
+  font-size: clamp(26px, 4.2vw, 44px);
   line-height: 1.05;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
   font-weight: 900;
+  color: rgba(255,255,255,0.96);
 }
 
-.metaLine{
-  margin: 0;
+.metaRow {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  font-size: 13px;
+  align-items: baseline;
+  gap: 10px;
+  color: rgba(255,255,255,0.72);
 }
 
-.scientific{
+.metaEm {
   font-style: italic;
-  color: var(--muted);
-  font-weight: 650;
-}
-.metaMuted{
-  color: var(--muted);
-  font-weight: 650;
-}
-.dot{
-  opacity: 0.4;
+  color: rgba(255,255,255,0.78);
 }
 
-.stats{
+.metaDot {
+  opacity: 0.55;
+}
+
+.meta {
+  opacity: 0.8;
+  text-transform: lowercase;
+}
+
+.meta2 {
+  margin-top: 2px;
+  color: rgba(255,255,255,0.70);
+  font-size: 14px;
+}
+
+.kpis {
+  margin-top: 14px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 12px;
 }
 
-.statCard{
-  border-radius: 16px;
-  border: var(--stroke) solid var(--line);
-  background: color-mix(in srgb, var(--panel) 70%, transparent);
-  padding: 12px 12px 10px;
+.kpi {
+  border-radius: 18px;
+  padding: 14px 14px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
 }
 
-.statLabel{
+.kpiLabel {
   font-size: 12px;
-  color: var(--muted);
-  margin-bottom: 4px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.62);
 }
 
-.statValue{
-  font-size: 20px;
-  font-weight: 850;
+.kpiValue {
+  margin-top: 6px;
+  font-size: 28px;
+  font-weight: 900;
   letter-spacing: -0.02em;
+  color: rgba(255,255,255,0.95);
 }
 
-/* Reserve space for overlap so next section starts below sheet */
-.sheetSpacer{
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: calc(var(--bottom-nav-h, 92px) + 190px);
-  pointer-events: none;
-}
-
-/* Desktop tuning */
-@media (min-width: 900px){
-  .media{
-    height: min(900px, 92vh);
-    max-width: 1180px;
+/* Desktop: mere “Airbnb” og mere luft */
+@media (min-width: 900px) {
+  .media {
     border-radius: 26px;
+    height: min(88vh, 860px);
   }
+  .sheet {
+    left: 22px;
+    right: 22px;
+    bottom: 22px;
+    max-width: 980px;
+  }
+  .sheetInner {
+    padding: 18px 18px;
+  }
+}
 
-  .topbar{
-    padding: 16px 16px 12px;
+/* Mobil tweaks: undgå at sheet rammer bottomnav visuelt */
+@media (max-width: 420px) {
+  .media {
+    height: min(84vh, 720px);
   }
-  .chips{
-    left: 18px;
-    top: 84px;
-  }
-  .hint{
-    left: 18px;
-  }
-  .sheet{
-    left: 18px;
-    right: 18px;
-    bottom: 22px; /* desktop: no bottom nav overlay needed */
-  }
-  .sheetSpacer{
-    height: 240px;
+  .sheet {
+    bottom: 86px; /* plads til jeres bottom nav */
   }
 }
