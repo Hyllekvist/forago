@@ -59,15 +59,17 @@
   max-width: var(--maxw);
   margin: 0 auto;
 
-  /* Full-screen feel, minus chrome */
-  height: calc(100vh - 84px);
+  height: 100vh;              /* ✅ full screen */
   border-radius: var(--r-xl);
   overflow: hidden;
 
   border: var(--stroke) solid var(--line);
   background: var(--panel);
   box-shadow: var(--shadow-2);
+
+  position: relative;         /* ✅ for overlay topbar */
 }
+
 
 .heroMediaBtn{
   width: 100%;
@@ -128,9 +130,8 @@
 
 .sheet{
   max-width: var(--maxw);
-  margin: calc(var(--s-6) * -1) auto var(--s-4); /* overlap hero */
+  margin: calc(var(--s-6) * -1.25) auto var(--s-4);
   padding: var(--s-5) var(--s-4);
-
   border-radius: 26px;
   box-shadow: var(--shadow-2);
 }
@@ -365,4 +366,50 @@
   margin: var(--s-4) auto 0;
   color: var(--muted2);
   font-size: var(--fs-1);
+}
+
+.heroTopbar{
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 10px;
+
+  z-index: 5;
+
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: var(--s-3);
+
+  padding: calc(env(safe-area-inset-top) + 10px) 10px 10px;
+  border-radius: 18px;
+}
+
+.heroBack{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+
+  padding: 10px 12px;
+  border-radius: 999px;
+  font-weight: 850;
+}
+
+.heroTopbarRight{
+  display:flex;
+  gap: 10px;
+}
+
+.heroTopBtn{
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: var(--stroke) solid var(--chipLine);
+  background: var(--chipBg);
+  font-weight: 850;
+}
+
+.heroTopBtnPrimary{
+  border-color: var(--line);
+  background: var(--panel2);
 }
