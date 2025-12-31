@@ -1,156 +1,97 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import Link from "next/link";
-import styles from "./SpeciesPage.module.css";
+import Image from "next/image";
+import styles from "./FieldHero.module.css";
 
-export default function FieldHero(props: {
-  locale: "dk" | "en";
-  name: string;
-  scientific: string;
-  group: string;
-  imageUrl: string | null;
+type ChipTone = "neutral" | "good" | "warn" | "danger";
 
-  danger: boolean;
-  dangerLabel: string;
+export type FieldChip = {
+  label: string;
+  tone?: ChipTone;
+  icon?: React.ReactNode;
+};
 
-  inSeasonNow: boolean;
-  confidence: number | null;
-  seasonText: string;
+type Props = {
+  title?: string;
+  imageSrc: string;
+  imageAlt: string;
 
-  totalFinds: string;
-  finds30d: string;
-}) {
-  const {
-    locale,
-    name,
-    scientific,
-    group,
-    imageUrl,
-    danger,
-    dangerLabel,
-    inSeasonNow,
-    confidence,
-    seasonText,
-    totalFinds,
-    finds30d,
-  } = props;
+  // overlay actions
+  left?: React.ReactNode;   // back button etc.
+  right?: React.ReactNode;  // season/save etc.
 
-  const [open, setOpen] = useState(false);
+  // small chips on hero
+  chips?: FieldChip[];
 
-  const seasonBadge = useMemo(() => {
-    const base = inSeasonNow
-      ? locale === "dk"
-        ? "I sæson nu"
-        : "In season now"
-      : locale === "dk"
-      ? "Ikke i sæson"
-      : "Out of season";
-    const conf = confidence !== null ? ` · ${Math.round(confidence)}%` : "";
-    return base + conf;
-  }, [inSeasonNow, confidence, locale]);
+  // optional hint bottom
+  hint?: string;
 
-  const tapHint =
-    locale === "dk" ? "Tryk for fullscreen (pinch-zoom)" : "Tap for fullscreen (pinch-zoom)";
+  // if your images are mostly studio/isolated: "contain" shows full specimen
+  fit?: "contain" | "cover";
+};
 
+function toneClass(t?: ChipTone) {
+  if (t === "good") return styles.chipGood;
+  if (t === "warn") return styles.chipWarn;
+  if (t === "danger") return styles.chipDanger;
+  return styles.chipNeutral;
+}
+
+export default function FieldHero({
+  title,
+  imageSrc,
+  imageAlt,
+  left,
+  right,
+  chips = [],
+  hint = "Tryk for fullscreen (pinch-zoom)",
+  fit = "contain",
+}: Props) {
   return (
-    <>
-      {/* FULL HERO: now goes all the way up */}
-      <header className={styles.heroFull} aria-label={locale === "dk" ? "Billede" : "Image"}>
-        {/* Overlay topbar on the image */}
-        <div className={`${styles.heroTopbar} surfaceGlass`}>
-          <Link className={`${styles.heroBack} hoverable`} href={`/${locale}/species`}>
-            ← {locale === "dk" ? "Arter" : "Species"}
-          </Link>
+    <section className={styles.hero} aria-label={title ? `Foto: ${title}` : "Foto"}>
+      {/* image */}
+      <div className={styles.media}>
+        <Image
+          src={imageSrc}
+          alt={imageAlt}
+          fill
+          priority
+          sizes="(max-width: 900px) 100vw, 1100px"
+          className={`${styles.img} ${fit === "cover" ? styles.fitCover : styles.fitContain}`}
+        />
+        <div className={styles.vignette} aria-hidden="true" />
+        <div className={styles.grain} aria-hidden="true" />
+      </div>
 
-          <div className={styles.heroTopbarRight}>
-            <Link className={`${styles.heroTopBtn} hoverable`} href={`/${locale}/season`}>
-              {locale === "dk" ? "Sæson" : "Season"}
-            </Link>
-            <Link className={`${styles.heroTopBtn} ${styles.heroTopBtnPrimary} hoverable`} href={`/${locale}/log`}>
-              {locale === "dk" ? "Gem" : "Save"}
-            </Link>
+      {/* overlay top bar */}
+      <div className={styles.topbar}>
+        <div className={styles.topbarInner}>
+          <div className={styles.left}>{left}</div>
+          <div className={styles.right}>{right}</div>
+        </div>
+      </div>
+
+      {/* chips */}
+      {chips.length > 0 && (
+        <div className={styles.chipsWrap}>
+          <div className={styles.chips}>
+            {chips.map((c, idx) => (
+              <span key={idx} className={`${styles.chip} ${toneClass(c.tone)}`}>
+                {c.icon ? <span className={styles.chipIcon}>{c.icon}</span> : null}
+                <span className={styles.chipText}>{c.label}</span>
+              </span>
+            ))}
           </div>
         </div>
+      )}
 
-        {/* Image button */}
-        <button
-          type="button"
-          className={`${styles.heroMediaBtn} pressable`}
-          onClick={() => imageUrl && setOpen(true)}
-          aria-label={tapHint}
-          disabled={!imageUrl}
-        >
-          {imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={imageUrl} alt={name} className={styles.heroImg} />
-          ) : (
-            <div className={styles.noImg}>{locale === "dk" ? "Ingen billede endnu" : "No image yet"}</div>
-          )}
-
-          <div className={styles.heroHint} aria-hidden="true">
-            <span className={styles.hintDot} />
-            <span className="meta">{tapHint}</span>
-          </div>
-        </button>
-      </header>
-
-      {/* Airbnb-ish info sheet */}
-      <section className={`${styles.sheet} surface`} aria-label={locale === "dk" ? "Info" : "Info"}>
-        <div className={styles.sheetTop}>
-          <h1 className="h1">{name}</h1>
-
-          <div className={styles.sheetMeta}>
-            {scientific ? <em className={styles.scientific}>{scientific}</em> : null}
-            {scientific ? <span className={styles.dot}>·</span> : null}
-            <span className="meta">{locale === "dk" ? "Feltprofil" : "Field profile"} · Forago</span>
-            <span className={styles.dot}>·</span>
-            <span className="meta">{group}</span>
-          </div>
+      {/* hint */}
+      <div className={styles.hintWrap}>
+        <div className={styles.hint}>
+          <span className={styles.hintDot} aria-hidden="true" />
+          <span className={styles.hintText}>{hint}</span>
         </div>
-
-        <div className={styles.badgeRow} aria-label={locale === "dk" ? "Status" : "Status"}>
-          {danger ? (
-            <span className={`${styles.badge} ${styles.badgeDanger}`}>☠ {dangerLabel}</span>
-          ) : (
-            <span className={styles.badge}>{locale === "dk" ? "Sikkerhed ukendt" : "Safety unknown"}</span>
-          )}
-
-          <span className={`${styles.badge} ${inSeasonNow ? styles.badgeGood : ""}`}>{seasonBadge}</span>
-
-          <span className={styles.badge}>
-            {locale === "dk" ? "Sæson" : "Season"}: {seasonText}
-          </span>
-        </div>
-
-        <div className={styles.kpis} aria-label={locale === "dk" ? "Statistik" : "Stats"}>
-          <div className={styles.kpi}>
-            <div className="meta">{locale === "dk" ? "Fund" : "Finds"}</div>
-            <div className={styles.kpiV}>{totalFinds}</div>
-          </div>
-          <div className={styles.kpi}>
-            <div className="meta">30d</div>
-            <div className={styles.kpiV}>{finds30d}</div>
-          </div>
-        </div>
-      </section>
-
-      {/* Fullscreen */}
-      {open && imageUrl ? (
-        <div className={styles.fs} role="dialog" aria-modal="true">
-          <button className={styles.fsClose} onClick={() => setOpen(false)} aria-label={locale === "dk" ? "Luk" : "Close"}>
-            ✕
-          </button>
-          <div className={styles.fsScroll}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={imageUrl} alt={name} className={styles.fsImg} />
-          </div>
-          <div className={styles.fsFooter}>
-            <div className={styles.fsName}>{name}</div>
-            {scientific ? <div className="meta">{scientific}</div> : null}
-          </div>
-        </div>
-      ) : null}
-    </>
+      </div>
+    </section>
   );
 }
