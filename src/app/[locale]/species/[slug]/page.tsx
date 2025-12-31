@@ -1,4 +1,4 @@
-// src/app/[locale]/species/[slug]/page.tsx
+// src/app/[locale]/species/[slug]/page.tsx 
 import { notFound } from "next/navigation";
 import Script from "next/script";
 import { supabaseServer } from "@/lib/supabase/server";
