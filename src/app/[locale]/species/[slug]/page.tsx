@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Script from "next/script";
+import Script from "next/script"; 
 import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import styles from "./SpeciesPage.module.css";
