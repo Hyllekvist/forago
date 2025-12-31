@@ -1,8 +1,6 @@
 /* SpeciesPage.module.css
-   Matcher classnames i src/app/[locale]/species/[slug]/page.tsx
-   KRAV:
-   - Ingen hardcodede farver (kun tokens/vars)
-   - Sheet overlap styres af én variabel
+   Matcher src/app/[locale]/species/[slug]/page.tsx
+   Kun tokens/vars. Ingen hardcodede farver.
 */
 
 .page {
@@ -10,27 +8,39 @@
   padding: 0;
 }
 
-/* Ydre wrapper */
+/* ========= Shell ========= */
+
 .shell {
   width: 100%;
   max-width: 1180px;
   margin: 0 auto;
 
-  /* side-padding */
   padding-inline: clamp(14px, 4vw, 26px);
-
-  /* luft over/under */
   padding-top: clamp(10px, 2.6vw, 18px);
   padding-bottom: calc(var(--bottom-nav-h, 72px) + env(safe-area-inset-bottom) + 18px);
 
   display: grid;
   gap: clamp(12px, 2.8vw, 18px);
 
-  /* 👇 Justér KUN denne for at trække sheet højere op over billedet */
+  /* kontrol */
   --sheet-overlap: 140px;
+
+  /* “defensive tokens” (kun var→var fallbacks) */
+  --fg-strong: var(--fg-strong, var(--fg));
+  --fg-muted-2: var(--fg-muted-2, var(--fg-muted));
+  --surface-1x: var(--surface-1, var(--surface));
+  --surface-2x: var(--surface-2, var(--surface-1x));
+  --surface-3x: var(--surface-3, var(--surface-2x));
+  --border-x: var(--border, var(--hairline, var(--border-subtle)));
+  --shadow-smx: var(--shadow-sm, var(--shadow-1, var(--shadow)));
+  --shadow-mdx: var(--shadow-md, var(--shadow-2, var(--shadow)));
+  --shadow-lgx: var(--shadow-lg, var(--shadow-3, var(--shadow)));
+  --highlight-x: var(--highlight, var(--sheen, var(--surface-highlight)));
+  --glass-bg: var(--surface-glass, var(--surface-2x));
+  --glass-blur: var(--glass-blur, var(--blur-md, 8px));
 }
 
-/* ===== SHEET (panel der overlapper hero) ===== */
+/* ========= Sheet ========= */
 
 .sheet {
   position: relative;
@@ -39,16 +49,19 @@
   border-radius: var(--radius-xl, 22px);
   overflow: hidden;
 
-  backdrop-filter: blur(var(--blur-lg, 14px));
-  background: var(--surface-1);
-  border: 1px solid var(--border);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+
+  background: var(--surface-1x);
+  border: 1px solid var(--border-x);
 
   box-shadow:
-    0 28px 90px var(--shadow-lg),
-    inset 0 1px 0 var(--highlight);
+    0 28px 90px var(--shadow-lgx),
+    inset 0 1px 0 var(--highlight-x);
 }
 
-/* Header */
+/* ========= Header ========= */
+
 .header {
   padding: clamp(16px, 4.2vw, 24px);
   padding-bottom: clamp(14px, 3.6vw, 18px);
@@ -56,15 +69,15 @@
   gap: 10px;
 }
 
-/* Title */
 .title {
   margin: 0;
   font-size: clamp(30px, 7.6vw, 54px);
   line-height: 1.05;
   letter-spacing: -0.03em;
   font-weight: 780;
-  color: var(--fg);
-  text-shadow: var(--text-shadow-hero);
+
+  color: var(--fg-strong);
+  text-shadow: var(--text-shadow-hero, none);
 }
 
 .subline {
@@ -76,65 +89,74 @@
 
   font-size: 14px;
   line-height: 1.35;
-  color: var(--fg-muted);
+  color: var(--fg-muted-2);
 }
 
 .latin {
   font-style: italic;
-  color: var(--fg);
+  color: var(--fg-strong);
 }
 
 .dot {
   opacity: var(--muted-opacity, 0.55);
 }
 
-/* ===== Meta chips ===== */
+/* ========= Chips ========= */
 
 .metaRow {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
+/* vigtig: gør dem "synlige" uanset baggrund */
 .metaChip {
   display: inline-flex;
   align-items: center;
   gap: 8px;
 
+  min-height: 36px;
   padding: 10px 12px;
   border-radius: 999px;
 
-  backdrop-filter: blur(var(--blur-md, 10px));
-  background: var(--surface-glass);
-  border: 1px solid var(--border);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
 
-  color: var(--fg);
+  background: var(--glass-bg);
+  border: 1px solid var(--border-x);
+
+  color: var(--fg-strong);
   font-size: 13px;
   line-height: 1;
   white-space: nowrap;
+
+  box-shadow:
+    0 10px 26px var(--shadow-smx),
+    inset 0 1px 0 var(--highlight-x);
 }
 
+/* status chips bruger dine status-tokens */
 .metaChipDanger {
-  background: var(--danger-bg);
-  border-color: var(--danger-border);
-  color: var(--danger-fg);
+  background: var(--danger-bg, var(--glass-bg));
+  border-color: var(--danger-border, var(--border-x));
+  color: var(--danger-fg, var(--fg-strong));
 }
 
 .metaChipGood {
-  background: var(--success-bg);
-  border-color: var(--success-border);
-  color: var(--success-fg);
+  background: var(--success-bg, var(--glass-bg));
+  border-color: var(--success-border, var(--border-x));
+  color: var(--success-fg, var(--fg-strong));
 }
 
 .metaChipWarn {
-  background: var(--warning-bg);
-  border-color: var(--warning-border);
-  color: var(--warning-fg);
+  background: var(--warning-bg, var(--glass-bg));
+  border-color: var(--warning-border, var(--border-x));
+  color: var(--warning-fg, var(--fg-strong));
 }
 
-/* ===== KPI cards ===== */
+/* ========= KPI ========= */
 
 .kpis {
   display: grid;
@@ -147,13 +169,12 @@
   border-radius: var(--radius-lg, 18px);
   padding: 16px;
 
-  backdrop-filter: blur(var(--blur-md, 12px));
-  background: var(--surface-2);
-  border: 1px solid var(--border);
+  background: var(--surface-2x);
+  border: 1px solid var(--border-x);
 
   box-shadow:
-    0 18px 60px var(--shadow-md),
-    inset 0 1px 0 var(--highlight);
+    0 18px 60px var(--shadow-mdx),
+    inset 0 1px 0 var(--highlight-x);
 
   display: grid;
   gap: 8px;
@@ -165,7 +186,7 @@
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--fg-muted);
+  color: var(--fg-muted-2);
 }
 
 .kpiValue {
@@ -173,10 +194,10 @@
   line-height: 1;
   font-weight: 780;
   letter-spacing: -0.02em;
-  color: var(--fg);
+  color: var(--fg-strong);
 }
 
-/* ===== Sections ===== */
+/* ========= Sections ========= */
 
 .sections {
   padding: 0 clamp(16px, 4.2vw, 24px) clamp(16px, 4.2vw, 24px);
@@ -186,11 +207,11 @@
 
 .section {
   border-radius: var(--radius-xl, 20px);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
+  background: var(--surface-2x);
+  border: 1px solid var(--border-x);
   overflow: hidden;
 
-  box-shadow: 0 12px 40px var(--shadow-md);
+  box-shadow: 0 12px 40px var(--shadow-mdx);
 }
 
 .sectionTitle {
@@ -200,7 +221,7 @@
   font-size: 18px;
   font-weight: 760;
   letter-spacing: -0.01em;
-  color: var(--fg);
+  color: var(--fg-strong);
 }
 
 .sectionSub {
@@ -209,7 +230,7 @@
 
   font-size: 14px;
   line-height: 1.45;
-  color: var(--fg-muted);
+  color: var(--fg-muted-2);
 }
 
 /* checklist */
@@ -228,8 +249,8 @@
   padding: 12px 12px;
   border-radius: var(--radius-lg, 14px);
 
-  background: var(--surface-3, var(--surface-2));
-  border: 1px solid var(--border);
+  background: var(--surface-3x);
+  border: 1px solid var(--border-x);
 }
 
 .bullet {
@@ -237,19 +258,21 @@
   height: 8px;
   margin-top: 6px;
   border-radius: 999px;
-  background: var(--fg);
+
+  background: var(--fg-strong);
   opacity: 0.65;
-  box-shadow: 0 0 0 4px var(--ring, rgba(0, 0, 0, 0.06));
+
+  box-shadow: 0 0 0 4px var(--ring, var(--surface-2x));
 }
 
 .checkText {
   margin: 0;
   font-size: 14px;
   line-height: 1.5;
-  color: var(--fg);
+  color: var(--fg-strong);
 }
 
-/* paragraph blocks */
+/* paragraphs */
 .paragraph {
   padding: 0 16px 16px 16px;
 }
@@ -258,11 +281,11 @@
   margin: 0;
   font-size: 14px;
   line-height: 1.6;
-  color: var(--fg);
+  color: var(--fg-strong);
   white-space: pre-wrap;
 }
 
-/* callouts (lookalikes/safety) */
+/* callouts */
 .callout {
   padding: 0 16px 16px 16px;
 }
@@ -272,24 +295,23 @@
   padding: 14px 14px;
   border-radius: var(--radius-lg, 16px);
 
-  background: var(--surface-3, var(--surface-2));
-  border: 1px solid var(--border);
+  background: var(--surface-3x);
+  border: 1px solid var(--border-x);
 
   font-size: 14px;
   line-height: 1.6;
-  color: var(--fg);
+  color: var(--fg-strong);
   white-space: pre-wrap;
 }
 
-/* footer meta */
+/* footer */
 .footerMeta {
   padding: 12px clamp(16px, 4.2vw, 24px) clamp(18px, 4.2vw, 22px);
-  color: var(--fg-muted);
+  color: var(--fg-muted-2);
   font-size: 12px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--border-x);
 }
 
-/* ===== Mobile tweaks ===== */
 @media (max-width: 420px) {
   .kpis {
     grid-template-columns: 1fr;
