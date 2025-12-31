@@ -1,0 +1,192 @@
+.hero{
+  position: relative;
+  height: 100svh;                 /* 👈 hele skærmen */
+  min-height: 640px;              /* desktop ro */
+  border-radius: var(--r-xl);
+  overflow: clip;
+  border: var(--stroke) solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--shadow-2);
+  isolation: isolate;
+}
+
+/* Media layer */
+.media{
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(1200px 800px at 50% 20%, rgba(255,255,255,0.10), rgba(0,0,0,0) 55%),
+    radial-gradient(900px 600px at 50% 70%, rgba(110,231,183,0.10), rgba(0,0,0,0) 60%),
+    linear-gradient(180deg, rgba(0,0,0,0.20), rgba(0,0,0,0.35));
+}
+
+.img{
+  filter: saturate(1.05) contrast(1.04);
+  transform: translateZ(0);
+}
+
+/* Choose specimen-first framing */
+.fitContain{ object-fit: contain; padding: clamp(16px, 3vw, 44px); }
+.fitCover{ object-fit: cover; }
+
+.vignette{
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(900px 700px at 50% 35%, rgba(0,0,0,0) 55%, rgba(0,0,0,0.55) 100%);
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.grain{
+  position: absolute;
+  inset: -40px;
+  pointer-events: none;
+  opacity: 0.10;
+  mix-blend-mode: overlay;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255,255,255,0.04),
+      rgba(255,255,255,0.04) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+}
+
+/* Overlay topbar (no wasted space) */
+.topbar{
+  position: absolute;
+  inset: 0 0 auto 0;
+  padding: clamp(10px, 1.2vw, 16px);
+  z-index: 5;
+  pointer-events: none; /* only inner is clickable */
+}
+
+.topbarInner{
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  padding: 10px 12px;
+  border-radius: 999px;
+
+  background: color-mix(in srgb, var(--glassBg) 84%, transparent);
+  border: var(--stroke) solid var(--glassLine);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-1);
+}
+
+.left{ display:flex; align-items:center; gap:10px; min-width: 120px; }
+.right{ display:flex; align-items:center; gap:10px; }
+
+/* Chips row */
+.chipsWrap{
+  position: absolute;
+  left: clamp(12px, 1.5vw, 18px);
+  right: clamp(12px, 1.5vw, 18px);
+  top: clamp(64px, 7svh, 86px);   /* under topbar */
+  z-index: 4;
+}
+
+.chips{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.chip{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 8px 10px;             /* 👈 mindre og strammere */
+  border-radius: 999px;
+
+  border: var(--stroke) solid var(--chipLine);
+  background: color-mix(in srgb, var(--chipBg) 86%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+
+  box-shadow: 0 10px 26px rgba(0,0,0,0.22);
+}
+
+.chipIcon{
+  display:grid;
+  place-items:center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+.chipText{ opacity: 0.96; }
+
+.chipNeutral{ }
+.chipGood{
+  border-color: var(--goodLine);
+  background: color-mix(in srgb, var(--goodBg) 70%, transparent);
+}
+.chipWarn{
+  border-color: var(--warnLine);
+  background: color-mix(in srgb, var(--warnBg) 70%, transparent);
+}
+.chipDanger{
+  border-color: rgba(239, 68, 68, 0.40);
+  background: rgba(239, 68, 68, 0.14);
+}
+
+/* Hint bottom */
+.hintWrap{
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 4;
+  display: flex;
+  justify-content: flex-start;
+  pointer-events: none;
+}
+
+.hint{
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: var(--stroke) solid var(--glassLine);
+  background: color-mix(in srgb, var(--glassBg) 78%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-1);
+
+  font-size: 13px;
+  color: var(--muted2);
+}
+
+.hintDot{
+  width: 10px; height: 10px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+@media (max-width: 640px){
+  .hero{
+    min-height: 560px;
+    border-radius: var(--r-lg);
+  }
+  .fitContain{ padding: 18px; }
+  .chip{ font-size: 12px; padding: 7px 9px; }
+}
