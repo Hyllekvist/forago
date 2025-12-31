@@ -40,8 +40,8 @@ function monthsBetween(from: number, to: number) {
 }
 
 function monthName(locale: Locale, m: number) {
-  const dk = ["", "januar","februar","marts","april","maj","juni","juli","august","september","oktober","november","december"];
-  const en = ["", "january","february","march","april","may","june","july","august","september","october","november","december"];
+  const dk = ["", "januar", "februar", "marts", "april", "maj", "juni", "juli", "august", "september", "oktober", "november", "december"];
+  const en = ["", "january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
   return (locale === "dk" ? dk : en)[m] ?? String(m);
 }
 
@@ -50,7 +50,7 @@ function currentMonthLocal() {
 }
 
 function countryForLocale(_locale: string) {
-  // DB bruger lowercase i jeres data
+  // DB bruger lowercase
   return "dk";
 }
 
@@ -72,9 +72,9 @@ function siteUrl() {
   return "http://localhost:3000";
 }
 
-function fmtCompact(n: number, locale: Locale) {
+function fmtCompact(n: number) {
   if (!Number.isFinite(n)) return "0";
-  return new Intl.NumberFormat(locale === "dk" ? "da-DK" : "en-US", { notation: "compact" }).format(n);
+  return new Intl.NumberFormat("da-DK", { notation: "compact" }).format(n);
 }
 
 type SpeciesRow = {
@@ -83,10 +83,8 @@ type SpeciesRow = {
   primary_group: string;
   scientific_name: string | null;
   created_at: string;
-
   image_path: string | null;
   image_updated_at: string | null;
-
   is_poisonous: boolean;
   danger_level: number;
 };
@@ -118,13 +116,16 @@ export async function generateMetadata({ params }: { params: { locale: string; s
     .maybeSingle();
 
   const name = tr?.common_name || slug;
+  const title = `${name} — Forago`;
+  const description =
+    tr?.short_description ||
+    (locParam === "dk"
+      ? `Lær at genkende og bruge ${name}. Sæson, forvekslinger og sikkerhed.`
+      : `Learn how to identify and use ${name}. Season, look-alikes and safety.`);
+
   return {
-    title: `${name} — Forago`,
-    description:
-      tr?.short_description ||
-      (locParam === "dk"
-        ? `Lær at genkende og bruge ${name}. Sæson, forvekslinger og sikkerhed.`
-        : `Learn how to identify and use ${name}. Season, look-alikes and safety.`),
+    title,
+    description,
     alternates: { canonical: `/${locParam}/species/${slug}` },
   };
 }
@@ -135,7 +136,6 @@ export default async function SpeciesPage({ params }: { params: { locale: string
   const locale = locParam;
 
   const supabase = await supabaseServer();
-
   const month = currentMonthLocal();
   const country = countryForLocale(locale);
 
@@ -155,14 +155,10 @@ export default async function SpeciesPage({ params }: { params: { locale: string
     .eq("species_id", species.id)
     .eq("locale", locale)
     .maybeSingle();
-
   if (trErr) throw trErr;
   const t = (tr ?? null) as TrRow | null;
 
-  const name = t?.common_name || species.slug;
-  const scientific = species.scientific_name || "";
-  const group = species.primary_group || "plant";
-
+  // seasonality
   const { data: seasonRow, error: seasErr } = await supabase
     .from("seasonality")
     .select("month_from, month_to, confidence, notes")
@@ -170,7 +166,6 @@ export default async function SpeciesPage({ params }: { params: { locale: string
     .eq("country", country)
     .eq("region", "")
     .maybeSingle();
-
   if (seasErr) throw seasErr;
 
   const from = (seasonRow?.month_from as number | undefined) ?? undefined;
@@ -180,16 +175,21 @@ export default async function SpeciesPage({ params }: { params: { locale: string
   const inSeasonNow = from && to ? isInSeason(month, from, to) : false;
   const seasonText = from && to ? seasonLabel(locale, from, to) : null;
 
+  const name = t?.common_name || species.slug;
+  const scientific = species.scientific_name || "";
+  const group = species.primary_group || "plant";
+
+  // Image (foreground = contain, background = blurred cover)
   const imageUrl =
     species.image_path
       ? supabase.storage.from("species").getPublicUrl(species.image_path).data.publicUrl +
         `?v=${encodeURIComponent(String(species.image_updated_at ?? species.created_at))}`
       : null;
 
-  // Intelligence (privacy-first): total + 30d + hotspots
+  // Intelligence
   let totalFinds = 0;
   let finds30d = 0;
-  let hotspots: Array<{ spot_id: string; finds: number }> = [];
+  let hotspots: Array<{ area: string; finds: number }> = [];
 
   const [statsRes, hotRes] = await Promise.all([
     supabase.rpc("species_find_stats", { p_species_id: species.id }),
@@ -200,11 +200,10 @@ export default async function SpeciesPage({ params }: { params: { locale: string
     totalFinds = Number(statsRes.data[0].total_finds ?? 0);
     finds30d = Number(statsRes.data[0].finds_30d ?? 0);
   }
-
   if (!hotRes.error && Array.isArray(hotRes.data)) {
     hotspots = hotRes.data.map((r: any) => ({
-      spot_id: String(r.spot_id ?? r.area ?? "ukendt"),
-      finds: Number(r.finds ?? r.c ?? 0),
+      area: String(r.area ?? (locale === "dk" ? "Ukendt område" : "Unknown area")),
+      finds: Number(r.finds ?? 0),
     }));
   }
 
@@ -229,16 +228,8 @@ export default async function SpeciesPage({ params }: { params: { locale: string
 
     const ids = Array.from(uniq.keys());
     if (ids.length) {
-      const { data: relSpecies } = await supabase
-        .from("species")
-        .select("id, slug, image_path, image_updated_at, created_at")
-        .in("id", ids);
-
-      const { data: relTr } = await supabase
-        .from("species_translations")
-        .select("species_id, common_name")
-        .eq("locale", locale)
-        .in("species_id", ids);
+      const { data: relSpecies } = await supabase.from("species").select("id, slug, image_path, image_updated_at, created_at").in("id", ids);
+      const { data: relTr } = await supabase.from("species_translations").select("species_id, common_name").eq("locale", locale).in("species_id", ids);
 
       const trMap = new Map((relTr ?? []).map((x: any) => [x.species_id as string, x.common_name as string]));
       const spMap = new Map((relSpecies ?? []).map((x: any) => [x.id as string, x]));
@@ -251,7 +242,6 @@ export default async function SpeciesPage({ params }: { params: { locale: string
               ? supabase.storage.from("species").getPublicUrl(s.image_path).data.publicUrl +
                 `?v=${encodeURIComponent(String(s.image_updated_at ?? s.created_at))}`
               : null;
-
           return {
             slug: s?.slug || "",
             name: trMap.get(id) || s?.slug || "unknown",
@@ -265,21 +255,7 @@ export default async function SpeciesPage({ params }: { params: { locale: string
     }
   }
 
-  const danger =
-    Boolean(species.is_poisonous) ||
-    (species.danger_level ?? 0) > 0 ||
-    Boolean(t?.safety_notes?.toLowerCase().includes("gift"));
-
-  const dangerLabel =
-    locale === "dk"
-      ? (species.danger_level >= 2 ? "MEGET GIFTIG" : "GIFTIG")
-      : (species.danger_level >= 2 ? "HIGHLY TOXIC" : "TOXIC");
-
-  const sections = danger
-    ? (["safety", "lookalikes", "identification", "use"] as const)
-    : (["identification", "lookalikes", "use", "safety"] as const);
-
-  // Schema.org
+  // JSON-LD
   const base = siteUrl();
   const canonical = `${base}/${locale}/species/${species.slug}`;
   const jsonLd = {
@@ -299,13 +275,31 @@ export default async function SpeciesPage({ params }: { params: { locale: string
     ],
   };
 
+  const danger =
+    Boolean(species.is_poisonous) ||
+    Boolean(t?.safety_notes?.toLowerCase().includes("gift"));
+
+  const dangerLabel =
+    locale === "dk"
+      ? species.danger_level >= 2
+        ? "MEGET GIFTIG"
+        : "GIFTIG"
+      : species.danger_level >= 2
+      ? "HIGHLY TOXIC"
+      : "TOXIC";
+
+  // Hvis giftig: flyt safety og lookalikes op
+  const sections = danger
+    ? (["safety", "lookalikes", "identification", "use"] as const)
+    : (["identification", "lookalikes", "use", "safety"] as const);
+
   return (
     <main className={styles.page}>
       <Script id="species-jsonld" type="application/ld+json">
         {JSON.stringify(jsonLd)}
       </Script>
 
-      {/* topbar */}
+      {/* Topbar */}
       <div className={styles.topbar}>
         <Link className={styles.back} href={`/${locale}/species`}>
           ← {locale === "dk" ? "Arter" : "Species"}
@@ -315,55 +309,60 @@ export default async function SpeciesPage({ params }: { params: { locale: string
           <Link className={styles.topBtn} href={`/${locale}/season`}>
             {locale === "dk" ? "Sæson" : "Season"}
           </Link>
-          <Link className={styles.topBtn} href={`/${locale}/log`}>
+          <Link className={styles.topBtnStrong} href={`/${locale}/log`}>
             {locale === "dk" ? "Gem" : "Save"}
           </Link>
         </div>
       </div>
 
-      {/* HERO */}
-      <section className={styles.hero}>
+      {/* HERO: “Apple” layout */}
+      <header className={styles.hero}>
         <div className={styles.heroMedia}>
           {imageUrl ? (
             <>
-              <Image src={imageUrl} alt="" fill sizes="100vw" className={styles.bgImg} priority />
-              <Image src={imageUrl} alt={name} fill sizes="100vw" className={styles.fgImg} priority />
+              {/* Background “glow” */}
+              <Image
+                src={imageUrl}
+                alt=""
+                fill
+                priority
+                className={styles.heroBgImg}
+                sizes="100vw"
+              />
+              {/* Foreground: NEVER cropped */}
+              <Image
+                src={imageUrl}
+                alt={name}
+                fill
+                priority
+                className={styles.heroFgImg}
+                sizes="100vw"
+              />
             </>
           ) : (
-            <div className={styles.mediaFallback}>
-              <div className={styles.mediaFallbackIcon}>🍄</div>
-              <div className={styles.mediaFallbackText}>
-                {locale === "dk" ? "Ingen billede endnu" : "No image yet"}
-              </div>
-            </div>
+            <div className={styles.heroPlaceholder} aria-hidden="true" />
           )}
 
-          <div className={styles.mediaOverlay} aria-hidden="true" />
-
-          {/* chip slots */}
-          <div className={styles.chipTL}>
+          {/* Chips on top of media */}
+          <div className={styles.heroChips}>
             {danger ? <span className={styles.chipDanger}>☠ {dangerLabel}</span> : null}
-          </div>
 
-          <div className={styles.chipTR}>
-            <span className={styles.chipSoft}>{group}</span>
-          </div>
-
-          <div className={styles.chipBL}>
-            <span className={`${styles.chipSoft} ${inSeasonNow ? styles.chipGood : styles.chipDim}`}>
+            <span className={`${styles.chip} ${inSeasonNow ? styles.chipGood : styles.chipDim}`}>
               {inSeasonNow ? (locale === "dk" ? "I sæson nu" : "In season now") : (locale === "dk" ? "Ikke i sæson" : "Out of season")}
               {conf !== null ? ` · ${Math.round(conf)}%` : ""}
             </span>
+
+            <span className={styles.chip}>{group}</span>
           </div>
         </div>
 
-        <div className={styles.heroBody}>
+        <div className={styles.heroText}>
           <h1 className={styles.h1}>{name}</h1>
 
-          <div className={styles.subline}>
+          <div className={styles.metaLine}>
             {scientific ? <em className={styles.scientific}>{scientific}</em> : null}
             {scientific ? <span className={styles.dot}>·</span> : null}
-            <span className={styles.seasonInline}>
+            <span className={styles.metaItem}>
               {locale === "dk" ? "Sæson:" : "Season:"}{" "}
               <strong>{seasonText ?? (locale === "dk" ? "ukendt" : "unknown")}</strong>
             </span>
@@ -376,45 +375,39 @@ export default async function SpeciesPage({ params }: { params: { locale: string
                 : "Add short_description in species_translations.")}
           </p>
 
-          {/* CTAs */}
+          {/* Apple-ish action row */}
           <div className={styles.ctaRow}>
-            <a className={styles.ctaPrimary} href="#identification">
+            <a className={styles.primaryCta} href="#identification">
               {locale === "dk" ? "Identifikation" : "Identification"}
             </a>
-            <a className={`${styles.ctaGhost} ${danger ? styles.ctaWarn : ""}`} href="#safety">
+            <a className={`${styles.secondaryCta} ${danger ? styles.secondaryWarn : ""}`} href="#safety">
               {locale === "dk" ? "Sikkerhed" : "Safety"}
             </a>
           </div>
 
-          {/* Facts */}
-          <div className={styles.facts}>
-            <div className={styles.factCard}>
-              <div className={styles.factLabel}>{locale === "dk" ? "Fund" : "Finds"}</div>
-              <div className={styles.factValue}>{fmtCompact(totalFinds, locale)}</div>
-              <div className={styles.factHint}>{locale === "dk" ? "Community (agg.)" : "Community (agg.)"}</div>
+          {/* Stats row (tight, premium) */}
+          <div className={styles.statRow}>
+            <div className={styles.stat}>
+              <div className={styles.statK}>{locale === "dk" ? "Fund" : "Finds"}</div>
+              <div className={styles.statV}>{fmtCompact(totalFinds)}</div>
+              <div className={styles.statH}>{locale === "dk" ? "Total (community)" : "Total (community)"}</div>
             </div>
 
-            <div className={styles.factCard}>
-              <div className={styles.factLabel}>{locale === "dk" ? "30 dage" : "30 days"}</div>
-              <div className={styles.factValue}>{fmtCompact(finds30d, locale)}</div>
-              <div className={styles.factHint}>{locale === "dk" ? "Momentum" : "Momentum"}</div>
+            <div className={styles.stat}>
+              <div className={styles.statK}>{locale === "dk" ? "30 dage" : "30 days"}</div>
+              <div className={styles.statV}>{fmtCompact(finds30d)}</div>
+              <div className={styles.statH}>{locale === "dk" ? "Momentum" : "Momentum"}</div>
             </div>
 
-            <div className={styles.factCard}>
-              <div className={styles.factLabel}>{locale === "dk" ? "Sæsonvindue" : "Season window"}</div>
-              <div className={styles.factValue}>
-                {from && to ? `${monthName(locale, from)}–${monthName(locale, to)}` : "—"}
-              </div>
-              <div className={styles.factHint}>{locale === "dk" ? "DB" : "DB"}</div>
-            </div>
-
-            <div className={styles.factCard}>
-              <div className={styles.factLabel}>{locale === "dk" ? "Hotspot" : "Hotspot"}</div>
-              <div className={styles.factValue}>{hotspots[0]?.spot_id ?? "—"}</div>
-              <div className={styles.factHint}>
+            <div className={styles.stat}>
+              <div className={styles.statK}>{locale === "dk" ? "Hotspot" : "Hotspot"}</div>
+              <div className={styles.statV}>{hotspots[0]?.area ?? "—"}</div>
+              <div className={styles.statH}>
                 {hotspots[0]
-                  ? `${fmtCompact(hotspots[0].finds, locale)} ${locale === "dk" ? "fund" : "finds"}`
-                  : (locale === "dk" ? "Ingen data" : "No data")}
+                  ? `${fmtCompact(hotspots[0].finds)} ${locale === "dk" ? "fund" : "finds"}`
+                  : locale === "dk"
+                  ? "Ingen data"
+                  : "No data"}
               </div>
             </div>
           </div>
@@ -433,30 +426,29 @@ export default async function SpeciesPage({ params }: { params: { locale: string
             </div>
           ) : null}
         </div>
-      </section>
+      </header>
 
-      {/* INTELLIGENCE */}
+      {/* Intelligence panel */}
       <section className={styles.block}>
         <div className={styles.blockHead}>
           <h2 className={styles.h2}>{locale === "dk" ? "Intelligence" : "Intelligence"}</h2>
           <p className={styles.blockSub}>
             {locale === "dk"
-              ? "Aggregeret community-data. Ingen præcise koordinater."
-              : "Aggregated community data. No exact coordinates."}
+              ? "Aggregeret community-data. Ingen præcise spots."
+              : "Aggregated community data. No precise spots."}
           </p>
         </div>
 
-        <div className={styles.intelGrid}>
+        <div className={styles.grid2}>
           <div className={styles.panel}>
-            <div className={styles.panelTitle}>{locale === "dk" ? "Mest fundet ved" : "Most found near"}</div>
-
+            <div className={styles.panelTitle}>{locale === "dk" ? "Mest fundet i" : "Most found in"}</div>
             {hotspots.length ? (
               <ol className={styles.hotList}>
-                {hotspots.slice(0, 5).map((h, i) => (
-                  <li key={`${h.spot_id}-${i}`} className={styles.hotRow}>
-                    <span className={styles.hotRank}>{i + 1}</span>
-                    <span className={styles.hotName}>{h.spot_id}</span>
-                    <span className={styles.hotCount}>{fmtCompact(h.finds, locale)}</span>
+                {hotspots.slice(0, 5).map((h, idx) => (
+                  <li key={`${h.area}-${idx}`} className={styles.hotRow}>
+                    <span className={styles.rank}>{idx + 1}</span>
+                    <span className={styles.area}>{h.area}</span>
+                    <span className={styles.count}>{fmtCompact(h.finds)}</span>
                   </li>
                 ))}
               </ol>
@@ -468,26 +460,24 @@ export default async function SpeciesPage({ params }: { params: { locale: string
           <div className={styles.panel}>
             <div className={styles.panelTitle}>{locale === "dk" ? "Hurtige regler" : "Quick rules"}</div>
             <ul className={styles.rules}>
-              <li>{locale === "dk" ? "Identificér 100% før du rører/spiser." : "Identify 100% before touching/eating."}</li>
-              <li>{locale === "dk" ? "Lær få arter ad gangen — gentag ofte." : "Learn few species at a time — repeat."}</li>
-              <li>{locale === "dk" ? "Brug forvekslinger som tjekliste." : "Use look-alikes as a checklist."}</li>
+              <li>{locale === "dk" ? "Spis aldrig noget du ikke kan identificere 100%." : "Never eat something you can’t identify 100%."}</li>
+              <li>{locale === "dk" ? "Undgå trafikerede veje og forurenede områder." : "Avoid polluted areas and heavy traffic roads."}</li>
+              <li>{locale === "dk" ? "Lær få arter ad gangen. Gentag ofte." : "Learn few species at a time. Repeat often."}</li>
             </ul>
           </div>
         </div>
       </section>
 
-      {/* CONTENT (reordered if toxic) */}
+      {/* Content (reordered if dangerous) */}
       {sections.map((key) => {
         if (key === "identification") {
           return (
             <section key={key} id="identification" className={styles.block}>
-              <h2 className={styles.h2}>{locale === "dk" ? "Identifikation" : "Identification"}</h2>
-              <div className={styles.card}>
-                {t?.identification ? (
-                  <div className={styles.textBlock}>{t.identification}</div>
-                ) : (
-                  <p className={styles.muted}>{locale === "dk" ? "Tilføj identification i species_translations." : "Add identification in species_translations."}</p>
-                )}
+              <div className={styles.blockHeadTight}>
+                <h2 className={styles.h2}>{locale === "dk" ? "Identifikation" : "Identification"}</h2>
+              </div>
+              <div className={styles.contentCard}>
+                {t?.identification ? <div className={styles.text}>{t.identification}</div> : <p className={styles.muted}>{locale === "dk" ? "Tilføj identification i species_translations." : "Add identification in species_translations."}</p>}
               </div>
             </section>
           );
@@ -496,13 +486,11 @@ export default async function SpeciesPage({ params }: { params: { locale: string
         if (key === "lookalikes") {
           return (
             <section key={key} id="lookalikes" className={styles.block}>
-              <h2 className={styles.h2}>{locale === "dk" ? "Forvekslinger" : "Look-alikes"}</h2>
-              <div className={`${styles.card} ${danger ? styles.cardWarn : ""}`}>
-                {t?.lookalikes ? (
-                  <div className={styles.textBlock}>{t.lookalikes}</div>
-                ) : (
-                  <p className={styles.muted}>{locale === "dk" ? "Tilføj lookalikes (SEO-guld)." : "Add look-alikes (SEO gold)."}</p>
-                )}
+              <div className={styles.blockHeadTight}>
+                <h2 className={styles.h2}>{locale === "dk" ? "Forvekslinger" : "Look-alikes"}</h2>
+              </div>
+              <div className={`${styles.contentCard} ${danger ? styles.warnCard : ""}`}>
+                {t?.lookalikes ? <div className={styles.text}>{t.lookalikes}</div> : <p className={styles.muted}>{locale === "dk" ? "Tilføj lookalikes (SEO-guld)." : "Add look-alikes (SEO gold)."}</p>}
               </div>
             </section>
           );
@@ -511,36 +499,31 @@ export default async function SpeciesPage({ params }: { params: { locale: string
         if (key === "use") {
           return (
             <section key={key} id="use" className={styles.block}>
-              <h2 className={styles.h2}>{locale === "dk" ? "Brug" : "Use"}</h2>
-              <div className={styles.card}>
-                {t?.usage_notes ? (
-                  <div className={styles.textBlock}>{t.usage_notes}</div>
-                ) : (
-                  <p className={styles.muted}>{locale === "dk" ? "Tilføj usage_notes." : "Add usage_notes."}</p>
-                )}
+              <div className={styles.blockHeadTight}>
+                <h2 className={styles.h2}>{locale === "dk" ? "Brug" : "Use"}</h2>
+              </div>
+              <div className={styles.contentCard}>
+                {t?.usage_notes ? <div className={styles.text}>{t.usage_notes}</div> : <p className={styles.muted}>{locale === "dk" ? "Tilføj usage_notes." : "Add usage_notes."}</p>}
               </div>
             </section>
           );
         }
 
-        // safety
         return (
           <section key={key} id="safety" className={styles.block}>
-            <h2 className={styles.h2}>{locale === "dk" ? "Sikkerhed" : "Safety"}</h2>
-            <div className={`${styles.card} ${styles.cardWarn}`}>
-              {t?.safety_notes ? (
-                <div className={styles.textBlock}>{t.safety_notes}</div>
-              ) : (
-                <p className={styles.muted}>{locale === "dk" ? "Tilføj safety_notes. Vær tydelig." : "Add safety_notes. Be explicit."}</p>
-              )}
+            <div className={styles.blockHeadTight}>
+              <h2 className={styles.h2}>{locale === "dk" ? "Sikkerhed" : "Safety"}</h2>
+            </div>
+            <div className={`${styles.contentCard} ${styles.warnCard}`}>
+              {t?.safety_notes ? <div className={styles.text}>{t.safety_notes}</div> : <p className={styles.muted}>{locale === "dk" ? "Tilføj safety_notes. Vær tydelig." : "Add safety_notes. Be explicit."}</p>}
             </div>
           </section>
         );
       })}
 
-      {/* RELATED */}
+      {/* Related */}
       <section className={styles.block}>
-        <div className={styles.blockRow}>
+        <div className={styles.blockHeadRow}>
           <h2 className={styles.h2}>{locale === "dk" ? "Relaterede (i sæson nu)" : "Related (in season now)"}</h2>
           <Link className={styles.more} href={`/${locale}/season`}>
             {locale === "dk" ? "Se sæson →" : "See season →"}
@@ -552,19 +535,11 @@ export default async function SpeciesPage({ params }: { params: { locale: string
             {related.map((r) => (
               <Link key={r.slug} className={styles.relatedCard} href={`/${locale}/species/${r.slug}`}>
                 <div className={styles.relatedMedia}>
-                  {r.imageUrl ? (
-                    <Image src={r.imageUrl} alt={r.name} fill sizes="50vw" className={styles.relatedImg} />
-                  ) : (
-                    <div className={styles.relatedPh} aria-hidden="true" />
-                  )}
-                  <div className={styles.relatedFade} aria-hidden="true" />
+                  {r.imageUrl ? <Image src={r.imageUrl} alt={r.name} fill className={styles.relatedImg} sizes="(max-width: 640px) 60vw, 260px" /> : <div className={styles.relatedPh} aria-hidden="true" />}
                 </div>
-
                 <div className={styles.relatedBody}>
                   <div className={styles.relatedName}>{r.name}</div>
-                  <div className={styles.relatedMeta}>
-                    {locale === "dk" ? "Match" : "Match"} · {Math.round(r.confidence)}%
-                  </div>
+                  <div className={styles.relatedMeta}>{locale === "dk" ? "Match" : "Match"} · {r.confidence}%</div>
                 </div>
               </Link>
             ))}
