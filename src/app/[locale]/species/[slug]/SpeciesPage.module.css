@@ -1,4 +1,4 @@
-.page{
+.page{ 
   /* Map til jeres tokens/themes (fallbacks er kun safety-net) */
   --bg: var(--color-bg, var(--bg, #0b0e14));
   --surface: var(--color-surface, rgba(255,255,255,.06));
