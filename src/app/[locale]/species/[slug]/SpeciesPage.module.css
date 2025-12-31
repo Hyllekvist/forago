@@ -1,65 +1,152 @@
-/* src/app/[locale]/species/[slug]/SpeciesPage.module.css
-   Desktop first. Works with FieldHero (full-screen hero) + content below.
-   Uses your existing global tokens (var(--panel), --line, --accent etc.)
-*/
+/* src/app/[locale]/species/[slug]/SpeciesPage.module.css */
 
 .page{
   width: 100%;
-  padding: clamp(14px, 1.4vw, 22px);
+  padding: clamp(12px, 1.4vw, 22px);
 }
 
 .shell{
   max-width: 1180px;
   margin: 0 auto;
   display: grid;
-  gap: clamp(14px, 1.6vw, 22px);
+  gap: clamp(12px, 1.6vw, 18px);
 }
 
-/* =========================
-   CONTENT SURFACE
-   ========================= */
-
-.content{
-  border-radius: var(--r-xl);
-  border: var(--stroke) solid var(--line);
-  background: var(--panel);
-  box-shadow: var(--shadow-1);
-
+/* “Sheet” under billedet (ingen overlap -> ingen skjult billede) */
+.sheet{
+  border-radius: var(--r-xl, 28px);
+  border: var(--stroke, 1px) solid var(--line, rgba(255,255,255,.10));
+  background: var(--panel, rgba(20,24,26,.78));
+  box-shadow: var(--shadow-1, 0 18px 60px rgba(0,0,0,.22));
   padding: clamp(16px, 2.2vw, 28px);
 }
 
-/* =========================
-   SECTIONS
-   ========================= */
+/* Header */
+.header{ display: grid; gap: 10px; }
 
+.title{
+  margin: 0;
+  font-size: clamp(28px, 3.0vw, 44px);
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+  font-weight: 880;
+}
+
+.subline{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin: 0;
+  color: var(--muted, rgba(255,255,255,.72));
+  font-size: clamp(13px, 1.1vw, 16px);
+}
+
+.latin{
+  font-style: italic;
+  color: color-mix(in srgb, var(--ink, #fff) 70%, transparent);
+}
+
+.dot{ opacity: .55; }
+
+/* Chips */
+.metaRow{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.metaChip{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: var(--stroke, 1px) solid var(--chipLine, rgba(255,255,255,.12));
+  background: var(--chipBg, rgba(255,255,255,.06));
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 760;
+  letter-spacing: -0.01em;
+}
+
+.metaChipGood{
+  border-color: color-mix(in srgb, var(--accent, #61d3a6) 40%, var(--chipLine, rgba(255,255,255,.12)));
+  background: color-mix(in srgb, var(--accent, #61d3a6) 12%, var(--chipBg, rgba(255,255,255,.06)));
+}
+
+.metaChipWarn{
+  border-color: color-mix(in srgb, #f5c26b 40%, var(--chipLine, rgba(255,255,255,.12)));
+  background: color-mix(in srgb, #f5c26b 12%, var(--chipBg, rgba(255,255,255,.06)));
+}
+
+.metaChipDanger{
+  border-color: color-mix(in srgb, #ff6b6b 45%, var(--chipLine, rgba(255,255,255,.12)));
+  background: color-mix(in srgb, #ff6b6b 12%, var(--chipBg, rgba(255,255,255,.06)));
+}
+
+/* KPI */
+.kpis{
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.kpi{
+  border-radius: 18px;
+  border: var(--stroke, 1px) solid var(--line, rgba(255,255,255,.10));
+  background: color-mix(in srgb, var(--panel2, rgba(255,255,255,.06)) 88%, transparent);
+  box-shadow: 0 14px 42px rgba(0,0,0,.16);
+  padding: 14px 16px;
+  display: grid;
+  gap: 6px;
+}
+
+.kpiLabel{
+  font-size: 12px;
+  color: var(--muted, rgba(255,255,255,.72));
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.kpiValue{
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+/* Sections */
 .sections{
+  margin-top: 18px;
   display: grid;
   gap: 14px;
 }
 
 .section{
-  border-radius: var(--r-xl);
-  border: var(--stroke) solid var(--line);
-  background: color-mix(in srgb, var(--panel2) 72%, transparent);
-  box-shadow: 0 14px 38px rgba(0,0,0,0.16);
-
+  border-radius: var(--r-xl, 24px);
+  border: var(--stroke, 1px) solid var(--line, rgba(255,255,255,.10));
+  background: color-mix(in srgb, var(--panel2, rgba(255,255,255,.06)) 80%, transparent);
+  box-shadow: 0 14px 38px rgba(0,0,0,.14);
   padding: clamp(14px, 1.6vw, 18px);
 }
 
 .sectionTitle{
   margin: 0;
-  font-size: clamp(16px, 1.35vw, 18px);
-  font-weight: 840;
+  font-size: clamp(16px, 1.25vw, 18px);
+  font-weight: 860;
   letter-spacing: -0.01em;
 }
 
 .sectionSub{
   margin: 6px 0 0;
   font-size: 13px;
-  color: var(--muted);
+  color: var(--muted, rgba(255,255,255,.72));
 }
 
-/* Checklist style (quick identification) */
+/* Checklist */
 .checklist{
   margin-top: 12px;
   display: grid;
@@ -71,12 +158,10 @@
   grid-template-columns: 14px 1fr;
   gap: 10px;
   align-items: start;
-
   padding: 12px 12px;
   border-radius: 16px;
-
-  border: var(--stroke) solid color-mix(in srgb, var(--line) 92%, transparent);
-  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  border: var(--stroke, 1px) solid color-mix(in srgb, var(--line, rgba(255,255,255,.10)) 92%, transparent);
+  background: color-mix(in srgb, var(--panel, rgba(20,24,26,.78)) 84%, transparent);
 }
 
 .bullet{
@@ -84,23 +169,23 @@
   height: 10px;
   margin-top: 4px;
   border-radius: 999px;
-  background: var(--accent);
-  box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 16%, transparent);
+  background: var(--accent, #61d3a6);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent, #61d3a6) 16%, transparent);
 }
 
 .checkText{
   margin: 0;
   font-size: 14px;
   line-height: 1.45;
-  color: color-mix(in srgb, var(--ink) 88%, transparent);
+  color: color-mix(in srgb, var(--ink, #fff) 88%, transparent);
 }
 
-/* “Warning bar” cards (sikkerhed/forvekslinger) */
+/* Callout (safety/lookalikes) */
 .callout{
   margin-top: 12px;
   border-radius: 16px;
-  border: var(--stroke) solid color-mix(in srgb, var(--warnLine) 88%, transparent);
-  background: color-mix(in srgb, var(--warnBg) 72%, transparent);
+  border: var(--stroke, 1px) solid color-mix(in srgb, var(--warnLine, #f5c26b) 62%, transparent);
+  background: color-mix(in srgb, var(--warnBg, #f5c26b) 12%, transparent);
   padding: 12px 12px;
 }
 
@@ -108,15 +193,15 @@
   margin: 0;
   font-size: 14px;
   line-height: 1.45;
-  color: color-mix(in srgb, var(--ink) 88%, transparent);
+  color: color-mix(in srgb, var(--ink, #fff) 88%, transparent);
 }
 
-/* Plain paragraph block */
+/* Paragraph */
 .paragraph{
   margin-top: 12px;
   border-radius: 16px;
-  border: var(--stroke) solid color-mix(in srgb, var(--line) 92%, transparent);
-  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  border: var(--stroke, 1px) solid color-mix(in srgb, var(--line, rgba(255,255,255,.10)) 92%, transparent);
+  background: color-mix(in srgb, var(--panel, rgba(20,24,26,.78)) 84%, transparent);
   padding: 12px 12px;
 }
 
@@ -124,35 +209,33 @@
   margin: 0;
   font-size: 14px;
   line-height: 1.55;
-  color: color-mix(in srgb, var(--ink) 86%, transparent);
+  color: color-mix(in srgb, var(--ink, #fff) 86%, transparent);
 }
 
-/* Footer meta */
+/* Footer */
 .footerMeta{
   margin-top: 16px;
   font-size: 12px;
-  color: var(--muted2);
+  color: var(--muted2, rgba(255,255,255,.56));
 }
 
-/* =========================
-   MOBILE POLISH (110%)
-   ========================= */
-
+/* Mobile polish */
 @media (max-width: 640px){
   .page{ padding: 12px; }
-  .content{ padding: 16px; border-radius: var(--r-lg); }
-  .section{ border-radius: var(--r-lg); }
+  .sheet{ padding: 16px; border-radius: var(--r-lg, 22px); }
+  .section{ border-radius: var(--r-lg, 20px); }
+  .kpi{ border-radius: 16px; }
+  .title{ font-size: 32px; }
+  .metaChip{ font-size: 12px; padding: 7px 9px; }
 }
 
-/* =========================
-   LIGHT THEME TUNING
-   ========================= */
-
-:root[data-theme="light"] .content{
-  background: var(--panel);
-  box-shadow: var(--shadow-2);
+/* Light mode tuning */
+:root[data-theme="light"] .sheet{
+  background: var(--panel, rgba(255,255,255,.78));
+  box-shadow: var(--shadow-2, 0 18px 60px rgba(0,0,0,.10));
 }
 
-:root[data-theme="light"] .section{
-  background: color-mix(in srgb, var(--panel) 86%, transparent);
+:root[data-theme="light"] .section,
+:root[data-theme="light"] .kpi{
+  background: color-mix(in srgb, var(--panel, rgba(255,255,255,.78)) 92%, transparent);
 }
