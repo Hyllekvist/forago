@@ -1,6 +1,10 @@
 /* SpeciesPage.module.css
    Matcher src/app/[locale]/species/[slug]/page.tsx
-   Robust: falder tilbage til eksisterende tokens, aldrig “tom styling”.
+
+   Design-mål:
+   - Samme “glassy card” look som BottomNav (var(--card), var(--ink), var(--accent))
+   - Ingen hardcodede farver
+   - ÉT sted at justere sheet-højden: --sheet-overlap
 */
 
 .page {
@@ -8,7 +12,7 @@
   padding: 0;
 }
 
-/* ===== Shell ===== */
+/* ===== Layout wrapper ===== */
 .shell {
   width: 100%;
   max-width: 1180px;
@@ -21,28 +25,34 @@
   display: grid;
   gap: clamp(12px, 2.8vw, 18px);
 
-  /* Justér overlap her */
+  /* JUSTÉR KUN DEN HER for at trække sheet op/ned over billedet */
   --sheet-overlap: 140px;
 
-  /* sikre fallbacks (kun var->var) */
-  --c-fg: var(--fg, var(--text));
-  --c-muted: var(--fg-muted, var(--muted, var(--c-fg)));
-  --c-border: var(--border, var(--hairline, var(--c-muted)));
+  /* Radii */
+  --r-xl: 22px;
+  --r-lg: 18px;
+  --r-md: 14px;
 
-  --c-s1: var(--surface-1, var(--surface, var(--bg)));
-  --c-s2: var(--surface-2, var(--c-s1));
-  --c-s3: var(--surface-3, var(--c-s2));
+  /* Forago tokens */
+  --c-card: var(--card);
+  --c-ink: var(--ink);
+  --c-accent: var(--accent);
 
-  --r-xl: var(--radius-xl, 22px);
-  --r-lg: var(--radius-lg, 18px);
-  --r-md: var(--radius-md, 14px);
+  /* Glass “base” (match BottomNav vibe) */
+  --glass-bg: color-mix(in srgb, var(--c-card) 82%, transparent);
+  --glass-border: color-mix(in srgb, var(--c-ink) 12%, transparent);
+  --glass-shadow: 0 22px 70px rgba(0, 0, 0, 0.28);
 
-  --shadow-1: var(--shadow-sm, var(--shadow, none));
-  --shadow-2: var(--shadow-md, var(--shadow, none));
-  --shadow-3: var(--shadow-lg, var(--shadow, none));
+  --panel-bg: color-mix(in srgb, var(--c-card) 86%, transparent);
+  --panel-border: color-mix(in srgb, var(--c-ink) 10%, transparent);
+  --panel-shadow: 0 12px 40px rgba(0, 0, 0, 0.14);
+
+  --muted: color-mix(in srgb, var(--c-ink) 70%, transparent);
+  --muted2: color-mix(in srgb, var(--c-ink) 60%, transparent);
+  --strong: color-mix(in srgb, var(--c-ink) 86%, transparent);
 }
 
-/* ===== Sheet ===== */
+/* ===== SHEET (overlapper hero) ===== */
 .sheet {
   position: relative;
   margin-top: calc(-1 * var(--sheet-overlap));
@@ -50,16 +60,12 @@
   border-radius: var(--r-xl);
   overflow: hidden;
 
-  /* SÆNK blur → mindre “udvisket” */
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
 
-  background: var(--c-s1);
-  border: 1px solid var(--c-border);
-
-  box-shadow:
-    0 22px 70px var(--shadow-3),
-    inset 0 1px 0 var(--c-border);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 /* ===== Header ===== */
@@ -76,8 +82,7 @@
   line-height: 1.05;
   letter-spacing: -0.03em;
   font-weight: 780;
-
-  color: var(--c-fg);
+  color: var(--c-ink);
   text-shadow: var(--text-shadow-hero, none);
 }
 
@@ -90,19 +95,19 @@
 
   font-size: 14px;
   line-height: 1.35;
-  color: var(--c-muted);
+  color: var(--muted);
 }
 
 .latin {
   font-style: italic;
-  color: var(--c-fg);
+  color: color-mix(in srgb, var(--c-ink) 82%, transparent);
 }
 
 .dot {
   opacity: 0.55;
 }
 
-/* ===== Chips ===== */
+/* ===== Meta chips ===== */
 .metaRow {
   display: flex;
   flex-wrap: wrap;
@@ -111,7 +116,6 @@
   margin-top: 6px;
 }
 
-/* vigtig: ALT her virker selv hvis “glass” tokens mangler */
 .metaChip {
   display: inline-flex;
   align-items: center;
@@ -121,39 +125,35 @@
   padding: 10px 12px;
   border-radius: 999px;
 
-  background: var(--c-s2);
-  border: 1px solid var(--c-border);
-  color: var(--c-fg);
+  background: color-mix(in srgb, var(--c-card) 78%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c-ink) 12%, transparent);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.16);
 
+  color: color-mix(in srgb, var(--c-ink) 84%, transparent);
   font-size: 13px;
   line-height: 1;
   white-space: nowrap;
-
-  box-shadow:
-    0 10px 26px var(--shadow-1),
-    inset 0 1px 0 var(--c-border);
 }
 
-/* Hvis du har status-tokens, bruges de – ellers falder de tilbage til almindelig chip */
 .metaChipDanger {
-  background: var(--danger-bg, var(--c-s2));
-  border-color: var(--danger-border, var(--c-border));
-  color: var(--danger-fg, var(--c-fg));
+  background: color-mix(in srgb, var(--c-accent) 22%, transparent);
+  border-color: color-mix(in srgb, var(--c-accent) 34%, transparent);
+  color: var(--c-ink);
 }
 
 .metaChipGood {
-  background: var(--success-bg, var(--c-s2));
-  border-color: var(--success-border, var(--c-border));
-  color: var(--success-fg, var(--c-fg));
+  background: color-mix(in srgb, var(--c-accent) 18%, transparent);
+  border-color: color-mix(in srgb, var(--c-accent) 30%, transparent);
+  color: var(--c-ink);
 }
 
 .metaChipWarn {
-  background: var(--warning-bg, var(--c-s2));
-  border-color: var(--warning-border, var(--c-border));
-  color: var(--warning-fg, var(--c-fg));
+  background: color-mix(in srgb, var(--c-accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--c-ink) 14%, transparent);
+  color: color-mix(in srgb, var(--c-ink) 86%, transparent);
 }
 
-/* ===== KPI ===== */
+/* ===== KPI cards ===== */
 .kpis {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -165,12 +165,9 @@
   border-radius: var(--r-lg);
   padding: 16px;
 
-  background: var(--c-s2);
-  border: 1px solid var(--c-border);
-
-  box-shadow:
-    0 18px 60px var(--shadow-2),
-    inset 0 1px 0 var(--c-border);
+  background: color-mix(in srgb, var(--c-card) 78%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c-ink) 12%, transparent);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.18);
 
   display: grid;
   gap: 8px;
@@ -182,7 +179,7 @@
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--c-muted);
+  color: var(--muted2);
 }
 
 .kpiValue {
@@ -190,41 +187,41 @@
   line-height: 1;
   font-weight: 780;
   letter-spacing: -0.02em;
-  color: var(--c-fg);
+  color: var(--c-ink);
 }
 
-/* ===== Sections ===== */
+/* ===== Sections wrapper ===== */
 .sections {
   padding: 0 clamp(16px, 4.2vw, 24px) clamp(16px, 4.2vw, 24px);
   display: grid;
   gap: 14px;
 }
 
+/* Section card */
 .section {
   border-radius: var(--r-xl);
-  background: var(--c-s2);
-  border: 1px solid var(--c-border);
   overflow: hidden;
-  box-shadow: 0 12px 40px var(--shadow-2);
+
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--panel-shadow);
 }
 
 .sectionTitle {
   margin: 0;
   padding: 16px 16px 6px 16px;
-
   font-size: 18px;
   font-weight: 760;
   letter-spacing: -0.01em;
-  color: var(--c-fg);
+  color: var(--c-ink);
 }
 
 .sectionSub {
   margin: 0;
   padding: 0 16px 14px 16px;
-
   font-size: 14px;
   line-height: 1.45;
-  color: var(--c-muted);
+  color: var(--muted);
 }
 
 /* Checklist */
@@ -240,11 +237,11 @@
   gap: 10px;
   align-items: start;
 
-  padding: 12px 12px;
+  padding: 12px;
   border-radius: var(--r-md);
 
-  background: var(--c-s3);
-  border: 1px solid var(--c-border);
+  background: color-mix(in srgb, var(--c-card) 90%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c-ink) 10%, transparent);
 }
 
 .bullet {
@@ -252,18 +249,17 @@
   height: 8px;
   margin-top: 6px;
   border-radius: 999px;
-  background: var(--c-fg);
-  opacity: 0.6;
+  background: color-mix(in srgb, var(--c-ink) 70%, transparent);
 }
 
 .checkText {
   margin: 0;
   font-size: 14px;
   line-height: 1.5;
-  color: var(--c-fg);
+  color: var(--strong);
 }
 
-/* Paragraph */
+/* Paragraph blocks */
 .paragraph {
   padding: 0 16px 16px 16px;
 }
@@ -272,38 +268,38 @@
   margin: 0;
   font-size: 14px;
   line-height: 1.6;
-  color: var(--c-fg);
+  color: var(--strong);
   white-space: pre-wrap;
 }
 
-/* Callout */
+/* Callouts (lookalikes/safety) */
 .callout {
   padding: 0 16px 16px 16px;
 }
 
 .calloutText {
   margin: 0;
-  padding: 14px 14px;
+  padding: 14px;
   border-radius: var(--r-lg);
 
-  background: var(--c-s3);
-  border: 1px solid var(--c-border);
+  background: color-mix(in srgb, var(--c-card) 90%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c-ink) 10%, transparent);
 
   font-size: 14px;
   line-height: 1.6;
-  color: var(--c-fg);
+  color: color-mix(in srgb, var(--c-ink) 88%, transparent);
   white-space: pre-wrap;
 }
 
-/* Footer */
+/* Footer meta */
 .footerMeta {
   padding: 12px clamp(16px, 4.2vw, 24px) clamp(18px, 4.2vw, 22px);
-  color: var(--c-muted);
+  color: var(--muted2);
   font-size: 12px;
-  border-top: 1px solid var(--c-border);
+  border-top: 1px solid color-mix(in srgb, var(--c-ink) 10%, transparent);
 }
 
-/* Mobile */
+/* Mobile tweaks */
 @media (max-width: 420px) {
   .kpis {
     grid-template-columns: 1fr;
