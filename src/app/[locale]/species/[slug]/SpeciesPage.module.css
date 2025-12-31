@@ -1,304 +1,298 @@
 /* SpeciesPage.module.css
-   Ambitiøs hero: full-bleed cover image + constrained content grid + safe-area aware bottom padding
-   Designmål:
-   - Billedet er “center stage” og går visuelt helt ned bag BottomNav
-   - Tekst/badges/chips ligger aldrig i kanten af billedet
-   - Alt er token/theme-friendly (ingen hardcodede farver ud over transparente overlays)
+   Matcher classnames i src/app/[locale]/species/[slug]/page.tsx
 */
-
-/* ===== Page shell ===== */
 
 .page {
   width: 100%;
-  padding: 0; /* vigtigt: hero er full-bleed, vi styrer spacing inde i content */
+  padding: 0;
 }
 
+/* ydre wrapper */
 .shell {
-  width: 100%;
-  max-width: none;
-  margin: 0;
-  display: grid;
-  gap: 0;
-}
-
-/* ===== HERO (full-bleed) ===== */
-
-.hero {
-  position: relative;
-  width: 100%;
-  /* giver “wow” height og plads til content + bundnav overlap */
-  min-height: 100svh;
-  overflow: hidden;
-
-  /* hvis du bruger radius på cards under, så lad hero være ren */
-  border-radius: 0;
-}
-
-/* image wrapper (Next <Image fill /> eller <img>) */
-.heroMedia {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-}
-
-.heroMedia :global(img) {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-  display: block;
-  transform: translateZ(0);
-}
-
-/* readability layers */
-.heroShade {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  /* mørk top + stærkere bund så tekst “står” */
-  background:
-    radial-gradient(1200px 700px at 20% 10%, rgba(0, 0, 0, 0.10), transparent 60%),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.62));
-}
-
-/* optional subtle grain/noise via pseudo; behold hvis du allerede har global noise */
-.heroNoise {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  opacity: 0.08;
-  pointer-events: none;
-  background-image: url("/noise.png"); /* hvis du har den — ellers fjern hele klassen */
-  background-size: 260px 260px;
-  mix-blend-mode: overlay;
-}
-
-/* ===== HERO CONTENT GRID (constrained) ===== */
-
-.heroContent {
-  position: relative;
-  z-index: 3;
-
-  /* constrained grid */
   width: 100%;
   max-width: 1180px;
   margin: 0 auto;
 
-  /* “safe” padding: top/side + bottom plads til bundnav */
-  padding:
-    clamp(18px, 4.2vw, 34px)
-    clamp(16px, 4.4vw, 34px)
-    calc(var(--bottom-nav-h, 72px) + env(safe-area-inset-bottom) + clamp(14px, 2.4vw, 22px));
+  /* side-padding til alt indhold */
+  padding-inline: clamp(14px, 4vw, 26px);
 
-  /* layout */
+  /* vigtig: giver luft over/under */
+  padding-top: clamp(10px, 2.6vw, 18px);
+  padding-bottom: calc(var(--bottom-nav-h, 72px) + env(safe-area-inset-bottom) + 18px);
+
   display: grid;
-  grid-template-rows: auto 1fr auto;
-  gap: clamp(14px, 2.8vw, 22px);
-  min-height: 100svh;
+  gap: clamp(12px, 2.8vw, 18px);
+
+  /* “kontrol-knapper” */
+  --sheet-overlap: clamp(64px, 16vw, 160px); /* 👈 ØG = sheet højere op, MINDRE = længere ned */
 }
 
-/* ===== Top row: actions (left/right slots) ===== */
+/* ===== SHEET (glassy panel der overlapper hero) ===== */
 
-.heroTop {
+.sheet {
+  position: relative;
+
+  /* overlap hero */
+  margin-top: calc(-1 * var(--sheet-overlap));
+
+  border-radius: 22px;
+  overflow: hidden;
+
+  backdrop-filter: blur(14px);
+  background: color-mix(in oklab, var(--surface-1, rgba(18, 22, 26, 0.58)) 92%, transparent);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.10));
+
+  box-shadow:
+    0 28px 90px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* top padding + side padding for sheet-indhold */
+.header {
+  padding: clamp(16px, 4.2vw, 24px);
+  padding-bottom: clamp(14px, 3.6vw, 18px);
   display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 12px;
-}
-
-.heroLeft {
-  display: inline-flex;
-  align-items: center;
   gap: 10px;
-  min-width: 160px;
 }
 
-.heroRight {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  justify-content: flex-end;
-}
-
-/* ===== Center row: title/meta/chips ===== */
-
-.heroCenter {
-  display: grid;
-  align-content: end;
-  gap: 10px;
-  padding-top: clamp(10px, 2.2vw, 18px);
-}
-
-/* typografi: brug dine tokens — navne er placeholders */
-.h1 {
+/* title */
+.title {
   margin: 0;
-  font-size: clamp(36px, 7.2vw, 56px);
-  line-height: 1.04;
+  font-size: clamp(30px, 7.6vw, 54px);
+  line-height: 1.05;
   letter-spacing: -0.03em;
-  font-weight: 760;
-  color: var(--fg, #fff);
-  text-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+  font-weight: 780;
+  color: var(--fg, rgba(255, 255, 255, 0.96));
+  text-shadow: 0 14px 60px rgba(0, 0, 0, 0.35);
 }
 
-.metaLine {
+.subline {
+  margin: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
   align-items: center;
-  opacity: 0.92;
-  color: var(--fg-muted, rgba(255, 255, 255, 0.78));
+  gap: 8px;
+
   font-size: 14px;
+  line-height: 1.35;
+  color: var(--fg-muted, rgba(255, 255, 255, 0.72));
 }
 
-.metaDot {
+.latin {
+  font-style: italic;
+  color: var(--fg, rgba(255, 255, 255, 0.86));
+}
+
+.dot {
   opacity: 0.55;
 }
 
-/* chips row */
-.chips {
+/* ===== Meta chips ===== */
+
+.metaRow {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
-  margin-top: 8px;
+  margin-top: 4px;
 }
 
-/* chip base (glass) */
-.chip {
+.metaChip {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+
   padding: 10px 12px;
   border-radius: 999px;
+
   backdrop-filter: blur(10px);
   background: rgba(20, 24, 28, 0.40);
   border: 1px solid rgba(255, 255, 255, 0.10);
-  color: rgba(255, 255, 255, 0.92);
+
+  color: rgba(255, 255, 255, 0.90);
   font-size: 13px;
   line-height: 1;
   white-space: nowrap;
 }
 
-.chipIcon {
-  opacity: 0.9;
+.metaChipDanger {
+  background: rgba(120, 20, 20, 0.35);
+  border-color: rgba(255, 120, 120, 0.24);
 }
 
-/* ===== Bottom row: hero cards (stats) ===== */
+.metaChipGood {
+  background: rgba(20, 120, 60, 0.28);
+  border-color: rgba(140, 255, 180, 0.20);
+}
 
-.heroBottom {
+.metaChipWarn {
+  background: rgba(150, 110, 20, 0.28);
+  border-color: rgba(255, 220, 140, 0.18);
+}
+
+/* ===== KPI cards ===== */
+
+.kpis {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: clamp(12px, 2.6vw, 18px);
+  gap: clamp(10px, 2.6vw, 16px);
+
+  margin-top: clamp(6px, 1.8vw, 10px);
 }
 
-/* simple glass cards */
-.heroCard {
+.kpi {
   border-radius: 18px;
-  padding: 16px 16px;
+  padding: 16px;
+
   backdrop-filter: blur(12px);
   background: rgba(20, 24, 28, 0.42);
   border: 1px solid rgba(255, 255, 255, 0.10);
+
   box-shadow:
-    0 16px 60px rgba(0, 0, 0, 0.25),
+    0 18px 60px rgba(0, 0, 0, 0.22),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  min-height: 86px;
 
   display: grid;
-  align-content: center;
   gap: 8px;
+  align-content: center;
+  min-height: 90px;
 }
 
-.heroCardLabel {
+.kpiLabel {
   font-size: 12px;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.72);
+  color: rgba(255, 255, 255, 0.70);
 }
 
-.heroCardValue {
+.kpiValue {
   font-size: 34px;
   line-height: 1;
-  font-weight: 760;
+  font-weight: 780;
   letter-spacing: -0.02em;
   color: rgba(255, 255, 255, 0.96);
 }
 
-/* ===== Below hero content area ===== */
+/* ===== Sections ===== */
 
-.content {
-  width: 100%;
-  max-width: 1180px;
-  margin: 0 auto;
-  padding:
-    clamp(14px, 3.6vw, 22px)
-    clamp(16px, 4.4vw, 34px)
-    calc(env(safe-area-inset-bottom) + 24px);
-
+.sections {
+  padding: 0 clamp(16px, 4.2vw, 24px) clamp(16px, 4.2vw, 24px);
   display: grid;
   gap: 14px;
 }
 
-/* cards/sections under hero */
-.sectionCard {
+.section {
   border-radius: 20px;
-  background: var(--surface-1, rgba(255, 255, 255, 0.06));
+  background: color-mix(in oklab, var(--surface-2, rgba(255, 255, 255, 0.06)) 88%, transparent);
   border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18);
   overflow: hidden;
-}
 
-.sectionHeader {
-  padding: 16px 16px 10px 16px;
-  display: grid;
-  gap: 6px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
 }
 
 .sectionTitle {
   margin: 0;
+  padding: 16px 16px 6px 16px;
+
   font-size: 18px;
-  font-weight: 700;
-  color: var(--fg, #fff);
+  font-weight: 760;
+  letter-spacing: -0.01em;
+  color: var(--fg, rgba(255, 255, 255, 0.94));
 }
 
 .sectionSub {
   margin: 0;
+  padding: 0 16px 14px 16px;
+
   font-size: 14px;
+  line-height: 1.45;
   color: var(--fg-muted, rgba(255, 255, 255, 0.72));
 }
 
-.sectionBody {
+/* checklist */
+.checklist {
+  padding: 0 16px 16px 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.check {
+  display: grid;
+  grid-template-columns: 10px 1fr;
+  gap: 10px;
+  align-items: start;
+
+  padding: 12px 12px;
+  border-radius: 14px;
+  background: rgba(10, 12, 14, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.bullet {
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.08);
+}
+
+.checkText {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+/* paragraph blocks */
+.paragraph {
   padding: 0 16px 16px 16px;
 }
 
-/* ===== Responsive tweaks ===== */
-
-@media (max-width: 680px) {
-  .heroTop {
-    grid-template-columns: 1fr auto;
-  }
-
-  .heroBottom {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .h1 {
-    font-size: clamp(34px, 10vw, 46px);
-  }
+.paragraph p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.86);
+  white-space: pre-wrap;
 }
 
-/* very small phones */
-@media (max-width: 380px) {
-  .heroBottom {
+/* callouts (lookalikes/safety) */
+.callout {
+  padding: 0 16px 16px 16px;
+}
+
+.calloutText {
+  margin: 0;
+  padding: 14px 14px;
+  border-radius: 16px;
+
+  background: rgba(10, 12, 14, 0.26);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.90);
+  white-space: pre-wrap;
+}
+
+/* footer meta */
+.footerMeta {
+  padding: 12px clamp(16px, 4.2vw, 24px) clamp(18px, 4.2vw, 22px);
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ===== Mobile tweaks ===== */
+
+@media (max-width: 420px) {
+  .kpis {
     grid-template-columns: 1fr;
   }
 }
 
-/* ===== Helpers ===== */
-
-/* Brug denne hvis du har et element der skal “flyde” over hero (fx badge stack) */
-.floatLayer {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  pointer-events: none;
-}
+/* ===== IMPORTANT: hvis du har problemer med at sheet bliver for lav/høj =====
+   Justér kun denne:
+   .shell { --sheet-overlap: ... }
+*/
