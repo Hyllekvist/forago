@@ -1,20 +1,26 @@
+/* =========================
+   PAGE + CHROME
+   ========================= */
+
 .page{
   min-height: 100vh;
   padding: var(--pad) var(--pad) calc(var(--bottom-nav-h) + 18px);
   color: var(--ink);
 }
 
-/* Sticky field chrome */
+/* Sticky top chrome (uses your global .surfaceGlass) */
 .chrome{
   position: sticky;
   top: 10px;
   z-index: 20;
   max-width: var(--maxw);
   margin: 0 auto var(--s-3);
+
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap: var(--s-3);
+
   padding: 10px 10px;
 }
 
@@ -22,111 +28,80 @@
   display:flex;
   align-items:center;
   gap: 10px;
+
   padding: 10px 12px;
   border-radius: 999px;
+  font-weight: 800;
 }
 
 .chromeRight{ display:flex; gap: 10px; }
+
 .chromeBtn{
   height: 40px;
   padding: 0 14px;
   border-radius: 999px;
   border: var(--stroke) solid var(--chipLine);
   background: var(--chipBg);
-  font-weight: 800;
+  font-weight: 850;
+  letter-spacing: -0.01em;
 }
+
 .chromeBtnPrimary{
   border-color: var(--line);
   background: var(--panel2);
 }
 
-/* HERO (image-first) */
-.hero{
-  max-width: var(--maxw);
-  margin: 0 auto var(--s-4);
-  display:flex;
-  flex-direction:column;
-  gap: var(--s-3);
-}
+/* =========================
+   FULL HERO (AIRBNB-ish)
+   ========================= */
 
-.viewer{
-  position: relative;
-  overflow: hidden;
+.heroFull{
+  max-width: var(--maxw);
+  margin: 0 auto;
+
+  /* Full-screen feel, minus chrome */
+  height: calc(100vh - 84px);
   border-radius: var(--r-xl);
+  overflow: hidden;
+
   border: var(--stroke) solid var(--line);
   background: var(--panel);
   box-shadow: var(--shadow-2);
-height: min(72vh, 640px);
 }
 
-/* Blur plate from image to increase contrast without muddy glass */
-.viewerPlate{
-  position:absolute;
-  inset: 0;
-  z-index: 0;
-}
-.viewerPlateImg{
-  object-fit: cover;
-  transform: scale(1.12);
-  filter: blur(28px) saturate(1.15);
-  opacity: 0.55;
-}
-
-.viewerTap{
-  position:absolute;
-  inset: 0;
-  z-index: 1;
+.heroMediaBtn{
   width: 100%;
   height: 100%;
   padding: 0;
+  position: relative;
 }
 
-.viewerImgWrap{
-  position:absolute;
-  inset: 0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-padding: 10px 10px 78px;
-  background:
-    radial-gradient(60% 70% at 50% 42%, rgba(255,255,255,0.08), transparent 65%),
-    linear-gradient(to bottom, rgba(0,0,0,0.22), rgba(0,0,0,0.35));
+.heroImg{
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* identify-first */
+  background: var(--panel);
 }
 
-:root[data-theme="light"] .viewerImgWrap{
-  background:
-    radial-gradient(60% 70% at 50% 42%, rgba(15,23,42,0.06), transparent 65%),
-    linear-gradient(to bottom, rgba(255,255,255,0.00), rgba(15,23,42,0.06));
-}
-
-.viewerImg{
-  object-fit: contain; /* NEVER crop */
-  filter: drop-shadow(0 16px 42px rgba(0,0,0,0.35));
-}
-
-.noImg{
-  padding: 12px 14px;
-  border-radius: var(--r-md);
-  background: var(--chipBg);
-  border: var(--stroke) solid var(--chipLine);
-  font-weight: 800;
-  color: var(--muted);
-}
-
-/* hint */
-.viewerHint{
+/* Small hint in bottom-left of hero */
+.heroHint{
   position:absolute;
   left: 14px;
-  bottom: 62px;
+  bottom: 14px;
+
   display:flex;
   align-items:center;
   gap: 10px;
+
   padding: 10px 12px;
   border-radius: 999px;
-  border: var(--stroke) solid var(--chipLine);
-  background: var(--chipBg);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+
+  border: var(--stroke) solid var(--glassLine);
+  background: var(--glassBg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+
+  box-shadow: var(--shadow-1);
 }
 
 .hintDot{
@@ -137,92 +112,118 @@ padding: 10px 10px 78px;
   box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
-/* controlled chips */
-.viewerChips{
-  position:absolute;
-  top: 14px;
-  left: 14px;
-  right: 14px;
-  z-index: 2;
+.noImg{
   display:flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  pointer-events:none;
+  align-items:center;
+  justify-content:center;
+  height: 100%;
+  padding: 12px 14px;
+  font-weight: 850;
+  color: var(--muted2);
 }
 
-.chip{
+/* =========================
+   OVERLAP SHEET (AIRBNB)
+   ========================= */
+
+.sheet{
+  max-width: var(--maxw);
+  margin: calc(var(--s-6) * -1) auto var(--s-4); /* overlap hero */
+  padding: var(--s-5) var(--s-4);
+
+  border-radius: 26px;
+  box-shadow: var(--shadow-2);
+}
+
+.sheetTop{
+  display:flex;
+  flex-direction:column;
+  gap: 8px;
+}
+
+.sheetMeta{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items:baseline;
+  color: var(--muted2);
+}
+
+.scientific{
+  font-style: italic;
+  font-weight: 760;
+  color: var(--muted2);
+}
+
+.dot{ opacity: .55; }
+
+.badgeRow{
+  margin-top: var(--s-3);
+  display:flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.badge{
   height: 30px;
   padding: 0 10px;
+  border-radius: 999px;
+
+  border: var(--stroke) solid var(--chipLine);
+  background: var(--chipBg);
+
   font-size: 12px;
   font-weight: 850;
   letter-spacing: -0.01em;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--chipBg) 88%, transparent);
 }
 
-.chipGood{
+.badgeGood{
   border-color: var(--goodLine);
   background: var(--goodBg);
 }
 
-.chipDanger{
+.badgeDanger{
   border-color: var(--warnLine);
   background: var(--warnBg);
 }
 
-/* bottom bar */
-.viewerBar{
-  position:absolute;
-  left: 14px;
-  right: 14px;
-  bottom: 14px;
-  z-index: 2;
+/* KPI row */
+.kpis{
+  margin-top: var(--s-4);
   display:flex;
-  align-items:stretch;
-  gap: 10px;
-  padding: 10px 10px;
-  border-radius: 16px;
-  border: var(--stroke) solid var(--glassLine);
-  background: var(--glassBg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: var(--shadow-1);
+  gap: var(--s-3);
 }
 
-.barItem{ flex: 1; min-width: 0; }
-.barValue{
-  margin-top: 2px;
+.kpi{
+  flex: 1;
+  padding: 12px 12px;
+  border-radius: var(--r-lg);
+  border: var(--stroke) solid var(--line);
+  background: var(--panel2);
+}
+
+.kpiV{
+  margin-top: 4px;
   font-weight: 900;
+  font-size: 20px;
   letter-spacing: -0.02em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.barSep{
-  width: 1px;
-  background: var(--line);
-  opacity: .85;
 }
 
-/* Title */
-.title{ padding: 0 2px; }
-.titleMeta{
-  margin-top: var(--s-2);
-  display:flex;
-  gap: 10px;
-  align-items:baseline;
-}
-.scientific{ font-style: italic; font-weight: 750; color: var(--muted2); }
-.dot{ opacity: .55; }
+/* =========================
+   CUES (Quick identification)
+   ========================= */
 
-/* Cues */
 .cues{
   max-width: var(--maxw);
   margin: 0 auto var(--s-4);
 }
 
 .cuesHead{ padding: 0 2px; }
-.cuesCard{ margin-top: var(--s-2); padding: var(--s-4); }
+
+.cuesCard{
+  margin-top: var(--s-2);
+  padding: var(--s-4);
+}
 
 .cueList{
   margin: 0;
@@ -238,6 +239,7 @@ padding: 10px 10px 78px;
   gap: 12px;
   align-items:flex-start;
   padding: 12px 12px;
+
   border-radius: var(--r-md);
   border: var(--stroke) solid var(--line);
   background: var(--panel2);
@@ -252,7 +254,10 @@ padding: 10px 10px 78px;
   margin-top: 6px;
 }
 
-/* Sections */
+/* =========================
+   MAIN SECTIONS
+   ========================= */
+
 .sections{
   max-width: var(--maxw);
   margin: 0 auto;
@@ -261,7 +266,10 @@ padding: 10px 10px 78px;
   gap: var(--s-4);
 }
 
-.block .surface{ margin-top: var(--s-2); padding: var(--s-4); }
+.block .surface{
+  margin-top: var(--s-2);
+  padding: var(--s-4);
+}
 
 .grid2{
   display:grid;
@@ -283,7 +291,10 @@ padding: 10px 10px 78px;
   background: color-mix(in srgb, var(--warnBg) 55%, var(--panel2));
 }
 
-/* Fullscreen viewer */
+/* =========================
+   FULLSCREEN VIEWER
+   ========================= */
+
 .fs{
   position: fixed;
   inset: 0;
@@ -299,10 +310,12 @@ padding: 10px 10px 78px;
   right: 14px;
   height: 44px;
   width: 44px;
+
   border-radius: 999px;
   border: var(--stroke) solid var(--glassLine);
   background: var(--glassBg);
   box-shadow: var(--shadow-1);
+
   font-weight: 900;
 }
 
@@ -315,9 +328,10 @@ padding: 10px 10px 78px;
 
 .fsImg{
   display:block;
-  max-width: none;     /* allow zoom-ish behavior */
-  width: 1200px;       /* big baseline; iOS pinch works nicely */
+  max-width: none;
+  width: 1200px;
   height: auto;
+
   margin: 0 auto;
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-2);
@@ -342,7 +356,10 @@ padding: 10px 10px 78px;
   letter-spacing: -0.02em;
 }
 
-/* Footer */
+/* =========================
+   FOOTER
+   ========================= */
+
 .updated{
   max-width: var(--maxw);
   margin: var(--s-4) auto 0;
