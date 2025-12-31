@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
-import styles from "./SpeciesIndexPage.module.css";
+import styles from "./SpeciesIndex.module.css";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 3600;
