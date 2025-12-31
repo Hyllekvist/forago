@@ -1,6 +1,6 @@
 /* SpeciesPage.module.css
    Matcher src/app/[locale]/species/[slug]/page.tsx
-   Kun tokens/vars. Ingen hardcodede farver.
+   Robust: falder tilbage til eksisterende tokens, aldrig “tom styling”.
 */
 
 .page {
@@ -8,8 +8,7 @@
   padding: 0;
 }
 
-/* ========= Shell ========= */
-
+/* ===== Shell ===== */
 .shell {
   width: 100%;
   max-width: 1180px;
@@ -22,46 +21,48 @@
   display: grid;
   gap: clamp(12px, 2.8vw, 18px);
 
-  /* kontrol */
+  /* Justér overlap her */
   --sheet-overlap: 140px;
 
-  /* “defensive tokens” (kun var→var fallbacks) */
-  --fg-strong: var(--fg-strong, var(--fg));
-  --fg-muted-2: var(--fg-muted-2, var(--fg-muted));
-  --surface-1x: var(--surface-1, var(--surface));
-  --surface-2x: var(--surface-2, var(--surface-1x));
-  --surface-3x: var(--surface-3, var(--surface-2x));
-  --border-x: var(--border, var(--hairline, var(--border-subtle)));
-  --shadow-smx: var(--shadow-sm, var(--shadow-1, var(--shadow)));
-  --shadow-mdx: var(--shadow-md, var(--shadow-2, var(--shadow)));
-  --shadow-lgx: var(--shadow-lg, var(--shadow-3, var(--shadow)));
-  --highlight-x: var(--highlight, var(--sheen, var(--surface-highlight)));
-  --glass-bg: var(--surface-glass, var(--surface-2x));
-  --glass-blur: var(--glass-blur, var(--blur-md, 8px));
+  /* sikre fallbacks (kun var->var) */
+  --c-fg: var(--fg, var(--text));
+  --c-muted: var(--fg-muted, var(--muted, var(--c-fg)));
+  --c-border: var(--border, var(--hairline, var(--c-muted)));
+
+  --c-s1: var(--surface-1, var(--surface, var(--bg)));
+  --c-s2: var(--surface-2, var(--c-s1));
+  --c-s3: var(--surface-3, var(--c-s2));
+
+  --r-xl: var(--radius-xl, 22px);
+  --r-lg: var(--radius-lg, 18px);
+  --r-md: var(--radius-md, 14px);
+
+  --shadow-1: var(--shadow-sm, var(--shadow, none));
+  --shadow-2: var(--shadow-md, var(--shadow, none));
+  --shadow-3: var(--shadow-lg, var(--shadow, none));
 }
 
-/* ========= Sheet ========= */
-
+/* ===== Sheet ===== */
 .sheet {
   position: relative;
   margin-top: calc(-1 * var(--sheet-overlap));
 
-  border-radius: var(--radius-xl, 22px);
+  border-radius: var(--r-xl);
   overflow: hidden;
 
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  backdrop-filter: blur(var(--glass-blur));
+  /* SÆNK blur → mindre “udvisket” */
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 
-  background: var(--surface-1x);
-  border: 1px solid var(--border-x);
+  background: var(--c-s1);
+  border: 1px solid var(--c-border);
 
   box-shadow:
-    0 28px 90px var(--shadow-lgx),
-    inset 0 1px 0 var(--highlight-x);
+    0 22px 70px var(--shadow-3),
+    inset 0 1px 0 var(--c-border);
 }
 
-/* ========= Header ========= */
-
+/* ===== Header ===== */
 .header {
   padding: clamp(16px, 4.2vw, 24px);
   padding-bottom: clamp(14px, 3.6vw, 18px);
@@ -76,7 +77,7 @@
   letter-spacing: -0.03em;
   font-weight: 780;
 
-  color: var(--fg-strong);
+  color: var(--c-fg);
   text-shadow: var(--text-shadow-hero, none);
 }
 
@@ -89,20 +90,19 @@
 
   font-size: 14px;
   line-height: 1.35;
-  color: var(--fg-muted-2);
+  color: var(--c-muted);
 }
 
 .latin {
   font-style: italic;
-  color: var(--fg-strong);
+  color: var(--c-fg);
 }
 
 .dot {
-  opacity: var(--muted-opacity, 0.55);
+  opacity: 0.55;
 }
 
-/* ========= Chips ========= */
-
+/* ===== Chips ===== */
 .metaRow {
   display: flex;
   flex-wrap: wrap;
@@ -111,7 +111,7 @@
   margin-top: 6px;
 }
 
-/* vigtig: gør dem "synlige" uanset baggrund */
+/* vigtig: ALT her virker selv hvis “glass” tokens mangler */
 .metaChip {
   display: inline-flex;
   align-items: center;
@@ -121,43 +121,39 @@
   padding: 10px 12px;
   border-radius: 999px;
 
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  backdrop-filter: blur(var(--glass-blur));
+  background: var(--c-s2);
+  border: 1px solid var(--c-border);
+  color: var(--c-fg);
 
-  background: var(--glass-bg);
-  border: 1px solid var(--border-x);
-
-  color: var(--fg-strong);
   font-size: 13px;
   line-height: 1;
   white-space: nowrap;
 
   box-shadow:
-    0 10px 26px var(--shadow-smx),
-    inset 0 1px 0 var(--highlight-x);
+    0 10px 26px var(--shadow-1),
+    inset 0 1px 0 var(--c-border);
 }
 
-/* status chips bruger dine status-tokens */
+/* Hvis du har status-tokens, bruges de – ellers falder de tilbage til almindelig chip */
 .metaChipDanger {
-  background: var(--danger-bg, var(--glass-bg));
-  border-color: var(--danger-border, var(--border-x));
-  color: var(--danger-fg, var(--fg-strong));
+  background: var(--danger-bg, var(--c-s2));
+  border-color: var(--danger-border, var(--c-border));
+  color: var(--danger-fg, var(--c-fg));
 }
 
 .metaChipGood {
-  background: var(--success-bg, var(--glass-bg));
-  border-color: var(--success-border, var(--border-x));
-  color: var(--success-fg, var(--fg-strong));
+  background: var(--success-bg, var(--c-s2));
+  border-color: var(--success-border, var(--c-border));
+  color: var(--success-fg, var(--c-fg));
 }
 
 .metaChipWarn {
-  background: var(--warning-bg, var(--glass-bg));
-  border-color: var(--warning-border, var(--border-x));
-  color: var(--warning-fg, var(--fg-strong));
+  background: var(--warning-bg, var(--c-s2));
+  border-color: var(--warning-border, var(--c-border));
+  color: var(--warning-fg, var(--c-fg));
 }
 
-/* ========= KPI ========= */
-
+/* ===== KPI ===== */
 .kpis {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -166,15 +162,15 @@
 }
 
 .kpi {
-  border-radius: var(--radius-lg, 18px);
+  border-radius: var(--r-lg);
   padding: 16px;
 
-  background: var(--surface-2x);
-  border: 1px solid var(--border-x);
+  background: var(--c-s2);
+  border: 1px solid var(--c-border);
 
   box-shadow:
-    0 18px 60px var(--shadow-mdx),
-    inset 0 1px 0 var(--highlight-x);
+    0 18px 60px var(--shadow-2),
+    inset 0 1px 0 var(--c-border);
 
   display: grid;
   gap: 8px;
@@ -186,7 +182,7 @@
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--fg-muted-2);
+  color: var(--c-muted);
 }
 
 .kpiValue {
@@ -194,11 +190,10 @@
   line-height: 1;
   font-weight: 780;
   letter-spacing: -0.02em;
-  color: var(--fg-strong);
+  color: var(--c-fg);
 }
 
-/* ========= Sections ========= */
-
+/* ===== Sections ===== */
 .sections {
   padding: 0 clamp(16px, 4.2vw, 24px) clamp(16px, 4.2vw, 24px);
   display: grid;
@@ -206,12 +201,11 @@
 }
 
 .section {
-  border-radius: var(--radius-xl, 20px);
-  background: var(--surface-2x);
-  border: 1px solid var(--border-x);
+  border-radius: var(--r-xl);
+  background: var(--c-s2);
+  border: 1px solid var(--c-border);
   overflow: hidden;
-
-  box-shadow: 0 12px 40px var(--shadow-mdx);
+  box-shadow: 0 12px 40px var(--shadow-2);
 }
 
 .sectionTitle {
@@ -221,7 +215,7 @@
   font-size: 18px;
   font-weight: 760;
   letter-spacing: -0.01em;
-  color: var(--fg-strong);
+  color: var(--c-fg);
 }
 
 .sectionSub {
@@ -230,10 +224,10 @@
 
   font-size: 14px;
   line-height: 1.45;
-  color: var(--fg-muted-2);
+  color: var(--c-muted);
 }
 
-/* checklist */
+/* Checklist */
 .checklist {
   padding: 0 16px 16px 16px;
   display: grid;
@@ -247,10 +241,10 @@
   align-items: start;
 
   padding: 12px 12px;
-  border-radius: var(--radius-lg, 14px);
+  border-radius: var(--r-md);
 
-  background: var(--surface-3x);
-  border: 1px solid var(--border-x);
+  background: var(--c-s3);
+  border: 1px solid var(--c-border);
 }
 
 .bullet {
@@ -258,21 +252,18 @@
   height: 8px;
   margin-top: 6px;
   border-radius: 999px;
-
-  background: var(--fg-strong);
-  opacity: 0.65;
-
-  box-shadow: 0 0 0 4px var(--ring, var(--surface-2x));
+  background: var(--c-fg);
+  opacity: 0.6;
 }
 
 .checkText {
   margin: 0;
   font-size: 14px;
   line-height: 1.5;
-  color: var(--fg-strong);
+  color: var(--c-fg);
 }
 
-/* paragraphs */
+/* Paragraph */
 .paragraph {
   padding: 0 16px 16px 16px;
 }
@@ -281,11 +272,11 @@
   margin: 0;
   font-size: 14px;
   line-height: 1.6;
-  color: var(--fg-strong);
+  color: var(--c-fg);
   white-space: pre-wrap;
 }
 
-/* callouts */
+/* Callout */
 .callout {
   padding: 0 16px 16px 16px;
 }
@@ -293,25 +284,26 @@
 .calloutText {
   margin: 0;
   padding: 14px 14px;
-  border-radius: var(--radius-lg, 16px);
+  border-radius: var(--r-lg);
 
-  background: var(--surface-3x);
-  border: 1px solid var(--border-x);
+  background: var(--c-s3);
+  border: 1px solid var(--c-border);
 
   font-size: 14px;
   line-height: 1.6;
-  color: var(--fg-strong);
+  color: var(--c-fg);
   white-space: pre-wrap;
 }
 
-/* footer */
+/* Footer */
 .footerMeta {
   padding: 12px clamp(16px, 4.2vw, 24px) clamp(18px, 4.2vw, 22px);
-  color: var(--fg-muted-2);
+  color: var(--c-muted);
   font-size: 12px;
-  border-top: 1px solid var(--border-x);
+  border-top: 1px solid var(--c-border);
 }
 
+/* Mobile */
 @media (max-width: 420px) {
   .kpis {
     grid-template-columns: 1fr;
