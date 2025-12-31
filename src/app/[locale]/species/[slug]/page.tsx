@@ -25,36 +25,8 @@ function isInSeason(month: number, from: number, to: number) {
   return month >= from || month <= to;
 }
 function monthName(locale: Locale, m: number) {
-  const dk = [
-    "",
-    "januar",
-    "februar",
-    "marts",
-    "april",
-    "maj",
-    "juni",
-    "juli",
-    "august",
-    "september",
-    "oktober",
-    "november",
-    "december",
-  ];
-  const en = [
-    "",
-    "january",
-    "february",
-    "march",
-    "april",
-    "may",
-    "june",
-    "july",
-    "august",
-    "september",
-    "october",
-    "november",
-    "december",
-  ];
+  const dk = ["", "januar", "februar", "marts", "april", "maj", "juni", "juli", "august", "september", "oktober", "november", "december"];
+  const en = ["", "january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
   return (locale === "dk" ? dk : en)[m] ?? String(m);
 }
 function seasonLabel(locale: Locale, from: number, to: number) {
@@ -73,6 +45,12 @@ function siteUrl() {
 function fmtCompact(n: number) {
   if (!Number.isFinite(n)) return "0";
   return new Intl.NumberFormat("da-DK", { notation: "compact" }).format(n);
+}
+
+function confToPct(conf: number) {
+  // supports both 0.8 and 80
+  const v = conf > 1 ? conf : conf * 100;
+  return Math.max(0, Math.min(100, Math.round(v)));
 }
 
 function pickCues(text: string | null | undefined, locale: Locale) {
@@ -97,14 +75,7 @@ function pickCues(text: string | null | undefined, locale: Locale) {
     .split(/\n+|•|- /g)
     .map((s) => s.trim())
     .filter(Boolean)
-    .flatMap((s) =>
-      s.length > 140
-        ? s
-            .split(/\. +/g)
-            .map((x) => x.trim())
-            .filter(Boolean)
-        : [s]
-    )
+    .flatMap((s) => (s.length > 140 ? s.split(/\. +/g).map((x) => x.trim()).filter(Boolean) : [s]))
     .filter((s) => s.length >= 12)
     .slice(0, 3);
 
@@ -133,20 +104,12 @@ type TrRow = {
   updated_at: string | null;
 };
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { locale: string; slug: string };
-}) {
+export async function generateMetadata({ params }: { params: { locale: string; slug: string } }) {
   const { locale: locParam, slug } = params;
   if (!isLocale(locParam)) return { title: "Forago" };
 
   const supabase = await supabaseServer();
-  const { data: sp } = await supabase
-    .from("species")
-    .select("id, slug")
-    .eq("slug", slug)
-    .maybeSingle();
+  const { data: sp } = await supabase.from("species").select("id, slug").eq("slug", slug).maybeSingle();
   if (!sp) return { title: "Forago" };
 
   const { data: tr } = await supabase
@@ -171,11 +134,7 @@ export async function generateMetadata({
   };
 }
 
-export default async function SpeciesPage({
-  params,
-}: {
-  params: { locale: string; slug: string };
-}) {
+export default async function SpeciesPage({ params }: { params: { locale: string; slug: string } }) {
   const { locale: locParam, slug } = params;
   if (!isLocale(locParam)) return notFound();
   const locale = locParam;
@@ -186,9 +145,7 @@ export default async function SpeciesPage({
 
   const { data: sp, error: spErr } = await supabase
     .from("species")
-    .select(
-      "id, slug, primary_group, scientific_name, created_at, image_path, image_updated_at, is_poisonous, danger_level"
-    )
+    .select("id, slug, primary_group, scientific_name, created_at, image_path, image_updated_at, is_poisonous, danger_level")
     .eq("slug", slug)
     .maybeSingle();
 
@@ -198,9 +155,7 @@ export default async function SpeciesPage({
 
   const { data: tr, error: trErr } = await supabase
     .from("species_translations")
-    .select(
-      "common_name, short_description, identification, lookalikes, usage_notes, safety_notes, updated_at"
-    )
+    .select("common_name, short_description, identification, lookalikes, usage_notes, safety_notes, updated_at")
     .eq("species_id", species.id)
     .eq("locale", locale)
     .maybeSingle();
@@ -227,13 +182,13 @@ export default async function SpeciesPage({
   const conf = (seasonRow?.confidence as number | undefined) ?? null;
 
   const inSeasonNow = from && to ? isInSeason(month, from, to) : false;
-  const seasonText =
-    from && to ? seasonLabel(locale, from, to) : locale === "dk" ? "ukendt" : "unknown";
+  const seasonText = from && to ? seasonLabel(locale, from, to) : locale === "dk" ? "ukendt" : "unknown";
 
-  const imageUrl = species.image_path
-    ? supabase.storage.from("species").getPublicUrl(species.image_path).data.publicUrl +
-      `?v=${encodeURIComponent(String(species.image_updated_at ?? species.created_at))}`
-    : null;
+  const imageUrl =
+    species.image_path
+      ? supabase.storage.from("species").getPublicUrl(species.image_path).data.publicUrl +
+        `?v=${encodeURIComponent(String(species.image_updated_at ?? species.created_at))}`
+      : null;
 
   let totalFinds = 0;
   let finds30d = 0;
@@ -285,7 +240,7 @@ export default async function SpeciesPage({
       </Script>
 
       <div className={styles.shell}>
-        {/* Full hero (fills screen) */}
+        {/* HERO ONLY = header. No duplicate info below. */}
         <FieldHero
           locale={locale}
           name={name}
@@ -301,58 +256,14 @@ export default async function SpeciesPage({
           finds30d={fmtCompact(finds30d)}
         />
 
-        {/* Sheet/content under hero */}
+        {/* Content starts here */}
         <section className={styles.content}>
-          <header className={styles.header}>
-            <h1 className={styles.title}>{name}</h1>
-
-            <p className={styles.subline}>
-              {scientific ? <span className={styles.latin}>{scientific}</span> : null}
-              {scientific ? <span className={styles.dot}>•</span> : null}
-              <span>{group}</span>
-              <span className={styles.dot}>•</span>
-              <span>
-                {locale === "dk" ? "Sæson:" : "Season:"} {seasonText}
-              </span>
-            </p>
-
-            <div className={styles.metaRow}>
-              {danger ? (
-                <span className={`${styles.metaChip} ${styles.metaChipStrong}`}>
-                  ☠️ {dangerLabel}
-                </span>
-              ) : (
-                <span className={styles.metaChip}>
-                  {locale === "dk" ? "Ikke giftig" : "Not toxic"}
-                </span>
-              )}
-
-              <span className={styles.metaChip}>
-                {inSeasonNow ? (locale === "dk" ? "I sæson" : "In season") : locale === "dk" ? "Ikke i sæson" : "Out of season"}
-                {typeof conf === "number" ? ` · ${Math.round(conf * 100)}%` : ""}
-              </span>
-
-              <span className={styles.metaChip}>
-                {locale === "dk" ? "Land:" : "Country:"} {country.toUpperCase()}
-              </span>
-            </div>
-
-            <div className={styles.kpis}>
-              <div className={styles.kpi}>
-                <div className={styles.kpiLabel}>{locale === "dk" ? "Fund" : "Finds"}</div>
-                <div className={styles.kpiValue}>{fmtCompact(totalFinds)}</div>
-              </div>
-
-              <div className={styles.kpi}>
-                <div className={styles.kpiLabel}>{locale === "dk" ? "30d" : "30d"}</div>
-                <div className={styles.kpiValue}>{fmtCompact(finds30d)}</div>
-              </div>
-            </div>
-          </header>
-
           <div className={styles.sections}>
             {/* Quick field checklist */}
-            <section className={styles.section} aria-label={locale === "dk" ? "Hurtig identifikation" : "Quick identification"}>
+            <section
+              className={styles.section}
+              aria-label={locale === "dk" ? "Hurtig identifikation" : "Quick identification"}
+            >
               <h2 className={styles.sectionTitle}>{locale === "dk" ? "Hurtig identifikation" : "Quick identification"}</h2>
               <p className={styles.sectionSub}>{locale === "dk" ? "Brug dette som tjekliste i marken." : "Use this as a field checklist."}</p>
 
@@ -394,9 +305,7 @@ export default async function SpeciesPage({
                         <p className={styles.calloutText}>{t.lookalikes}</p>
                       </div>
                     ) : (
-                      <p className={styles.sectionSub}>
-                        {locale === "dk" ? "Tilføj lookalikes (SEO-guld)." : "Add look-alikes (SEO gold)."}
-                      </p>
+                      <p className={styles.sectionSub}>{locale === "dk" ? "Tilføj lookalikes (SEO-guld)." : "Add look-alikes (SEO gold)."}</p>
                     )}
                   </section>
                 );
@@ -426,9 +335,7 @@ export default async function SpeciesPage({
                       <p className={styles.calloutText}>{t.safety_notes}</p>
                     </div>
                   ) : (
-                    <p className={styles.sectionSub}>
-                      {locale === "dk" ? "Tilføj safety_notes. Vær tydelig." : "Add safety_notes. Be explicit."}
-                    </p>
+                    <p className={styles.sectionSub}>{locale === "dk" ? "Tilføj safety_notes. Vær tydelig." : "Add safety_notes. Be explicit."}</p>
                   )}
                 </section>
               );
