@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Image from "next/image";
 import styles from "./SpeciesPage.module.css";
 
 export default function FieldHero(props: {
@@ -38,7 +37,7 @@ export default function FieldHero(props: {
 
   const [open, setOpen] = useState(false);
 
-  const seasonChip = useMemo(() => {
+  const seasonBadge = useMemo(() => {
     const base = inSeasonNow
       ? locale === "dk"
         ? "I sæson nu"
@@ -50,82 +49,77 @@ export default function FieldHero(props: {
     return base + conf;
   }, [inSeasonNow, confidence, locale]);
 
+  const tapHint = locale === "dk" ? "Tryk for fullscreen (pinch-zoom)" : "Tap for fullscreen (pinch-zoom)";
+
   return (
     <>
-      <header className={styles.hero}>
-        <div className={`${styles.viewer} surface`}>
-          {/* blurred plate */}
-          <div className={styles.viewerPlate} aria-hidden="true">
-            {imageUrl ? (
-              <Image src={imageUrl} alt="" fill className={styles.viewerPlateImg} sizes="100vw" priority />
-            ) : null}
+      {/* Full-screen hero (clean image only) */}
+      <header className={styles.heroFull} aria-label={locale === "dk" ? "Billede" : "Image"}>
+        <button
+          type="button"
+          className={`${styles.heroMediaBtn} pressable`}
+          onClick={() => imageUrl && setOpen(true)}
+          aria-label={tapHint}
+          disabled={!imageUrl}
+        >
+          {imageUrl ? (
+            // use img here for fastest + predictable iOS pinch in fullscreen
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={imageUrl} alt={name} className={styles.heroImg} />
+          ) : (
+            <div className={styles.noImg}>{locale === "dk" ? "Ingen billede endnu" : "No image yet"}</div>
+          )}
+
+          <div className={styles.heroHint} aria-hidden="true">
+            <span className={styles.hintDot} />
+            <span className="meta">{tapHint}</span>
           </div>
+        </button>
+      </header>
 
-          {/* main image - contain, huge, tap to fullscreen */}
-          <button
-            type="button"
-            className={`${styles.viewerTap} pressable`}
-            onClick={() => imageUrl && setOpen(true)}
-            aria-label={locale === "dk" ? "Åbn billede i fullscreen" : "Open image fullscreen"}
-          >
-            <div className={styles.viewerImgWrap}>
-              {imageUrl ? (
-                <Image src={imageUrl} alt={name} fill className={styles.viewerImg} sizes="100vw" priority />
-              ) : (
-                <div className={styles.noImg}>{locale === "dk" ? "Ingen billede endnu" : "No image yet"}</div>
-              )}
-            </div>
-
-            <div className={styles.viewerHint}>
-              <span className={styles.hintDot} aria-hidden="true" />
-              <span className="meta">
-                {locale === "dk" ? "Tryk for fullscreen (pinch-zoom)" : "Tap for fullscreen (pinch-zoom)"}
-              </span>
-            </div>
-          </button>
-
-          {/* overlays: minimal */}
-          <div className={styles.viewerChips} aria-hidden="true">
-            {danger ? (
-              <span className={`${styles.chip} ${styles.chipDanger}`}>☠ {dangerLabel}</span>
-            ) : (
-              <span className={styles.chip}>{locale === "dk" ? "Sikkerhed ukendt" : "Safety unknown"}</span>
-            )}
-            <span className={`${styles.chip} ${inSeasonNow ? styles.chipGood : ""}`}>{seasonChip}</span>
-            <span className={styles.chip}>{group}</span>
-          </div>
-
-          <div className={styles.viewerBar}>
-            <div className={styles.barItem}>
-              <div className="meta">{locale === "dk" ? "Sæson" : "Season"}</div>
-              <div className={styles.barValue}>{seasonText}</div>
-            </div>
-            <div className={styles.barSep} />
-            <div className={styles.barItem}>
-              <div className="meta">{locale === "dk" ? "Fund" : "Finds"}</div>
-              <div className={styles.barValue}>{totalFinds}</div>
-            </div>
-            <div className={styles.barSep} />
-            <div className={styles.barItem}>
-              <div className="meta">30d</div>
-              <div className={styles.barValue}>{finds30d}</div>
-            </div>
-          </div>
-        </div>
-
-        <div className={styles.title}>
+      {/* Airbnb-ish info sheet (overlapping) */}
+      <section className={`${styles.sheet} surface`} aria-label={locale === "dk" ? "Info" : "Info"}>
+        <div className={styles.sheetTop}>
           <h1 className="h1">{name}</h1>
-          <div className={styles.titleMeta}>
+
+          <div className={styles.sheetMeta}>
             {scientific ? <em className={styles.scientific}>{scientific}</em> : null}
             {scientific ? <span className={styles.dot}>·</span> : null}
             <span className="meta">{locale === "dk" ? "Feltprofil" : "Field profile"} · Forago</span>
+            <span className={styles.dot}>·</span>
+            <span className="meta">{group}</span>
           </div>
         </div>
-      </header>
 
-      {/* Fullscreen viewer: use <img> so iOS pinch feels natural */}
+        <div className={styles.badgeRow} aria-label={locale === "dk" ? "Status" : "Status"}>
+          {danger ? (
+            <span className={`${styles.badge} ${styles.badgeDanger}`}>☠ {dangerLabel}</span>
+          ) : (
+            <span className={styles.badge}>{locale === "dk" ? "Sikkerhed ukendt" : "Safety unknown"}</span>
+          )}
+
+          <span className={`${styles.badge} ${inSeasonNow ? styles.badgeGood : ""}`}>{seasonBadge}</span>
+
+          <span className={styles.badge}>
+            {locale === "dk" ? "Sæson" : "Season"}: {seasonText}
+          </span>
+        </div>
+
+        <div className={styles.kpis} aria-label={locale === "dk" ? "Statistik" : "Stats"}>
+          <div className={styles.kpi}>
+            <div className="meta">{locale === "dk" ? "Fund" : "Finds"}</div>
+            <div className={styles.kpiV}>{totalFinds}</div>
+          </div>
+          <div className={styles.kpi}>
+            <div className="meta">30d</div>
+            <div className={styles.kpiV}>{finds30d}</div>
+          </div>
+        </div>
+      </section>
+
+      {/* Fullscreen */}
       {open && imageUrl ? (
-        <div className={styles.fs} role="dialog" aria-modal="true">
+        <div className={styles.fs} role="dialog" aria-modal="true" aria-label={locale === "dk" ? "Fullscreen billede" : "Fullscreen image"}>
           <button className={styles.fsClose} onClick={() => setOpen(false)} aria-label={locale === "dk" ? "Luk" : "Close"}>
             ✕
           </button>
