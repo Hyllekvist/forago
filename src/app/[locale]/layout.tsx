@@ -1,4 +1,4 @@
-// src/app/[locale]/layout.tsx
+// src/app/[locale]/layout.tsx 
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { LOCALES, isLocale } from "@/lib/i18n/locales";
