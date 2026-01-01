@@ -1,17 +1,26 @@
 /* src/components/Shell/TopNav.module.css */
 
-.header {
+/* No global assumptions. Uses tokens/themes if present, with safe fallbacks. */
+
+.header{
   position: sticky;
   top: 0;
   z-index: 60;
-  padding: 10px 10px 0;
-  pointer-events: none; /* kun inner klikbar */
+
+  /* Glass surface */
+  background: var(--glassBg, rgba(10,14,18,.72));
+  border-bottom: 1px solid var(--glassLine, rgba(255,255,255,.10));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+
+  /* Shadow tuned for both themes via tokens if available */
+  box-shadow: var(--shadow-1, 0 12px 34px rgba(0,0,0,.18));
 }
 
-.inner {
-  pointer-events: auto;
-  height: 56px;
-  max-width: 1120px;
+/* Main row */
+.inner{
+  height: 54px;
+  max-width: var(--maxw, 1120px);
   margin: 0 auto;
   padding: 0 12px;
 
@@ -19,137 +28,130 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-
-  border-radius: 22px;
-  background: var(--glassBg, rgba(10, 14, 18, 0.72));
-  border: 1px solid var(--glassLine, rgba(255, 255, 255, 0.10));
-  box-shadow: var(--shadow-2, 0 16px 44px rgba(0, 0, 0, 0.42));
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
 }
 
-.brand {
+/* Brand */
+.brand{
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   text-decoration: none;
-  color: var(--ink, rgba(255, 255, 255, 0.92));
-  min-width: 120px;
+  color: var(--ink, rgba(255,255,255,.92));
+  min-width: 0;
 }
 
-.logoWrap {
+.logoWrap{
   width: 30px;
   height: 30px;
   border-radius: 12px;
   display: grid;
   place-items: center;
 
-  background: color-mix(in srgb, var(--ink, rgba(255,255,255,.9)) 6%, transparent);
-  border: 1px solid color-mix(in srgb, var(--ink, rgba(255,255,255,.9)) 10%, transparent);
+  background: color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 10%, transparent);
 }
 
-.logo {
-  opacity: 0.95;
+.logo{
+  width: 18px;
+  height: 18px;
 }
 
-.word {
+.word{
   font-size: 15px;
-  font-weight: 780;
-  letter-spacing: -0.01em;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
 }
 
-/* Desktop nav hidden on mobile */
-.nav {
-  display: none;
-  min-width: 0;
-}
+/* Desktop nav hidden by default (mobile uses bottomnav) */
+.nav{ display:none; }
 
-/* Right area */
-.right {
-  display: flex;
-  align-items: center;
+/* Right actions (always visible) */
+.right{
+  display:flex;
+  align-items:center;
   gap: 10px;
 }
 
-/* Mobile quick pills */
-.mobileQuick {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.quickPill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 38px;
-  padding: 0 12px;
-  border-radius: 999px;
-
-  text-decoration: none;
-  color: color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 86%, transparent);
-  font-size: 13px;
-  font-weight: 650;
-
-  background: color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 6%, transparent);
-  border: 1px solid color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 12%, transparent);
-}
-
-.quickActive {
+/* Icon button */
+.iconBtn{
+  text-decoration:none;
   color: var(--ink, rgba(255,255,255,.92));
-  background: color-mix(in srgb, var(--accent, #6ee7b7) 14%, transparent);
-  border-color: color-mix(in srgb, var(--accent, #6ee7b7) 20%, transparent);
-}
-
-/* Me/Login pill */
-.mePill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width: 40px;
   height: 40px;
-  padding: 0 12px;
-  border-radius: 999px;
-
-  text-decoration: none;
-  color: color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 88%, transparent);
-  font-size: 13px;
-  font-weight: 700;
+  border-radius: 14px;
 
   background: color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 6%, transparent);
-  border: 1px solid color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 10%, transparent);
+
+  transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
 }
 
-.meActive {
-  color: var(--ink, rgba(255,255,255,.92));
-  background: color-mix(in srgb, var(--accent, #6ee7b7) 14%, transparent);
-  border-color: color-mix(in srgb, var(--accent, #6ee7b7) 20%, transparent);
+.iconBtn:active{ transform: scale(.98); }
+
+@media (hover:hover){
+  .iconBtn:hover{
+    background: color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 8%, transparent);
+    border-color: color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 14%, transparent);
+  }
 }
 
-.toggleWrap {
-  display: inline-flex;
-  align-items: center;
+.iconWrap{
+  width: 22px;
+  height: 22px;
+  display:grid;
+  place-items:center;
 }
 
-/* Desktop upgrade */
-@media (min-width: 820px) {
-  .inner {
-    height: 64px;
-    padding: 0 16px;
+.icon{
+  width: 22px;
+  height: 22px;
+}
+
+/* Theme toggle wrapper so it aligns nicely even if ThemeToggle has its own size */
+.themeWrap{
+  display:flex;
+  align-items:center;
+}
+
+/* Optional mobile hint row: very subtle, avoids “clutter” */
+.mobileHint{
+  display:flex;
+  justify-content:center;
+  padding: 0 12px 8px;
+}
+
+.hintText{
+  font-size: 11px;
+  letter-spacing: 0.01em;
+  color: color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 55%, transparent);
+  opacity: .8;
+}
+
+/* Desktop breakpoint: show segmented nav, remove hint */
+@media (min-width: 900px){
+  .inner{
+    height: 62px;
+    padding: 0 18px;
   }
 
-  .mobileQuick {
-    display: none;
-  }
+  .mobileHint{ display:none; }
 
-  .nav {
-    display: flex;
-    justify-content: center;
+  .nav{
+    display:flex;
+    align-items:center;
+    justify-content:center;
     flex: 1;
+    min-width: 0;
   }
 
-  .segment {
-    display: grid;
-    grid-auto-flow: column;
+  /* Segmented control */
+  .segment{
+    display:flex;
+    align-items:center;
     gap: 6px;
 
     padding: 6px;
@@ -159,44 +161,42 @@
     border: 1px solid color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 10%, transparent);
   }
 
-  .segItem {
-    height: 40px;
-    padding: 0 14px;
-    border-radius: 999px;
-
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-
-    text-decoration: none;
+  .segItem{
+    text-decoration:none;
+    color: color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 78%, transparent);
     font-size: 13px;
     font-weight: 700;
-    letter-spacing: -0.005em;
+    padding: 10px 12px;
+    border-radius: 999px;
+    line-height: 1;
 
-    color: color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 78%, transparent);
-    transition: background 120ms ease, color 120ms ease, transform 120ms ease, border-color 120ms ease;
+    transition: background 120ms ease, color 120ms ease, transform 120ms ease;
   }
 
-  .segItem:hover {
-    color: color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 92%, transparent);
-    background: color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 7%, transparent);
+  @media (hover:hover){
+    .segItem:hover{
+      color: var(--ink, rgba(255,255,255,.92));
+      background: color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 8%, transparent);
+    }
   }
 
-  .segActive {
+  .segItem:active{ transform: scale(.99); }
+
+  .segActive{
     color: var(--ink, rgba(255,255,255,.92));
-    background: color-mix(in srgb, var(--accent, #6ee7b7) 14%, transparent);
+    background: color-mix(in srgb, var(--accent, #6ee7b7) 20%, transparent);
     border: 1px solid color-mix(in srgb, var(--accent, #6ee7b7) 22%, transparent);
-    box-shadow: 0 10px 26px color-mix(in srgb, var(--accent, #6ee7b7) 10%, transparent);
-  }
-
-  .segActive:hover {
-    transform: translateY(-0.5px);
   }
 }
 
-/* iOS safe area for header padding top */
-@supports (padding: max(0px)) {
-  .header {
-    padding-top: max(10px, env(safe-area-inset-top));
-  }
+/* Ultra small phones: keep it tight */
+@media (max-width: 360px){
+  .inner{ padding: 0 10px; }
+  .word{ font-size: 14px; }
+  .iconBtn{ width: 38px; height: 38px; border-radius: 13px; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce){
+  .iconBtn, .segItem{ transition: none !important; }
 }
