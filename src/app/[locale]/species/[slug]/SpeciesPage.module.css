@@ -20,7 +20,7 @@
 
   padding-inline: clamp(14px, 4vw, 26px);
   padding-top: clamp(10px, 2.6vw, 18px);
-  padding-bottom: calc(var(--bottom-nav-h, 72px) + env(safe-area-inset-bottom) + 18px);
+  padding-bottom: calc(var(--bottom-nav-h, 72px) + env(safe-area-inset-bottom) + 22px);
 
   display: grid;
   gap: clamp(12px, 2.8vw, 18px);
@@ -64,8 +64,8 @@
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
 
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(10px);  /* før 14px */
+  -webkit-backdrop-filter: blur(10px);
 }
 
 /* ===== Header ===== */
@@ -122,7 +122,7 @@
   gap: 8px;
 
   min-height: 36px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   border-radius: 999px;
 
   background: color-mix(in srgb, var(--c-card) 78%, transparent);
@@ -130,7 +130,7 @@
   box-shadow: 0 12px 34px rgba(0, 0, 0, 0.16);
 
   color: color-mix(in srgb, var(--c-ink) 84%, transparent);
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1;
   white-space: nowrap;
 }
