@@ -8,14 +8,16 @@ import styles from "./BottomNav.module.css";
 
 type Locale = string;
 
+type Key = "season" | "species" | "scan" | "guides" | "map";
+
 type NavItem = {
-  key: "feed" | "season" | "log" | "map" | "me";
+  key: Key;
   label: string;
   href: string;
-  icon: "feed" | "season" | "log" | "map" | "me" | "login";
+  icon: Key;
 };
 
-function Icon({ kind }: { kind: NavItem["icon"] }) {
+function Icon({ kind }: { kind: Key }) {
   const common = {
     className: styles.icon,
     viewBox: "0 0 24 24",
@@ -31,18 +33,78 @@ function Icon({ kind }: { kind: NavItem["icon"] }) {
           stroke="currentColor"
           strokeWidth="1.8"
         />
+        <path
+          d="M12 6.5v12"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          opacity="0.7"
+        />
       </svg>
     );
 
-  if (kind === "log")
+  if (kind === "species")
     return (
       <svg {...common}>
         <path
-          d="M6 7h12M6 12h12M6 17h8"
+          d="M10.5 12.2c-2.4-2.4-2.7-6.2-.7-8.2 2-2 5.8-1.7 8.2.7 2.2 2.2 2.6 5.7 1 7.9"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.8"
           strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M9.5 13.2c-2.2 2.2-4.2 4.1-5.1 5.8"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+        <path
+          d="M14.8 14.8 20 20"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+        <path
+          d="M16.8 12.8a3.6 3.6 0 1 1-5.1-5.1"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          opacity="0.75"
+          strokeLinecap="round"
+        />
+      </svg>
+    );
+
+  if (kind === "guides")
+    return (
+      <svg {...common}>
+        <path
+          d="M7 5.5h9.5A2.5 2.5 0 0 1 19 8v12.5H8.8A2.8 2.8 0 0 0 6 23V8A2.5 2.5 0 0 1 8.5 5.5Z"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M8.5 8.5H17"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          opacity="0.75"
+        />
+        <path
+          d="M8.5 11.5H16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          opacity="0.6"
         />
       </svg>
     );
@@ -57,52 +119,32 @@ function Icon({ kind }: { kind: NavItem["icon"] }) {
           strokeWidth="1.8"
           strokeLinejoin="round"
         />
-      </svg>
-    );
-
-  if (kind === "me")
-    return (
-      <svg {...common}>
         <path
-          d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm7 9a7 7 0 0 0-14 0"
+          d="M9 4v14M15 6v14"
           fill="none"
           stroke="currentColor"
-          strokeWidth="1.8"
+          strokeWidth="1.6"
           strokeLinecap="round"
+          opacity="0.7"
         />
       </svg>
     );
 
-  if (kind === "login")
-    return (
-      <svg {...common}>
-        <path
-          d="M10 7V6a2 2 0 0 1 2-2h7v16h-7a2 2 0 0 1-2-2v-1"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-        />
-        <path
-          d="M12 12H4m0 0 3-3M4 12l3 3"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    );
-
-  // feed (default)
+  // scan (default)
   return (
     <svg {...common}>
       <path
-        d="M5 7h14M5 12h14M5 17h10"
+        d="M9 6h6l1.2 2H20a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3.8L9 6Z"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.8"
-        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M12 17a3 3 0 1 0-3-3 3 3 0 0 0 3 3Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
       />
     </svg>
   );
@@ -111,29 +153,20 @@ function Icon({ kind }: { kind: NavItem["icon"] }) {
 function isActivePath(pathname: string | null, href: string) {
   if (!pathname) return false;
   if (href.endsWith("/")) href = href.slice(0, -1);
-
-  // root feed: match både /{locale} og /{locale}/
-  if (href.split("/").filter(Boolean).length === 1) {
-    const a = href;
-    return pathname === a || pathname === `${a}/`;
-  }
-
   return pathname === href || pathname.startsWith(href + "/");
 }
 
 export function BottomNav({ locale, user }: { locale: Locale; user: User | null }) {
   const pathname = usePathname();
 
-  const meHref = user ? `/${locale}/me` : `/${locale}/login`;
-  const meLabel = user ? "Me" : "Login";
-  const meIcon: NavItem["icon"] = user ? "me" : "login";
+  const dk = locale === "dk";
 
   const items: NavItem[] = [
-    { key: "feed", label: "Feed", href: `/${locale}`, icon: "feed" },
-    { key: "season", label: "Season", href: `/${locale}/season`, icon: "season" },
-    { key: "log", label: "Log", href: `/${locale}/log`, icon: "log" },
-    { key: "map", label: locale === "dk" ? "Kort" : "Map", href: `/${locale}/map`, icon: "map" },
-    { key: "me", label: meLabel, href: meHref, icon: meIcon },
+    { key: "season", label: dk ? "Sæson" : "Season", href: `/${locale}/season`, icon: "season" },
+    { key: "species", label: dk ? "Arter" : "Species", href: `/${locale}/species`, icon: "species" },
+    { key: "scan", label: dk ? "Scan" : "Scan", href: `/${locale}/scan`, icon: "scan" },
+    { key: "guides", label: dk ? "Guides" : "Guides", href: `/${locale}/guides`, icon: "guides" },
+    { key: "map", label: dk ? "Kort" : "Map", href: `/${locale}/map`, icon: "map" },
   ];
 
   return (
@@ -145,12 +178,19 @@ export function BottomNav({ locale, user }: { locale: Locale; user: User | null 
       <div className={styles.inner}>
         {items.map((it) => {
           const active = isActivePath(pathname, it.href);
+          const isScan = it.key === "scan";
 
           return (
             <Link
               key={it.key}
               href={it.href}
-              className={[styles.item, active ? styles.itemActive : ""].join(" ")}
+              className={[
+                styles.item,
+                active ? styles.itemActive : "",
+                isScan ? styles.itemScan : "",
+              ].join(" ")}
+              data-key={it.key}
+              data-active={active ? "true" : "false"}
               aria-current={active ? "page" : undefined}
             >
               <span className={styles.icoWrap} aria-hidden="true">
