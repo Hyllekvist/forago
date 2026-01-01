@@ -14,57 +14,57 @@
 .inner {
   pointer-events: auto;
   width: min(560px, calc(100% - 18px));
-  border-radius: 20px;
-  padding: 8px;
+  border-radius: 22px;
+  padding: 10px;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 6px;
+  gap: 8px;
 
   background: var(--bnav-bg);
   border: 1px solid var(--bnav-border);
   box-shadow: var(--bnav-shadow);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
-/* Variant: guest vs authed (du ønskede “to overlays”) */
+/* Variant: guest vs authed */
 .nav[data-variant="authed"] .inner {
-  --bnav-bg: color-mix(in srgb, var(--card) 78%, transparent);
-  --bnav-border: color-mix(in srgb, var(--ink) 12%, transparent);
-  --bnav-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
-  --bnav-pill: color-mix(in srgb, var(--accent) 26%, transparent);
+  --bnav-bg: color-mix(in srgb, var(--bnav-bg, rgba(0,0,0,.6)) 100%, transparent);
+  --bnav-border: var(--bnav-border, rgba(255,255,255,.10));
+  --bnav-shadow: var(--bnav-shadow, 0 18px 50px rgba(0, 0, 0, 0.35));
+  --bnav-pill: var(--bnav-active-pill, rgba(255,255,255,.06));
 }
 
 .nav[data-variant="guest"] .inner {
-  --bnav-bg: color-mix(in srgb, var(--card) 86%, transparent);
-  --bnav-border: color-mix(in srgb, var(--ink) 10%, transparent);
-  --bnav-shadow: 0 14px 42px rgba(0, 0, 0, 0.26);
-  --bnav-pill: color-mix(in srgb, var(--accent) 18%, transparent);
+  --bnav-bg: color-mix(in srgb, var(--bnav-bg, rgba(0,0,0,.65)) 100%, transparent);
+  --bnav-border: var(--bnav-border, rgba(255,255,255,.10));
+  --bnav-shadow: var(--bnav-shadow, 0 14px 42px rgba(0, 0, 0, 0.26));
+  --bnav-pill: var(--bnav-active-pill, rgba(255,255,255,.05));
 }
 
 .item {
   text-decoration: none;
-  color: color-mix(in srgb, var(--ink) 78%, transparent);
-  border-radius: 16px;
-  padding: 8px 8px 7px; /* lavere højde */
+  color: color-mix(in srgb, var(--bnav-ink, rgba(255,255,255,.85)) 92%, transparent);
+  border-radius: 18px;
+  padding: 8px 8px 7px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: 52px;
+  min-height: 54px;
 
-  transition: transform 120ms ease, background 120ms ease, color 120ms ease;
+  transition: transform 120ms ease, background 120ms ease, color 120ms ease, box-shadow 120ms ease;
 }
 
 .item:active {
-  transform: scale(0.98);
+  transform: scale(0.985);
 }
 
 .icoWrap {
-  width: 34px;
-  height: 34px;
-  border-radius: 13px;
+  width: 36px;
+  height: 36px;
+  border-radius: 14px;
   display: grid;
   place-items: center;
 }
@@ -78,17 +78,63 @@
   font-size: 11px;
   line-height: 1;
   letter-spacing: 0.01em;
-  opacity: 0.95;
+  opacity: 0.96;
 }
 
 .itemActive {
-  color: var(--ink);
+  color: var(--bnav-active-ink, rgba(255,255,255,.95));
   background: var(--bnav-pill);
 }
 
+/* ===== Scan: center CTA ===== */
+.itemScan {
+  position: relative;
+  transform: translateY(-6px);
+  border-radius: 20px;
+  min-height: 62px;
+  box-shadow: 0 14px 34px rgba(0,0,0,.22);
+}
+
+.itemScan .icoWrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 16px;
+}
+
+/* “Ring” + subtle glow bagved */
+.itemScan::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border-radius: 18px;
+  background:
+    radial-gradient(120px 60px at 50% 10%, color-mix(in srgb, var(--accent, #6ee7b7) 18%, transparent), transparent 70%),
+    radial-gradient(120px 60px at 50% 120%, color-mix(in srgb, var(--accent, #6ee7b7) 10%, transparent), transparent 70%);
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.itemScan {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent, #6ee7b7) 45%, transparent),
+    color-mix(in srgb, var(--accent, #6ee7b7) 22%, transparent)
+  );
+  border: 1px solid color-mix(in srgb, var(--accent, #6ee7b7) 35%, transparent);
+}
+
+.itemScan.itemActive {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent, #6ee7b7) 55%, transparent),
+    color-mix(in srgb, var(--accent, #6ee7b7) 28%, transparent)
+  );
+  box-shadow: 0 18px 50px color-mix(in srgb, var(--accent, #6ee7b7) 18%, rgba(0,0,0,.22));
+}
+
 .itemActive .icoWrap {
-  background: color-mix(in srgb, var(--accent) 30%, transparent);
-  box-shadow: 0 10px 30px color-mix(in srgb, var(--accent) 18%, transparent);
+  background: color-mix(in srgb, var(--accent, #6ee7b7) 22%, transparent);
+  box-shadow: 0 10px 26px color-mix(in srgb, var(--accent, #6ee7b7) 14%, transparent);
 }
 
 /* iOS safe area */
@@ -101,5 +147,6 @@
 /* Small phones */
 @media (max-width: 360px) {
   .label { font-size: 10px; }
-  .item { min-height: 50px; }
+  .item { min-height: 52px; }
+  .itemScan { min-height: 60px; }
 }
