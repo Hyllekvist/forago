@@ -1,4 +1,4 @@
-// src/app/[locale]/species/[slug]/page.tsx 
+// src/app/[locale]/species/[slug]/page.tsx
 import { notFound } from "next/navigation";
 import Script from "next/script";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -25,8 +25,36 @@ function isInSeason(month: number, from: number, to: number) {
   return month >= from || month <= to;
 }
 function monthName(locale: Locale, m: number) {
-  const dk = ["", "januar", "februar", "marts", "april", "maj", "juni", "juli", "august", "september", "oktober", "november", "december"];
-  const en = ["", "january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+  const dk = [
+    "",
+    "januar",
+    "februar",
+    "marts",
+    "april",
+    "maj",
+    "juni",
+    "juli",
+    "august",
+    "september",
+    "oktober",
+    "november",
+    "december",
+  ];
+  const en = [
+    "",
+    "january",
+    "february",
+    "march",
+    "april",
+    "may",
+    "june",
+    "july",
+    "august",
+    "september",
+    "october",
+    "november",
+    "december",
+  ];
   return (locale === "dk" ? dk : en)[m] ?? String(m);
 }
 function seasonLabel(locale: Locale, from: number, to: number) {
@@ -47,33 +75,60 @@ function fmtCompact(n: number) {
   return new Intl.NumberFormat("da-DK", { notation: "compact" }).format(n);
 }
 
-function pickCues(text: string | null | undefined, locale: Locale) {
-  const fallback =
-    locale === "dk"
-      ? [
-          "Start med helhedsformen: hat, stok og basis.",
-          "Tjek undersiden: lameller/porelag + farve.",
-          "Sammenlign altid med forvekslinger før du spiser noget.",
-        ]
-      : [
-          "Start with the overall shape: cap, stem and base.",
-          "Check the underside: gills/pores and color.",
-          "Always compare with look-alikes before consuming anything.",
-        ];
+/**
+ * Confidence in DB can be:
+ * - 0..1 (ratio)
+ * - 0..100 (percent)
+ * We normalize to 0..1.
+ */
+function normalizeConfidence(conf: unknown): number | null {
+  const x = Number(conf);
+  if (!Number.isFinite(x)) return null;
+  if (x <= 0) return 0;
+  if (x <= 1) return x;
+  if (x <= 100) return x / 100;
+  // if someone stored "8000" etc, clamp hard
+  return 1;
+}
 
-  const raw = (text ?? "").trim();
-  if (!raw) return fallback;
+function formatPercent01(x01: number) {
+  const pct = Math.round(x01 * 100);
+  return `${pct}%`;
+}
 
-  const parts = raw
-    .replace(/\r/g, "")
-    .split(/\n+|•|- /g)
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .flatMap((s) => (s.length > 140 ? s.split(/\. +/g).map((x) => x.trim()).filter(Boolean) : [s]))
-    .filter((s) => s.length >= 12)
-    .slice(0, 3);
+// Render multiline text nicely and strip raw "\n" artifacts.
+function SmartText({ text }: { text?: string | null }) {
+  const raw = (text ?? "").replace(/\r/g, "").trim();
+  if (!raw) return null;
 
-  return parts.length ? parts : fallback;
+  const lines = raw
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  // bullets are lines starting with "- "
+  const bullets: string[] = [];
+  const paragraphs: string[] = [];
+
+  for (const line of lines) {
+    if (line.startsWith("- ")) bullets.push(line.replace(/^-+\s*/, ""));
+    else paragraphs.push(line);
+  }
+
+  return (
+    <>
+      {paragraphs.map((p, i) => (
+        <p key={`p-${i}`}>{p}</p>
+      ))}
+      {bullets.length > 0 ? (
+        <ul className={styles.list}>
+          {bullets.map((b, i) => (
+            <li key={`b-${i}`}>{b}</li>
+          ))}
+        </ul>
+      ) : null}
+    </>
+  );
 }
 
 type SpeciesRow = {
@@ -88,6 +143,9 @@ type SpeciesRow = {
   danger_level: number;
 };
 
+type IdFeature = { icon?: string; title?: string; text?: string };
+type IdCallout = { tone?: "warn" | "info" | "ok"; title?: string; text?: string };
+
 type TrRow = {
   common_name: string | null;
   short_description: string | null;
@@ -96,14 +154,28 @@ type TrRow = {
   usage_notes: string | null;
   safety_notes: string | null;
   updated_at: string | null;
+  id_features: IdFeature[] | null;
+  id_callouts: IdCallout[] | null;
 };
 
-export async function generateMetadata({ params }: { params: { locale: string; slug: string } }) {
+function safeArray<T>(v: unknown): T[] {
+  return Array.isArray(v) ? (v as T[]) : [];
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { locale: string; slug: string };
+}) {
   const { locale: locParam, slug } = params;
   if (!isLocale(locParam)) return { title: "Forago" };
 
   const supabase = await supabaseServer();
-  const { data: sp } = await supabase.from("species").select("id, slug").eq("slug", slug).maybeSingle();
+  const { data: sp } = await supabase
+    .from("species")
+    .select("id, slug")
+    .eq("slug", slug)
+    .maybeSingle();
   if (!sp) return { title: "Forago" };
 
   const { data: tr } = await supabase
@@ -121,10 +193,18 @@ export async function generateMetadata({ params }: { params: { locale: string; s
       ? `Lær at genkende og bruge ${name}. Sæson, forvekslinger og sikkerhed.`
       : `Learn how to identify and use ${name}. Season, look-alikes and safety.`);
 
-  return { title, description, alternates: { canonical: `/${locParam}/species/${slug}` } };
+  return {
+    title,
+    description,
+    alternates: { canonical: `/${locParam}/species/${slug}` },
+  };
 }
 
-export default async function SpeciesPage({ params }: { params: { locale: string; slug: string } }) {
+export default async function SpeciesPage({
+  params,
+}: {
+  params: { locale: string; slug: string };
+}) {
   const { locale: locParam, slug } = params;
   if (!isLocale(locParam)) return notFound();
   const locale = locParam;
@@ -135,7 +215,9 @@ export default async function SpeciesPage({ params }: { params: { locale: string
 
   const { data: sp, error: spErr } = await supabase
     .from("species")
-    .select("id, slug, primary_group, scientific_name, created_at, image_path, image_updated_at, is_poisonous, danger_level")
+    .select(
+      "id, slug, primary_group, scientific_name, created_at, image_path, image_updated_at, is_poisonous, danger_level"
+    )
     .eq("slug", slug)
     .maybeSingle();
 
@@ -145,7 +227,9 @@ export default async function SpeciesPage({ params }: { params: { locale: string
 
   const { data: tr, error: trErr } = await supabase
     .from("species_translations")
-    .select("common_name, short_description, identification, lookalikes, usage_notes, safety_notes, updated_at")
+    .select(
+      "common_name, short_description, identification, lookalikes, usage_notes, safety_notes, updated_at, id_features, id_callouts"
+    )
     .eq("species_id", species.id)
     .eq("locale", locale)
     .maybeSingle();
@@ -169,26 +253,35 @@ export default async function SpeciesPage({ params }: { params: { locale: string
 
   const from = (seasonRow?.month_from as number | undefined) ?? undefined;
   const to = (seasonRow?.month_to as number | undefined) ?? undefined;
-  const conf = (seasonRow?.confidence as number | undefined) ?? null;
+  const conf01 = normalizeConfidence(seasonRow?.confidence);
 
   const inSeasonNow = from && to ? isInSeason(month, from, to) : false;
-  const seasonText = from && to ? seasonLabel(locale, from, to) : locale === "dk" ? "ukendt" : "unknown";
+  const seasonText =
+    from && to ? seasonLabel(locale, from, to) : locale === "dk" ? "ukendt" : "unknown";
 
   const imageUrl =
     species.image_path
-      ? supabase.storage.from("species").getPublicUrl(species.image_path).data.publicUrl +
+      ? supabase.storage
+          .from("species")
+          .getPublicUrl(species.image_path).data.publicUrl +
         `?v=${encodeURIComponent(String(species.image_updated_at ?? species.created_at))}`
       : null;
 
   let totalFinds = 0;
   let finds30d = 0;
-  const statsRes = await supabase.rpc("species_find_stats", { p_species_id: species.id });
+  const statsRes = await supabase.rpc("species_find_stats", {
+    p_species_id: species.id,
+  });
   if (!statsRes.error && Array.isArray(statsRes.data) && statsRes.data[0]) {
     totalFinds = Number(statsRes.data[0].total_finds ?? 0);
     finds30d = Number(statsRes.data[0].finds_30d ?? 0);
   }
 
-  const danger = species.is_poisonous || (t?.safety_notes?.toLowerCase().includes("gift") ?? false);
+  const danger =
+    species.is_poisonous ||
+    (t?.safety_notes?.toLowerCase().includes("gift") ?? false) ||
+    (t?.id_callouts?.some((c) => (c?.tone ?? "") === "warn") ?? false);
+
   const dangerLabel =
     locale === "dk"
       ? species.danger_level >= 2
@@ -203,7 +296,13 @@ export default async function SpeciesPage({ params }: { params: { locale: string
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
-      { "@type": "WebPage", "@id": canonical, url: canonical, name: `${name} — Forago`, inLanguage: locale },
+      {
+        "@type": "WebPage",
+        "@id": canonical,
+        url: canonical,
+        name: `${name} — Forago`,
+        inLanguage: locale,
+      },
       {
         "@type": "Article",
         headline: name,
@@ -217,8 +316,13 @@ export default async function SpeciesPage({ params }: { params: { locale: string
     ],
   };
 
-  const cues = pickCues(t?.identification, locale);
-  const sections = danger ? (["safety", "lookalikes", "identification", "use"] as const) : (["identification", "lookalikes", "use", "safety"] as const);
+  // Quick ID should be structured (id_features). Fallback to short_description/identification.
+  const features = safeArray<IdFeature>(t?.id_features).slice(0, 6);
+  const callouts = safeArray<IdCallout>(t?.id_callouts).slice(0, 6);
+
+  const sections = danger
+    ? (["safety", "lookalikes", "identification", "use"] as const)
+    : (["identification", "lookalikes", "use", "safety"] as const);
 
   return (
     <main className={styles.page}>
@@ -227,10 +331,8 @@ export default async function SpeciesPage({ params }: { params: { locale: string
       </Script>
 
       <div className={styles.shell}>
-        {/* BILLEDE (cover) – ingen badges ovenpå billedet */}
         <FieldHero imageUrl={imageUrl} alt={name} />
 
-        {/* SHEET */}
         <section className={styles.sheet}>
           <header className={styles.header}>
             <h1 className={styles.title}>{name}</h1>
@@ -247,14 +349,28 @@ export default async function SpeciesPage({ params }: { params: { locale: string
 
             <div className={styles.metaRow}>
               {danger ? (
-                <span className={`${styles.metaChip} ${styles.metaChipDanger}`}>☠️ {dangerLabel}</span>
+                <span className={`${styles.metaChip} ${styles.metaChipDanger}`}>
+                  ☠️ {dangerLabel}
+                </span>
               ) : (
-                <span className={styles.metaChip}>{locale === "dk" ? "Ikke giftig" : "Not toxic"}</span>
+                <span className={styles.metaChip}>
+                  {locale === "dk" ? "Ikke giftig" : "Not toxic"}
+                </span>
               )}
 
-              <span className={`${styles.metaChip} ${inSeasonNow ? styles.metaChipGood : styles.metaChipWarn}`}>
-                {inSeasonNow ? (locale === "dk" ? "I sæson" : "In season") : locale === "dk" ? "Ikke i sæson" : "Out of season"}
-                {typeof conf === "number" ? ` · ${Math.round(conf * 100)}%` : ""}
+              <span
+                className={`${styles.metaChip} ${
+                  inSeasonNow ? styles.metaChipGood : styles.metaChipWarn
+                }`}
+              >
+                {inSeasonNow
+                  ? locale === "dk"
+                    ? "I sæson"
+                    : "In season"
+                  : locale === "dk"
+                  ? "Ikke i sæson"
+                  : "Out of season"}
+                {typeof conf01 === "number" ? ` · ${formatPercent01(conf01)}` : ""}
               </span>
 
               <span className={styles.metaChip}>
@@ -273,21 +389,64 @@ export default async function SpeciesPage({ params }: { params: { locale: string
                 <div className={styles.kpiValue}>{fmtCompact(finds30d)}</div>
               </div>
             </div>
+
+            {/* Optional: top callouts (especially for toxic species) */}
+            {callouts.length ? (
+              <div className={styles.callouts}>
+                {callouts.slice(0, 2).map((c, i) => (
+                  <div
+                    key={i}
+                    className={`${styles.callout} ${
+                      c.tone === "warn"
+                        ? styles.calloutWarn
+                        : c.tone === "ok"
+                        ? styles.calloutOk
+                        : styles.calloutInfo
+                    }`}
+                  >
+                    {c.title ? <div className={styles.calloutTitle}>{c.title}</div> : null}
+                    {c.text ? <div className={styles.calloutText}>{c.text}</div> : null}
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </header>
 
           <div className={styles.sections}>
-            {/* Hurtig identifikation */}
-            <section className={styles.section} aria-label={locale === "dk" ? "Hurtig identifikation" : "Quick identification"}>
-              <h2 className={styles.sectionTitle}>{locale === "dk" ? "Hurtig identifikation" : "Quick identification"}</h2>
-              <p className={styles.sectionSub}>{locale === "dk" ? "Brug dette som tjekliste i marken." : "Use this as a field checklist."}</p>
+            {/* Hurtig identifikation (from structured features) */}
+            <section
+              className={styles.section}
+              aria-label={locale === "dk" ? "Hurtig identifikation" : "Quick identification"}
+            >
+              <h2 className={styles.sectionTitle}>
+                {locale === "dk" ? "Hurtig identifikation" : "Quick identification"}
+              </h2>
+              <p className={styles.sectionSub}>
+                {locale === "dk" ? "Brug dette som tjekliste i marken." : "Use this as a field checklist."}
+              </p>
 
               <div className={styles.checklist}>
-                {cues.map((c, i) => (
-                  <div key={i} className={styles.check}>
+                {features.length ? (
+                  features.map((f, i) => (
+                    <div key={i} className={styles.check}>
+                      <span className={styles.bullet} aria-hidden="true" />
+                      <div className={styles.checkText}>
+                        <strong>{f.title ?? ""}</strong>
+                        {f.text ? `: ${f.text}` : ""}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  // fallback if features missing
+                  <div className={styles.check}>
                     <span className={styles.bullet} aria-hidden="true" />
-                    <p className={styles.checkText}>{c}</p>
+                    <p className={styles.checkText}>
+                      {locale === "dk"
+                        ? "Tilføj id_features i species_translations for en perfekt tjekliste."
+                        : "Add id_features in species_translations for a proper checklist."}
+                    </p>
                   </div>
-                ))}
+                )}
               </div>
             </section>
 
@@ -296,11 +455,19 @@ export default async function SpeciesPage({ params }: { params: { locale: string
               if (key === "identification") {
                 return (
                   <section key={key} id="identification" className={styles.section}>
-                    <h2 className={styles.sectionTitle}>{locale === "dk" ? "Identifikation" : "Identification"}</h2>
+                    <h2 className={styles.sectionTitle}>
+                      {locale === "dk" ? "Identifikation" : "Identification"}
+                    </h2>
                     {t?.identification ? (
-                      <div className={styles.paragraph}><p>{t.identification}</p></div>
+                      <div className={styles.paragraph}>
+                        <SmartText text={t.identification} />
+                      </div>
                     ) : (
-                      <p className={styles.sectionSub}>{locale === "dk" ? "Tilføj identification i species_translations." : "Add identification in species_translations."}</p>
+                      <p className={styles.sectionSub}>
+                        {locale === "dk"
+                          ? "Tilføj identification i species_translations."
+                          : "Add identification in species_translations."}
+                      </p>
                     )}
                   </section>
                 );
@@ -309,11 +476,21 @@ export default async function SpeciesPage({ params }: { params: { locale: string
               if (key === "lookalikes") {
                 return (
                   <section key={key} id="lookalikes" className={styles.section}>
-                    <h2 className={styles.sectionTitle}>{locale === "dk" ? "Forvekslinger" : "Look-alikes"}</h2>
+                    <h2 className={styles.sectionTitle}>
+                      {locale === "dk" ? "Forvekslinger" : "Look-alikes"}
+                    </h2>
                     {t?.lookalikes ? (
-                      <div className={styles.callout}><p className={styles.calloutText}>{t.lookalikes}</p></div>
+                      <div className={styles.callout}>
+                        <div className={styles.calloutText}>
+                          <SmartText text={t.lookalikes} />
+                        </div>
+                      </div>
                     ) : (
-                      <p className={styles.sectionSub}>{locale === "dk" ? "Tilføj lookalikes (SEO-guld)." : "Add look-alikes (SEO gold)."}</p>
+                      <p className={styles.sectionSub}>
+                        {locale === "dk"
+                          ? "Tilføj lookalikes (SEO-guld)."
+                          : "Add look-alikes (SEO gold)."}
+                      </p>
                     )}
                   </section>
                 );
@@ -324,9 +501,13 @@ export default async function SpeciesPage({ params }: { params: { locale: string
                   <section key={key} id="use" className={styles.section}>
                     <h2 className={styles.sectionTitle}>{locale === "dk" ? "Brug" : "Use"}</h2>
                     {t?.usage_notes ? (
-                      <div className={styles.paragraph}><p>{t.usage_notes}</p></div>
+                      <div className={styles.paragraph}>
+                        <SmartText text={t.usage_notes} />
+                      </div>
                     ) : (
-                      <p className={styles.sectionSub}>{locale === "dk" ? "Tilføj usage_notes." : "Add usage_notes."}</p>
+                      <p className={styles.sectionSub}>
+                        {locale === "dk" ? "Tilføj usage_notes." : "Add usage_notes."}
+                      </p>
                     )}
                   </section>
                 );
@@ -336,9 +517,17 @@ export default async function SpeciesPage({ params }: { params: { locale: string
                 <section key={key} id="safety" className={styles.section}>
                   <h2 className={styles.sectionTitle}>{locale === "dk" ? "Sikkerhed" : "Safety"}</h2>
                   {t?.safety_notes ? (
-                    <div className={styles.callout}><p className={styles.calloutText}>{t.safety_notes}</p></div>
+                    <div className={styles.callout}>
+                      <div className={styles.calloutText}>
+                        <SmartText text={t.safety_notes} />
+                      </div>
+                    </div>
                   ) : (
-                    <p className={styles.sectionSub}>{locale === "dk" ? "Tilføj safety_notes. Vær tydelig." : "Add safety_notes. Be explicit."}</p>
+                    <p className={styles.sectionSub}>
+                      {locale === "dk"
+                        ? "Tilføj safety_notes. Vær tydelig."
+                        : "Add safety_notes. Be explicit."}
+                    </p>
                   )}
                 </section>
               );
@@ -346,7 +535,8 @@ export default async function SpeciesPage({ params }: { params: { locale: string
           </div>
 
           <div className={styles.footerMeta}>
-            {locale === "dk" ? "Sidst opdateret:" : "Last updated:"} {t?.updated_at ? new Date(t.updated_at).toISOString().slice(0, 10) : "—"}
+            {locale === "dk" ? "Sidst opdateret:" : "Last updated:"}{" "}
+            {t?.updated_at ? new Date(t.updated_at).toISOString().slice(0, 10) : "—"}
           </div>
         </section>
       </div>
