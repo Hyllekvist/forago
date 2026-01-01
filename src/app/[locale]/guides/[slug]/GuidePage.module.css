@@ -1,4 +1,4 @@
-.page{
+.page{ 
   width: 100%;
   padding: clamp(14px, 2vw, 22px);
   padding-bottom: 92px; /* space for bottom bar */
