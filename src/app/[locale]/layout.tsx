@@ -35,12 +35,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function LocaleLayout({ children, params }: Props) {
   const locale = params.locale;
-  if (!isLocale(locale)) return notFound();
+  if (!isLocale(locale)) notFound();
 
   // ✅ read-only client (never sets cookies)
   const supabase = supabaseServerReadOnly();
 
-  // ✅ avoid getUser() here (can trigger refresh -> cookies().set)
+  // ✅ do NOT use getUser() here (can try cookies().set in some setups)
   const { data } = await supabase.auth.getSession();
   const user = data?.session?.user ?? null;
 
