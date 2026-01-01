@@ -87,54 +87,44 @@
 }
 
 /* ===== Scan: center CTA ===== */
+/* ===== Scan: center CTA (subtil) ===== */
 .itemScan {
   position: relative;
-  transform: translateY(-6px);
-  border-radius: 20px;
-  min-height: 62px;
-  box-shadow: 0 14px 34px rgba(0,0,0,.22);
+  transform: translateY(-2px);            /* var -6px */
+  border-radius: 18px;
+  min-height: 56px;                      /* tæt på de andre */
+  box-shadow: 0 10px 26px rgba(0,0,0,.14);
+  background: transparent;               /* drop stor gradient-flade */
+  border: 1px solid color-mix(in srgb, var(--bnav-border, rgba(255,255,255,.10)) 70%, transparent);
 }
 
 .itemScan .icoWrap {
-  width: 40px;
-  height: 40px;
-  border-radius: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 14px;
 }
 
-/* “Ring” + subtle glow bagved */
+/* Subtil “ring” i stedet for blok */
 .itemScan::before {
   content: "";
   position: absolute;
   inset: 6px;
-  border-radius: 18px;
-  background:
-    radial-gradient(120px 60px at 50% 10%, color-mix(in srgb, var(--accent, #6ee7b7) 18%, transparent), transparent 70%),
-    radial-gradient(120px 60px at 50% 120%, color-mix(in srgb, var(--accent, #6ee7b7) 10%, transparent), transparent 70%);
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--accent, #6ee7b7) 28%, transparent);
+  background: color-mix(in srgb, var(--accent, #6ee7b7) 8%, transparent);
+  opacity: 0.95;
   pointer-events: none;
-  opacity: 0.9;
 }
 
-.itemScan {
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--accent, #6ee7b7) 45%, transparent),
-    color-mix(in srgb, var(--accent, #6ee7b7) 22%, transparent)
-  );
-  border: 1px solid color-mix(in srgb, var(--accent, #6ee7b7) 35%, transparent);
-}
-
+/* Active state: lidt mere, men stadig rolig */
 .itemScan.itemActive {
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--accent, #6ee7b7) 55%, transparent),
-    color-mix(in srgb, var(--accent, #6ee7b7) 28%, transparent)
-  );
-  box-shadow: 0 18px 50px color-mix(in srgb, var(--accent, #6ee7b7) 18%, rgba(0,0,0,.22));
+  border-color: color-mix(in srgb, var(--accent, #6ee7b7) 35%, transparent);
+  box-shadow: 0 14px 34px color-mix(in srgb, var(--accent, #6ee7b7) 12%, rgba(0,0,0,.14));
 }
 
-.itemActive .icoWrap {
-  background: color-mix(in srgb, var(--accent, #6ee7b7) 22%, transparent);
-  box-shadow: 0 10px 26px color-mix(in srgb, var(--accent, #6ee7b7) 14%, transparent);
+/* Sørg for at scan ikke får den generelle "itemActive" baggrund som en stor klods */
+.itemScan.itemActive {
+  background: transparent;
 }
 
 /* iOS safe area */
