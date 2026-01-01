@@ -242,11 +242,10 @@ export default async function SpeciesPage({
     finds30d = Number(statsRes.data[0].finds_30d ?? 0);
   }
 
-  const danger =
-    species.is_poisonous ||
-    (t?.safety_notes?.toLowerCase().includes("gift") ?? false) ||
-    (t?.id_callouts?.some((c) => (c?.tone ?? "") === "warn") ?? false);
-
+const danger =
+  species.is_poisonous ||
+  species.danger_level >= 1 ||
+  (t?.id_callouts?.some((c) => (c?.tone ?? "") === "warn") ?? false);
   const dangerLabel =
     locale === "dk"
       ? species.danger_level >= 2
