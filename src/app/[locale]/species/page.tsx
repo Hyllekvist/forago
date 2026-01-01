@@ -172,7 +172,7 @@ export default async function SpeciesIndexPage({
           </Link>
         </div>
 
-        <form className={styles.search} action="" method="get">
+<form className={styles.search} action={`/${locale}/species`} method="get">
           <input
             className={styles.searchInput}
             type="search"
