@@ -1,6 +1,6 @@
-// src/lib/supabase/server-readonly.ts 
-import { createServerClient } from "@supabase/ssr";
+// src/lib/supabase/server-readonly.ts
 import { cookies } from "next/headers";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
 export function supabaseServerReadOnly() {
   const store = cookies();
@@ -10,12 +10,12 @@ export function supabaseServerReadOnly() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name) {
+        get(name: string) {
           return store.get(name)?.value;
         },
         // RSC: må ikke sætte cookies her -> no-op
-        set() {},
-        remove() {},
+        set(_name: string, _value: string, _options: CookieOptions) {},
+        remove(_name: string, _options: CookieOptions) {},
       },
     }
   );
