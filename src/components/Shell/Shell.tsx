@@ -24,6 +24,11 @@ export default function Shell({
     document.documentElement.dataset.locale = locale;
   }, [locale]);
 
+  // ✅ optional: bruges hvis du har theme/bnav varianter bundet til data-auth
+  useEffect(() => {
+    document.documentElement.dataset.auth = user ? "in" : "out";
+  }, [user]);
+
   return (
     <div className={styles.shell}>
       <div className={styles.bg} aria-hidden="true" />
@@ -33,7 +38,6 @@ export default function Shell({
 
       <div className={styles.stack}>{children}</div>
 
-      {/* ✅ send user videre */}
       <BottomNav locale={locale} user={user} />
     </div>
   );
