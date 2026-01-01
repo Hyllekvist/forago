@@ -1,24 +1,21 @@
 // src/lib/supabase/server-readonly.ts
-import { createClient } from "@supabase/supabase-js";
+import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 export function supabaseServerReadOnly() {
-  const cookieStore = cookies();
+  const store = cookies();
 
-  return createClient(
+  return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-        detectSessionInUrl: false,
-      },
-      global: {
-        headers: {
-          // send auth cookie videre hvis den findes
-          Cookie: cookieStore.toString(),
+      cookies: {
+        get(name) {
+          return store.get(name)?.value;
         },
+        // RSC: må ikke sætte cookies her -> no-op
+        set() {},
+        remove() {},
       },
     }
   );
