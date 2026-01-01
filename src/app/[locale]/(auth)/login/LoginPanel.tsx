@@ -109,8 +109,8 @@ export function LoginPanel() {
           });
           if (error) throw error;
 
-          router.replace(returnTo);
-          router.refresh();
+        router.refresh();
+router.replace(returnTo);
           return;
         }
 
