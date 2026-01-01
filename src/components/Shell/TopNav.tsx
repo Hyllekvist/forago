@@ -28,14 +28,25 @@ function isActivePath(pathname: string, href: string) {
 }
 
 export function TopNav({ locale, user }: Props) {
-  const pathname = usePathname();
+  const pathname = usePathname() || "";
+  const dk = locale === "dk";
 
   const homeHref = `/${locale}`;
+
+  const seasonHref = `/${locale}/season`;
+  const speciesHref = `/${locale}/species`;
   const guidesHref = `/${locale}/guides`;
   const mapHref = `/${locale}/map`;
-  const authHref = user ? `/${locale}/me` : `/${locale}/login`;
 
-  const authLabel = user ? "Me" : locale === "dk" ? "Login" : "Login";
+  const authHref = user ? `/${locale}/me` : `/${locale}/login`;
+  const authLabel = user ? "Me" : dk ? "Login" : "Login";
+
+  const items = [
+    { key: "season", label: dk ? "Sæson" : "Season", href: seasonHref },
+    { key: "species", label: dk ? "Arter" : "Species", href: speciesHref },
+    { key: "guides", label: "Guides", href: guidesHref },
+    { key: "map", label: dk ? "Kort" : "Map", href: mapHref },
+  ] as const;
 
   return (
     <header className={styles.header} role="banner">
@@ -54,32 +65,62 @@ export function TopNav({ locale, user }: Props) {
           <span className={styles.word}>Forago</span>
         </Link>
 
-        {/* Desktop nav (skjules på mobil) */}
+        {/* Desktop segmented nav */}
         <nav className={styles.nav} aria-label="Primary">
-          <Link
-            className={[styles.link, isActivePath(pathname, guidesHref) ? styles.active : ""].join(" ")}
-            href={guidesHref}
-          >
-            Guides
-          </Link>
+          <div className={styles.segment}>
+            {items.map((it) => {
+              const active = isActivePath(pathname, it.href);
+              return (
+                <Link
+                  key={it.key}
+                  href={it.href}
+                  className={[styles.segItem, active ? styles.segActive : ""].join(" ")}
+                  aria-current={active ? "page" : undefined}
+                >
+                  {it.label}
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+
+        {/* Right actions (desktop + mobile) */}
+        <div className={styles.right}>
+          {/* Mobile quick links */}
+          <div className={styles.mobileQuick} aria-label="Quick links">
+            <Link
+              href={guidesHref}
+              className={[
+                styles.quickPill,
+                isActivePath(pathname, guidesHref) ? styles.quickActive : "",
+              ].join(" ")}
+            >
+              Guides
+            </Link>
+            <Link
+              href={mapHref}
+              className={[
+                styles.quickPill,
+                isActivePath(pathname, mapHref) ? styles.quickActive : "",
+              ].join(" ")}
+            >
+              {dk ? "Kort" : "Map"}
+            </Link>
+          </div>
 
           <Link
-            className={[styles.link, isActivePath(pathname, mapHref) ? styles.active : ""].join(" ")}
-            href={mapHref}
-          >
-            {locale === "dk" ? "Kort" : "Map"}
-          </Link>
-
-          <Link
-            className={[styles.link, isActivePath(pathname, authHref) ? styles.active : ""].join(" ")}
             href={authHref}
+            className={[styles.mePill, isActivePath(pathname, authHref) ? styles.meActive : ""].join(
+              " "
+            )}
+            aria-label={authLabel}
           >
             {authLabel}
           </Link>
-        </nav>
 
-        <div className={styles.right}>
-          <ThemeToggle />
+          <span className={styles.toggleWrap}>
+            <ThemeToggle />
+          </span>
         </div>
       </div>
     </header>
