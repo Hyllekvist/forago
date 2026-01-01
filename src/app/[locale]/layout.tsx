@@ -1,14 +1,11 @@
 // src/app/[locale]/layout.tsx
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { cookies } from "next/headers"; // ✅ add
 import { LOCALES, isLocale } from "@/lib/i18n/locales";
 import { buildHreflangs } from "@/lib/i18n/hreflang";
 import { baseMetadata } from "@/lib/seo/metadata";
 import { supabaseServerReadOnly } from "@/lib/supabase/server-readonly";
 import Shell from "@/components/Shell/Shell";
-
-export const dynamic = "force-dynamic"; // ✅ add
 
 type Props = {
   children: React.ReactNode;
@@ -38,9 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function LocaleLayout({ children, params }: Props) {
   const locale = params.locale;
-  if (!isLocale(locale)) notFound();
-
-  cookies(); // ✅ “touch” cookies so Next won't cache this layout
+  if (!isLocale(locale)) return notFound();
 
   const supabase = supabaseServerReadOnly();
   const { data } = await supabase.auth.getSession();
