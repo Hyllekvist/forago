@@ -77,9 +77,7 @@ export default async function SpeciesIndexPage({
   // Base species list
   let spQuery = supabase
     .from("species")
-    .select(
-      "id, slug, primary_group, image_path, image_updated_at, created_at, is_poisonous, danger_level"
-    )
+    .select("id, slug, primary_group, image_path, image_updated_at, created_at, is_poisonous, danger_level")
     .order("created_at", { ascending: false })
     .limit(120);
 
@@ -91,7 +89,7 @@ export default async function SpeciesIndexPage({
   const rows = (spRows ?? []) as SpeciesListRow[];
   const ids = rows.map((r) => r.id);
 
-  // Translations for names/descriptions (used for search + UI)
+  // Translations
   const { data: trRows, error: trErr } = await supabase
     .from("species_translations")
     .select("species_id, common_name, short_description")
@@ -109,9 +107,7 @@ export default async function SpeciesIndexPage({
     });
   }
 
-  // Optional: community stats (total finds + 30d) for each species via RPC if you have it.
-  // If you don't have this RPC, the UI will just show "—".
-  // Expected shape: [{ species_id, total_finds, finds_30d }]
+  // Optional: stats RPC
   let statsMap = new Map<string, { total: number; d30: number }>();
   const statsRes = await supabase.rpc("species_find_stats_many", {
     p_species_ids: ids,
@@ -127,7 +123,7 @@ export default async function SpeciesIndexPage({
     }
   }
 
-  // Client-side-ish filtering server-side (simple contains)
+  // Filter
   const filtered = q
     ? rows.filter((r) => {
         const tr = trMap.get(r.id);
@@ -147,7 +143,6 @@ export default async function SpeciesIndexPage({
   }
   const groupKeys = Array.from(groups.keys()).sort((a, b) => a.localeCompare(b));
 
-  // Helper to build public image url
   function imgUrl(r: SpeciesListRow) {
     if (!r.image_path) return null;
     return (
@@ -158,20 +153,21 @@ export default async function SpeciesIndexPage({
 
   return (
     <main className={styles.page}>
-      {/* Header */}
       <header className={styles.header}>
         <div className={styles.headerTop}>
-          <h1 className={styles.h1}>{locale === "dk" ? "Arter" : "Species"}</h1>
+          <div className={styles.titleBlock}>
+            <h1 className={styles.h1}>{locale === "dk" ? "Arter" : "Species"}</h1>
+            <p className={styles.sub}>
+              {locale === "dk"
+                ? "Find arter, lær kendetegn, og se community-intelligence."
+                : "Browse species, learn identification, and see community intelligence."}
+            </p>
+          </div>
+
           <Link className={styles.cta} href={`/${locale}/season`}>
             {locale === "dk" ? "Sæson" : "Season"}
           </Link>
         </div>
-
-        <p className={styles.sub}>
-          {locale === "dk"
-            ? "Find arter, lær kendetegn, og se community-intelligence."
-            : "Browse species, learn identification, and see community intelligence."}
-        </p>
 
         <form className={styles.search} action="" method="get">
           <input
@@ -182,6 +178,7 @@ export default async function SpeciesIndexPage({
             defaultValue={q}
             aria-label={locale === "dk" ? "Søg arter" : "Search species"}
           />
+
           <select
             className={styles.searchSelect}
             name="group"
@@ -194,6 +191,7 @@ export default async function SpeciesIndexPage({
             <option value="berry">{locale === "dk" ? "Bær" : "Berries"}</option>
             <option value="tree">{locale === "dk" ? "Træer" : "Trees"}</option>
           </select>
+
           <button className={styles.searchBtn} type="submit">
             {locale === "dk" ? "Søg" : "Search"}
           </button>
@@ -211,17 +209,12 @@ export default async function SpeciesIndexPage({
         </div>
       </header>
 
-      {/* List */}
       <section className={styles.list}>
         {filtered.length === 0 ? (
           <div className={styles.empty}>
-            <div className={styles.emptyTitle}>
-              {locale === "dk" ? "Ingen matches" : "No matches"}
-            </div>
+            <div className={styles.emptyTitle}>{locale === "dk" ? "Ingen matches" : "No matches"}</div>
             <div className={styles.emptySub}>
-              {locale === "dk"
-                ? "Prøv en anden søgning eller fjern filter."
-                : "Try another query or clear filters."}
+              {locale === "dk" ? "Prøv en anden søgning eller fjern filter." : "Try another query or clear filters."}
             </div>
           </div>
         ) : (
@@ -260,53 +253,43 @@ export default async function SpeciesIndexPage({
                     const d30 = stats ? stats.d30 : null;
 
                     return (
-                      <Link
-                        key={r.id}
-                        href={`/${locale}/species/${r.slug}`}
-                        className={styles.card}
-                      >
+                      <Link key={r.id} href={`/${locale}/species/${r.slug}`} className={styles.card}>
                         <div className={styles.media}>
                           {img ? (
                             <Image
                               src={img}
                               alt={name}
                               fill
-                              sizes="(max-width: 900px) 50vw, 25vw"
+                              sizes="(max-width: 900px) 92vw, (max-width: 1200px) 45vw, 30vw"
                               className={styles.img}
                             />
                           ) : (
                             <div className={styles.ph} aria-hidden="true" />
                           )}
 
+                          <div className={styles.mediaShade} aria-hidden="true" />
+
                           <div className={styles.badges}>
-                            {dangerLabel ? (
-                              <span className={styles.badgeDanger}>☠ {dangerLabel}</span>
-                            ) : null}
+                            {dangerLabel ? <span className={styles.badgeDanger}>☠ {dangerLabel}</span> : null}
                             <span className={styles.badge}>{g}</span>
                           </div>
                         </div>
 
                         <div className={styles.body}>
-                          <div className={styles.nameRow}>
-                            <div className={styles.name}>{name}</div>
-                          </div>
+                          <div className={styles.name}>{name}</div>
 
                           <div className={styles.desc}>
                             {desc || (locale === "dk" ? "Tilføj short_description." : "Add short_description.")}
                           </div>
 
-                          <div className={styles.stats}>
-                            <div className={styles.stat}>
+                          <div className={styles.statsRow}>
+                            <div className={styles.statPill}>
                               <span className={styles.statK}>{locale === "dk" ? "Fund" : "Finds"}</span>
-                              <span className={styles.statV}>
-                                {total === null ? "—" : fmtCompact(total, locale)}
-                              </span>
+                              <span className={styles.statV}>{total === null ? "—" : fmtCompact(total, locale)}</span>
                             </div>
-                            <div className={styles.stat}>
+                            <div className={styles.statPill}>
                               <span className={styles.statK}>30d</span>
-                              <span className={styles.statV}>
-                                {d30 === null ? "—" : fmtCompact(d30, locale)}
-                              </span>
+                              <span className={styles.statV}>{d30 === null ? "—" : fmtCompact(d30, locale)}</span>
                             </div>
                           </div>
                         </div>
