@@ -4,6 +4,8 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import styles from "./SpeciesIndex.module.css";
+import SearchBar from "./SearchBar";
+
 
 export const dynamic = "force-dynamic";
 export const revalidate = 3600;
@@ -172,7 +174,7 @@ export default async function SpeciesIndexPage({
           </Link>
         </div>
 
-<form className={styles.search} action={`/${locale}/species`} method="get">
+<SearchBar locale={locale} initialQ={q} initialGroup={group} />
           <input
             className={styles.searchInput}
             type="search"
