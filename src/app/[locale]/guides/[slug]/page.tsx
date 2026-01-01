@@ -167,45 +167,44 @@ export default async function GuideDetailPage({ params }: { params: Params }) {
 
       <article className={styles.article}>
         {body ? (
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            components={{
-              h2: ({ children, ...props }) => {
-                const text = Array.isArray(children) ? children.join("") : String(children ?? "");
-                const id = slugifyId(text);
-                return (
-                  <h2 id={id} className={styles.h2} {...props}>
-                    {children}
-                  </h2>
-                );
-              },
-              h3: ({ children, ...props }) => <h3 className={styles.h3} {...props}>{children}</h3>,
-              p: ({ children, ...props }) => <p className={styles.p} {...props}>{children}</p>,
-              ul: ({ children, ...props }) => <ul className={styles.ul} {...props}>{children}</ul>,
-              ol: ({ children, ...props }) => <ol className={styles.ol} {...props}>{children}</ol>,
-              li: ({ children, ...props }) => <li className={styles.li} {...props}>{children}</li>,
-              blockquote: ({ children, ...props }) => (
-                <blockquote className={styles.quote} {...props}>{children}</blockquote>
-              ),
-              a: ({ href, children, ...props }) => (
-                <a className={styles.a} href={href} target="_blank" rel="noreferrer" {...props}>
-                  {children}
-                </a>
-              ),
-              hr: () => <div className={styles.rule} />,
-              strong: ({ children }) => <strong className={styles.strong}>{children}</strong>,
-              code: ({ inline, children, ...props }) =>
-                inline ? (
-                  <code className={styles.codeInline} {...props}>{children}</code>
-                ) : (
-                  <pre className={styles.codeBlock}>
-                    <code {...props}>{children}</code>
-                  </pre>
-                ),
-            }}
-          >
-            {body}
-          </ReactMarkdown>
+   <ReactMarkdown
+  remarkPlugins={[remarkGfm]}
+  components={{
+    a: ({ href, children, ...props }) => (
+      <a href={href} target="_blank" rel="noreferrer" className={styles.a} {...props}>
+        {children}
+      </a>
+    ),
+    h2: ({ children }) => <h2 className={styles.h2}>{children}</h2>,
+    h3: ({ children }) => <h3 className={styles.h3}>{children}</h3>,
+    p: ({ children }) => <p className={styles.p}>{children}</p>,
+    ul: ({ children }) => <ul className={styles.ul}>{children}</ul>,
+    ol: ({ children }) => <ol className={styles.ol}>{children}</ol>,
+    li: ({ children }) => <li className={styles.li}>{children}</li>,
+    blockquote: ({ children }) => <blockquote className={styles.quote}>{children}</blockquote>,
+    hr: () => <div className={styles.rule} />,
+    strong: ({ children }) => <strong className={styles.strong}>{children}</strong>,
+    code: ({ className, children, ...props }) => {
+      const isBlock = Boolean(className); // blocks get language-* className
+      if (!isBlock) {
+        return (
+          <code className={styles.codeInline} {...props}>
+            {children}
+          </code>
+        );
+      }
+      return (
+        <pre className={styles.codeBlock}>
+          <code className={className ?? ""} {...props}>
+            {children}
+          </code>
+        </pre>
+      );
+    },
+  }}
+>
+  {body}
+</ReactMarkdown>
         ) : (
           <p className={styles.muted}>Ingen guide-tekst endnu.</p>
         )}
