@@ -1,17 +1,18 @@
+// src/middleware.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
+import { createServerClient } from "@supabase/ssr";
 import { DEFAULT_LOCALE, isLocale } from "@/lib/i18n/locales";
 
-const PUBLIC_FILE = /\.(.*)$/; 
+const PUBLIC_FILE = /\.(.*)$/;
 
 function isPublicPath(pathname: string, locale: string) {
-  // public pages
   return (
     pathname === `/${locale}` ||
     pathname.startsWith(`/${locale}/login`) ||
     pathname.startsWith(`/${locale}/reset`) ||
     pathname.startsWith(`/${locale}/callback`) ||
+    pathname.startsWith(`/${locale}/confirm`) ||
     pathname.startsWith(`/${locale}/public`)
   );
 }
@@ -19,7 +20,6 @@ function isPublicPath(pathname: string, locale: string) {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Ignore next internals + files + api
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
@@ -28,14 +28,12 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Root -> default locale
   if (pathname === "/") {
     const url = req.nextUrl.clone();
     url.pathname = `/${DEFAULT_LOCALE}`;
     return NextResponse.redirect(url);
   }
 
-  // Ensure locale prefix
   const seg = pathname.split("/")[1];
   if (!isLocale(seg)) {
     const url = req.nextUrl.clone();
@@ -45,14 +43,30 @@ export async function middleware(req: NextRequest) {
 
   const locale = seg;
 
-  // Public routes allowed
   if (isPublicPath(pathname, locale)) {
     return NextResponse.next();
   }
 
-  // Auth guard
+  // ✅ IMPORTANT: brug samme cookie-format som browser (@supabase/ssr)
   const res = NextResponse.next();
-  const supabase = createMiddlewareClient({ req, res });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name) {
+          return req.cookies.get(name)?.value;
+        },
+        set(name, value, options) {
+          res.cookies.set({ name, value, ...options });
+        },
+        remove(name, options) {
+          res.cookies.set({ name, value: "", ...options, maxAge: 0 });
+        },
+      },
+    }
+  );
 
   const {
     data: { session },
