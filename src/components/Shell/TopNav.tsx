@@ -1,3 +1,4 @@
+// src/components/Shell/TopNav.tsx
 "use client";
 
 import Link from "next/link";
@@ -19,32 +20,69 @@ function normalizePath(p?: string | null) {
   return noQuery;
 }
 
-function isActivePath(pathname: string, href: string) {
-  const p = normalizePath(pathname);
+function isActivePath(pathname: string | null, href: string) {
+  const p = normalizePath(pathname ?? "");
   const h = normalizePath(href);
   if (p === h) return true;
   if (h !== "/" && p.startsWith(h + "/")) return true;
   return false;
 }
 
+function IconUser({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm7 9a7 7 0 0 0-14 0"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function IconLogin({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M10 7V6a2 2 0 0 1 2-2h7v16h-7a2 2 0 0 1-2-2v-1"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path
+        d="M12 12H4m0 0 3-3M4 12l3 3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function TopNav({ locale, user }: Props) {
-  const pathname = usePathname() || "";
-  const dk = locale === "dk";
+  const pathname = usePathname();
 
   const homeHref = `/${locale}`;
-
-  const seasonHref = `/${locale}/season`;
-  const speciesHref = `/${locale}/species`;
   const guidesHref = `/${locale}/guides`;
+  const speciesHref = `/${locale}/species`;
+  const seasonHref = `/${locale}/season`;
   const mapHref = `/${locale}/map`;
 
   const authHref = user ? `/${locale}/me` : `/${locale}/login`;
-  const authLabel = user ? "Me" : dk ? "Login" : "Login";
+  const authLabel = user ? (locale === "dk" ? "Profil" : "Profile") : locale === "dk" ? "Login" : "Login";
+  const AuthIcon = user ? IconUser : IconLogin;
 
-  const items = [
+  const dk = locale === "dk";
+
+  const desktopItems = [
     { key: "season", label: dk ? "Sæson" : "Season", href: seasonHref },
     { key: "species", label: dk ? "Arter" : "Species", href: speciesHref },
-    { key: "guides", label: "Guides", href: guidesHref },
+    { key: "guides", label: dk ? "Guides" : "Guides", href: guidesHref },
     { key: "map", label: dk ? "Kort" : "Map", href: mapHref },
   ] as const;
 
@@ -53,22 +91,15 @@ export function TopNav({ locale, user }: Props) {
       <div className={styles.inner}>
         <Link className={styles.brand} href={homeHref} aria-label="Forago home">
           <span className={styles.logoWrap} aria-hidden="true">
-            <Image
-              src="/forago-mushroom.svg"
-              alt=""
-              width={18}
-              height={18}
-              className={styles.logo}
-              priority
-            />
+            <Image src="/forago-mushroom.svg" alt="" width={18} height={18} className={styles.logo} priority />
           </span>
           <span className={styles.word}>Forago</span>
         </Link>
 
-        {/* Desktop segmented nav */}
+        {/* Desktop: segmented primary nav */}
         <nav className={styles.nav} aria-label="Primary">
           <div className={styles.segment}>
-            {items.map((it) => {
+            {desktopItems.map((it) => {
               const active = isActivePath(pathname, it.href);
               return (
                 <Link
@@ -84,44 +115,25 @@ export function TopNav({ locale, user }: Props) {
           </div>
         </nav>
 
-        {/* Right actions (desktop + mobile) */}
-        <div className={styles.right}>
-          {/* Mobile quick links */}
-          <div className={styles.mobileQuick} aria-label="Quick links">
-            <Link
-              href={guidesHref}
-              className={[
-                styles.quickPill,
-                isActivePath(pathname, guidesHref) ? styles.quickActive : "",
-              ].join(" ")}
-            >
-              Guides
-            </Link>
-            <Link
-              href={mapHref}
-              className={[
-                styles.quickPill,
-                isActivePath(pathname, mapHref) ? styles.quickActive : "",
-              ].join(" ")}
-            >
-              {dk ? "Kort" : "Map"}
-            </Link>
-          </div>
-
-          <Link
-            href={authHref}
-            className={[styles.mePill, isActivePath(pathname, authHref) ? styles.meActive : ""].join(
-              " "
-            )}
-            aria-label={authLabel}
-          >
-            {authLabel}
+        {/* Right actions: always visible */}
+        <div className={styles.right} aria-label="Header actions">
+          <Link className={styles.iconBtn} href={authHref} aria-label={authLabel} title={authLabel}>
+            <span className={styles.iconWrap} aria-hidden="true">
+              <AuthIcon className={styles.icon} />
+            </span>
           </Link>
 
-          <span className={styles.toggleWrap}>
+          <div className={styles.themeWrap}>
             <ThemeToggle />
-          </span>
+          </div>
         </div>
+      </div>
+
+      {/* Mobile hint row (optional, super subtle) */}
+      <div className={styles.mobileHint} aria-hidden="true">
+        <span className={styles.hintText}>
+          {dk ? "Navigation ligger i bunden" : "Navigation is at the bottom"}
+        </span>
       </div>
     </header>
   );
