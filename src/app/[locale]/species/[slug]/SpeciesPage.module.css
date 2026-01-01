@@ -26,7 +26,7 @@
   gap: clamp(12px, 2.8vw, 18px);
 
   /* JUSTÉR KUN DEN HER for at trække sheet op/ned over billedet */
-  --sheet-overlap: 140px;
+  --sheet-overlap: 60px;
 
   /* Radii */
   --r-xl: 22px;
