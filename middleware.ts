@@ -1,7 +1,7 @@
 // src/middleware.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { DEFAULT_LOCALE, isLocale } from "@/lib/i18n/locales";
 
 const PUBLIC_FILE = /\.(.*)$/;
@@ -47,7 +47,6 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // ✅ IMPORTANT: brug samme cookie-format som browser (@supabase/ssr)
   const res = NextResponse.next();
 
   const supabase = createServerClient(
@@ -55,13 +54,13 @@ export async function middleware(req: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name) {
+        get(name: string) {
           return req.cookies.get(name)?.value;
         },
-        set(name, value, options) {
+        set(name: string, value: string, options: CookieOptions) {
           res.cookies.set({ name, value, ...options });
         },
-        remove(name, options) {
+        remove(name: string, options: CookieOptions) {
           res.cookies.set({ name, value: "", ...options, maxAge: 0 });
         },
       },
