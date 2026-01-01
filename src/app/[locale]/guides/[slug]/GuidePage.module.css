@@ -4,6 +4,22 @@
   padding-bottom: 92px; /* space for bottom bar */
 }
 
+/* Local “theme” variables (expects your app sets --fg/--card/--border/--accent etc. globally) */
+.page{
+  --g-fg: var(--fg, rgba(255,255,255,0.92));
+  --g-muted: color-mix(in oklab, var(--g-fg) 70%, transparent);
+
+  --g-border: var(--border, rgba(255,255,255,0.12));
+  --g-card: var(--card, rgba(255,255,255,0.06));
+
+  /* paper should be readable in both themes; if you already have --paper, use it */
+  --g-paper: var(--paper, rgba(0,0,0,0.26));
+
+  /* link/accent fallbacks */
+  --g-link: var(--link, rgba(180,240,255,0.95));
+  --g-accent: var(--accent, rgba(90,220,190,0.65));
+}
+
 .topbar{
   max-width: 980px;
   margin: 0 auto;
@@ -21,16 +37,13 @@
   padding: 10px 12px;
   border-radius: 999px;
   text-decoration:none;
-  color: var(--fg, rgba(255,255,255,0.9));
-  background: color-mix(in oklab, var(--card, rgba(255,255,255,0.06)) 88%, transparent);
-  border: 1px solid color-mix(in oklab, var(--border, rgba(255,255,255,0.12)) 82%, transparent);
+  color: var(--g-fg);
+  background: color-mix(in oklab, var(--g-card) 88%, transparent);
+  border: 1px solid color-mix(in oklab, var(--g-border) 82%, transparent);
   backdrop-filter: blur(10px);
 }
 
-.topActions{
-  display:flex;
-  gap: 10px;
-}
+.topActions{ display:flex; gap: 10px; }
 
 .pill{
   display:inline-flex;
@@ -39,9 +52,9 @@
   padding: 10px 12px;
   border-radius: 999px;
   text-decoration:none;
-  color: var(--fg, rgba(255,255,255,0.9));
-  background: color-mix(in oklab, var(--card, rgba(255,255,255,0.06)) 88%, transparent);
-  border: 1px solid color-mix(in oklab, var(--border, rgba(255,255,255,0.12)) 82%, transparent);
+  color: var(--g-fg);
+  background: color-mix(in oklab, var(--g-card) 88%, transparent);
+  border: 1px solid color-mix(in oklab, var(--g-border) 82%, transparent);
   backdrop-filter: blur(10px);
 }
 
@@ -54,13 +67,13 @@
   border-radius: 22px;
   padding: clamp(16px, 2.4vw, 22px);
   background:
-    radial-gradient(900px 420px at 18% 0%, rgba(255,255,255,0.10), transparent 60%),
-    radial-gradient(700px 380px at 100% 15%, rgba(255,255,255,0.08), transparent 62%),
-    color-mix(in oklab, var(--card, rgba(255,255,255,0.06)) 92%, transparent);
-  border: 1px solid color-mix(in oklab, var(--border, rgba(255,255,255,0.12)) 82%, transparent);
+    radial-gradient(900px 420px at 18% 0%, color-mix(in oklab, var(--g-fg) 14%, transparent), transparent 60%),
+    radial-gradient(700px 380px at 100% 15%, color-mix(in oklab, var(--g-fg) 10%, transparent), transparent 62%),
+    color-mix(in oklab, var(--g-card) 92%, transparent);
+  border: 1px solid color-mix(in oklab, var(--g-border) 82%, transparent);
   box-shadow:
     0 20px 60px rgba(0,0,0,0.22),
-    inset 0 1px 0 rgba(255,255,255,0.10);
+    inset 0 1px 0 color-mix(in oklab, var(--g-fg) 10%, transparent);
   backdrop-filter: blur(12px);
 }
 
@@ -77,22 +90,23 @@
   font-size: 12px;
   font-weight: 800;
   opacity: .85;
+  color: var(--g-fg);
 }
 
 .meta{
   font-size: 13px;
   opacity: .78;
+  color: var(--g-fg);
 }
 
-.dot{
-  opacity: .35;
-}
+.dot{ opacity: .35; color: var(--g-fg); }
 
 .h1{
   margin: 6px 0 10px;
   font-size: clamp(32px, 4.2vw, 46px);
   line-height: 1.06;
   letter-spacing: -0.02em;
+  color: var(--g-fg);
 }
 
 .excerpt{
@@ -101,6 +115,7 @@
   line-height: 1.5;
   opacity: .88;
   max-width: 68ch;
+  color: var(--g-fg);
 }
 
 .chips{
@@ -116,9 +131,9 @@
   padding: 10px 12px;
   border-radius: 999px;
   text-decoration:none;
-  color: var(--fg, rgba(255,255,255,0.92));
-  background: color-mix(in oklab, var(--card, rgba(255,255,255,0.06)) 86%, transparent);
-  border: 1px solid color-mix(in oklab, var(--border, rgba(255,255,255,0.12)) 78%, transparent);
+  color: var(--g-fg);
+  background: color-mix(in oklab, var(--g-card) 86%, transparent);
+  border: 1px solid color-mix(in oklab, var(--g-border) 78%, transparent);
 }
 
 .article{
@@ -126,17 +141,18 @@
   margin: 14px auto 0;
   border-radius: 22px;
   padding: clamp(16px, 2.6vw, 26px);
-  background: color-mix(in oklab, var(--paper, rgba(0,0,0,0.26)) 74%, transparent);
-  border: 1px solid color-mix(in oklab, var(--border, rgba(255,255,255,0.12)) 78%, transparent);
+  background: color-mix(in oklab, var(--g-paper) 74%, transparent);
+  border: 1px solid color-mix(in oklab, var(--g-border) 78%, transparent);
   box-shadow:
     0 18px 55px rgba(0,0,0,0.22),
-    inset 0 1px 0 rgba(255,255,255,0.08);
+    inset 0 1px 0 color-mix(in oklab, var(--g-fg) 8%, transparent);
+  color: var(--g-fg);
 }
 
 .rule{
   height: 1px;
   width: 100%;
-  background: color-mix(in oklab, var(--border, rgba(255,255,255,0.12)) 72%, transparent);
+  background: color-mix(in oklab, var(--g-border) 72%, transparent);
   margin: 18px 0;
 }
 
@@ -146,12 +162,14 @@
   font-size: clamp(20px, 2.4vw, 26px);
   line-height: 1.2;
   letter-spacing: -0.01em;
+  color: var(--g-fg);
 }
 
 .h3{
   margin: 18px 0 8px;
   font-size: 18px;
   line-height: 1.25;
+  color: var(--g-fg);
 }
 
 .p{
@@ -160,6 +178,7 @@
   line-height: 1.7;
   opacity: .92;
   max-width: 72ch;
+  color: var(--g-fg);
 }
 
 .ul, .ol{
@@ -175,28 +194,26 @@
 .quote{
   margin: 14px 0;
   padding: 14px 14px 14px 16px;
-  border-left: 3px solid color-mix(in oklab, var(--accent, rgba(255,255,255,0.35)) 70%, transparent);
-  background: color-mix(in oklab, var(--card, rgba(255,255,255,0.06)) 82%, transparent);
+  border-left: 3px solid color-mix(in oklab, var(--g-accent) 70%, transparent);
+  background: color-mix(in oklab, var(--g-card) 82%, transparent);
   border-radius: 14px;
 }
 
 .a{
-  color: color-mix(in oklab, var(--link, rgba(180,240,255,0.95)) 75%, white);
+  color: color-mix(in oklab, var(--g-link) 85%, white);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
-.strong{
-  font-weight: 800;
-}
+.strong{ font-weight: 800; }
 
 .codeInline{
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 0.92em;
   padding: 2px 6px;
   border-radius: 8px;
-  background: color-mix(in oklab, var(--card, rgba(255,255,255,0.08)) 86%, transparent);
-  border: 1px solid color-mix(in oklab, var(--border, rgba(255,255,255,0.12)) 75%, transparent);
+  background: color-mix(in oklab, var(--g-card) 86%, transparent);
+  border: 1px solid color-mix(in oklab, var(--g-border) 75%, transparent);
 }
 
 .codeBlock{
@@ -204,12 +221,13 @@
   padding: 14px;
   border-radius: 16px;
   overflow:auto;
-  background: color-mix(in oklab, var(--card, rgba(255,255,255,0.08)) 86%, transparent);
-  border: 1px solid color-mix(in oklab, var(--border, rgba(255,255,255,0.12)) 75%, transparent);
+  background: color-mix(in oklab, var(--g-card) 86%, transparent);
+  border: 1px solid color-mix(in oklab, var(--g-border) 75%, transparent);
 }
 
 .muted{
   opacity: .75;
+  color: var(--g-fg);
 }
 
 /* Bottom bar */
@@ -241,56 +259,20 @@
   padding: 12px 14px;
   border-radius: 999px;
   text-decoration:none;
-  border: 1px solid color-mix(in oklab, var(--border, rgba(255,255,255,0.12)) 78%, transparent);
+  border: 1px solid color-mix(in oklab, var(--g-border) 78%, transparent);
   backdrop-filter: blur(12px);
 }
 
 .bottomBtn{
-  color: var(--fg, rgba(255,255,255,0.9));
-  background: color-mix(in oklab, var(--card, rgba(255,255,255,0.06)) 90%, transparent);
+  color: var(--g-fg);
+  background: color-mix(in oklab, var(--g-card) 90%, transparent);
   margin-right: 10px;
 }
 
 .bottomBtnPrimary{
-  color: rgba(255,255,255,0.96);
+  color: color-mix(in oklab, var(--g-fg) 96%, white);
   background:
-    radial-gradient(120px 60px at 30% 0%, rgba(255,255,255,0.22), transparent 65%),
-    color-mix(in oklab, var(--accent, rgba(90,220,190,0.65)) 55%, rgba(0,0,0,0.2));
+    radial-gradient(120px 60px at 30% 0%, color-mix(in oklab, var(--g-fg) 22%, transparent), transparent 65%),
+    color-mix(in oklab, var(--g-accent) 55%, rgba(0,0,0,0.2));
   box-shadow: 0 16px 40px rgba(0,0,0,0.25);
-}
-
-/* Light mode robustness (no washed-out text) */
-:global(html[data-theme="light"]) .back,
-:global(html[data-theme="light"]) .pill,
-:global(html[data-theme="light"]) .chip{
-  color: rgba(10, 20, 18, 0.92);
-  background: rgba(255,255,255,0.72);
-  border-color: rgba(10,20,18,0.10);
-}
-
-:global(html[data-theme="light"]) .heroCard{
-  background:
-    radial-gradient(900px 420px at 18% 0%, rgba(0,0,0,0.06), transparent 60%),
-    radial-gradient(700px 380px at 100% 15%, rgba(0,0,0,0.04), transparent 62%),
-    rgba(255,255,255,0.78);
-  border-color: rgba(10,20,18,0.10);
-  box-shadow: 0 18px 55px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.6);
-}
-
-:global(html[data-theme="light"]) .article{
-  background: rgba(255,255,255,0.86);
-  border-color: rgba(10,20,18,0.10);
-  box-shadow: 0 16px 44px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.6);
-}
-
-:global(html[data-theme="light"]) .bottomBtn{
-  color: rgba(10,20,18,0.92);
-  background: rgba(255,255,255,0.78);
-  border-color: rgba(10,20,18,0.10);
-}
-
-:global(html[data-theme="light"]) .bottomBtnPrimary{
-  color: rgba(10,20,18,0.92);
-  background: rgba(180, 245, 230, 0.85);
-  border-color: rgba(10,20,18,0.10);
 }
