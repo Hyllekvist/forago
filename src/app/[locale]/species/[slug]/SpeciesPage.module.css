@@ -305,3 +305,57 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== Chips (meta) – mobile first ===== */
+.metaRow{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top: 8px;
+}
+
+.metaChip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+
+  padding: 8px 10px;          /* mindre */
+  border-radius: 999px;
+  font-size: 12px;            /* mindre */
+  line-height: 1;
+  white-space: nowrap;
+
+  background: var(--bnav-bg);          /* samme vibe som bundnav */
+  border: 1px solid var(--bnav-border);
+  box-shadow: var(--bnav-shadow);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+
+  color: color-mix(in srgb, var(--ink) 88%, transparent);
+}
+
+/* Danger / Success / Warning der matcher semantik */
+.metaChipDanger{
+  background: color-mix(in srgb, #ff3b30 18%, var(--bnav-bg));  /* rød tint */
+  border-color: color-mix(in srgb, #ff3b30 28%, var(--bnav-border));
+  color: color-mix(in srgb, var(--ink) 92%, transparent);
+}
+
+.metaChipGood{
+  background: color-mix(in srgb, #34c759 16%, var(--bnav-bg));  /* grøn */
+  border-color: color-mix(in srgb, #34c759 26%, var(--bnav-border));
+}
+
+.metaChipWarn{
+  background: color-mix(in srgb, #ff9f0a 18%, var(--bnav-bg));  /* amber */
+  border-color: color-mix(in srgb, #ff9f0a 28%, var(--bnav-border));
+}
+
+/* endnu mindre på små mobiler */
+@media (max-width: 390px){
+  .metaChip{
+    padding: 7px 9px;
+    font-size: 11px;
+    gap: 7px;
+  }
+}
