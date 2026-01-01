@@ -421,3 +421,48 @@
   .skelChip { width: 140px; height: 30px; }
   .skelChipSm { width: 96px; height: 30px; }
 }
+
+/* Rendered lists from SmartText */
+.list {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+  color: var(--strong);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.list li {
+  margin: 0;
+}
+
+/* Top callouts under header */
+.callouts {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.calloutTitle {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted2);
+  margin-bottom: 6px;
+}
+
+/* Tone variants (no hardcoded colors; just accent/ink mix) */
+.calloutWarn .calloutText {
+  background: color-mix(in srgb, var(--c-accent) 14%, var(--c-card));
+  border-color: color-mix(in srgb, var(--c-accent) 24%, var(--c-ink) 10%);
+}
+
+.calloutInfo .calloutText {
+  background: color-mix(in srgb, var(--c-ink) 6%, var(--c-card));
+  border-color: color-mix(in srgb, var(--c-ink) 14%, transparent);
+}
+
+.calloutOk .calloutText {
+  background: color-mix(in srgb, var(--c-accent) 10%, var(--c-card));
+  border-color: color-mix(in srgb, var(--c-accent) 18%, var(--c-ink) 10%);
+}
