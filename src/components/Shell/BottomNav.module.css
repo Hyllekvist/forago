@@ -29,22 +29,30 @@
 
 /* Variant: guest vs authed */
 .nav[data-variant="authed"] .inner {
-  --bnav-bg: color-mix(in srgb, var(--bnav-bg, rgba(0,0,0,.6)) 100%, transparent);
-  --bnav-border: var(--bnav-border, rgba(255,255,255,.10));
-  --bnav-shadow: var(--bnav-shadow, 0 18px 50px rgba(0, 0, 0, 0.35));
-  --bnav-pill: var(--bnav-active-pill, rgba(255,255,255,.06));
+  --_bg: var(--bnav-bg, rgba(10, 14, 18, 0.72));
+  --_border: var(--bnav-border, rgba(255, 255, 255, 0.10));
+  --_shadow: var(--bnav-shadow, 0 18px 50px rgba(0, 0, 0, 0.35));
+  --_pill: var(--bnav-active-pill, rgba(255, 255, 255, 0.07));
+  --_ico: var(--bnav-active-bg, rgba(255, 255, 255, 0.06));
+  background: var(--_bg);
+  border-color: var(--_border);
+  box-shadow: var(--_shadow);
 }
 
 .nav[data-variant="guest"] .inner {
-  --bnav-bg: color-mix(in srgb, var(--bnav-bg, rgba(0,0,0,.65)) 100%, transparent);
-  --bnav-border: var(--bnav-border, rgba(255,255,255,.10));
-  --bnav-shadow: var(--bnav-shadow, 0 14px 42px rgba(0, 0, 0, 0.26));
-  --bnav-pill: var(--bnav-active-pill, rgba(255,255,255,.05));
+  --_bg: var(--bnav-bg, rgba(10, 14, 18, 0.78));
+  --_border: var(--bnav-border, rgba(255, 255, 255, 0.12));
+  --_shadow: var(--bnav-shadow, 0 14px 42px rgba(0, 0, 0, 0.26));
+  --_pill: var(--bnav-active-pill, rgba(255, 255, 255, 0.06));
+  --_ico: var(--bnav-active-bg, rgba(255, 255, 255, 0.06));
+  background: var(--_bg);
+  border-color: var(--_border);
+  box-shadow: var(--_shadow);
 }
 
 .item {
   text-decoration: none;
-  color: color-mix(in srgb, var(--bnav-ink, rgba(255,255,255,.85)) 92%, transparent);
+  color: color-mix(in srgb, var(--bnav-ink, rgba(255, 255, 255, 0.88)) 92%, transparent);
   border-radius: 18px;
   padding: 8px 8px 7px;
   display: flex;
@@ -54,7 +62,12 @@
   gap: 6px;
   min-height: 54px;
 
-  transition: transform 120ms ease, background 120ms ease, color 120ms ease, box-shadow 120ms ease;
+  transition:
+    transform 120ms ease,
+    background 120ms ease,
+    color 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease;
 }
 
 .item:active {
@@ -67,6 +80,9 @@
   border-radius: 14px;
   display: grid;
   place-items: center;
+
+  background: transparent;
+  border: 1px solid transparent;
 }
 
 .icon {
@@ -78,53 +94,44 @@
   font-size: 11px;
   line-height: 1;
   letter-spacing: 0.01em;
-  opacity: 0.96;
+  opacity: 0.78; /* roligere baseline */
 }
 
+/* ONE active system (samme for alle) */
 .itemActive {
-  color: var(--bnav-active-ink, rgba(255,255,255,.95));
-  background: var(--bnav-pill);
+  color: var(--bnav-active-ink, rgba(255, 255, 255, 0.95));
+  background: var(--_pill, rgba(255, 255, 255, 0.06));
 }
 
-/* ===== Scan: center CTA ===== */
-/* ===== Scan: center CTA (subtil) ===== */
+.itemActive .icoWrap {
+  background: var(--_ico, rgba(255, 255, 255, 0.06));
+  border-color: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.itemActive .label {
+  opacity: 0.92;
+}
+
+/* ===== Scan: subtil lift + accent hint (ikke en “stor klods”) ===== */
 .itemScan {
-  position: relative;
-  transform: translateY(-2px);            /* var -6px */
-  border-radius: 18px;
-  min-height: 56px;                      /* tæt på de andre */
-  box-shadow: 0 10px 26px rgba(0,0,0,.14);
-  background: transparent;               /* drop stor gradient-flade */
-  border: 1px solid color-mix(in srgb, var(--bnav-border, rgba(255,255,255,.10)) 70%, transparent);
+  transform: translateY(-2px);
 }
 
-.itemScan .icoWrap {
-  width: 36px;
-  height: 36px;
-  border-radius: 14px;
-}
-
-/* Subtil “ring” i stedet for blok */
-.itemScan::before {
-  content: "";
-  position: absolute;
-  inset: 6px;
-  border-radius: 16px;
-  border: 1px solid color-mix(in srgb, var(--accent, #6ee7b7) 28%, transparent);
-  background: color-mix(in srgb, var(--accent, #6ee7b7) 8%, transparent);
-  opacity: 0.95;
-  pointer-events: none;
-}
-
-/* Active state: lidt mere, men stadig rolig */
 .itemScan.itemActive {
-  border-color: color-mix(in srgb, var(--accent, #6ee7b7) 35%, transparent);
-  box-shadow: 0 14px 34px color-mix(in srgb, var(--accent, #6ee7b7) 12%, rgba(0,0,0,.14));
+  /* stadig samme active baggrund som alle andre */
+  background: var(--_pill, rgba(255, 255, 255, 0.06));
 }
 
-/* Sørg for at scan ikke får den generelle "itemActive" baggrund som en stor klods */
-.itemScan.itemActive {
-  background: transparent;
+.itemScan.itemActive .icoWrap {
+  background: color-mix(in srgb, var(--accent, #6ee7b7) 16%, transparent);
+  border-color: color-mix(in srgb, var(--accent, #6ee7b7) 22%, transparent);
+}
+
+/* Hover (desktop) */
+@media (hover: hover) {
+  .item:hover {
+    background: color-mix(in srgb, var(--bnav-ink, rgba(255, 255, 255, 0.88)) 6%, transparent);
+  }
 }
 
 /* iOS safe area */
@@ -136,7 +143,10 @@
 
 /* Small phones */
 @media (max-width: 360px) {
-  .label { font-size: 10px; }
-  .item { min-height: 52px; }
-  .itemScan { min-height: 60px; }
+  .label {
+    font-size: 10px;
+  }
+  .item {
+    min-height: 52px;
+  }
 }
