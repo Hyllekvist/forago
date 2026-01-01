@@ -1,11 +1,4 @@
-/* SpeciesPage.module.css
-   Matcher src/app/[locale]/species/[slug]/page.tsx
-
-   Design-mål:
-   - Samme “glassy card” look som BottomNav (var(--card), var(--ink), var(--accent))
-   - Ingen hardcodede farver
-   - ÉT sted at justere sheet-højden: --sheet-overlap
-*/
+/* src/app/[locale]/species/[slug]/SpeciesPage.module.css */
 
 .page {
   width: 100%;
@@ -15,30 +8,26 @@
 /* ===== Layout wrapper ===== */
 .shell {
   width: 100%;
-  max-width: 1180px;
+  max-width: 1320px; /* ✅ større desktop */
   margin: 0 auto;
 
-  padding-inline: clamp(14px, 4vw, 26px);
+  padding-inline: clamp(14px, 4vw, 28px);
   padding-top: clamp(10px, 2.6vw, 18px);
   padding-bottom: calc(var(--bottom-nav-h, 72px) + env(safe-area-inset-bottom) + 22px);
 
   display: grid;
   gap: clamp(12px, 2.8vw, 18px);
 
-  /* JUSTÉR KUN DEN HER for at trække sheet op/ned over billedet */
-  --sheet-overlap: 50px;
+  --sheet-overlap: 56px;
 
-  /* Radii */
   --r-xl: 22px;
   --r-lg: 18px;
   --r-md: 14px;
 
-  /* Forago tokens */
   --c-card: var(--card);
   --c-ink: var(--ink);
   --c-accent: var(--accent);
 
-  /* Glass “base” (match BottomNav vibe) */
   --glass-bg: color-mix(in srgb, var(--c-card) 82%, transparent);
   --glass-border: color-mix(in srgb, var(--c-ink) 12%, transparent);
   --glass-shadow: 0 22px 70px rgba(0, 0, 0, 0.28);
@@ -51,14 +40,13 @@
   --muted2: color-mix(in srgb, var(--c-ink) 60%, transparent);
   --strong: color-mix(in srgb, var(--c-ink) 86%, transparent);
 
-  /* “bnav vibe” tokens (fallback hvis de ikke findes lokalt) */
   --bnav-bg: color-mix(in srgb, var(--c-card) 82%, transparent);
   --bnav-border: color-mix(in srgb, var(--c-ink) 12%, transparent);
   --bnav-shadow: 0 18px 50px rgba(0, 0, 0, 0.26);
   --bnav-pill: color-mix(in srgb, var(--c-accent) 18%, transparent);
 }
 
-/* ===== SHEET (overlapper hero) ===== */
+/* ===== SHEET ===== */
 .sheet {
   position: relative;
   margin-top: calc(-1 * var(--sheet-overlap));
@@ -72,6 +60,18 @@
 
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+
+  /* ✅ default: mobile/medium = one column */
+  display: block;
+}
+
+/* ===== SUMMARY (venstre) + CONTENT (højre) ===== */
+.summary {
+  /* mobile: bare en normal blok */
+}
+
+.content {
+  /* mobile: normal flow */
 }
 
 /* ===== Header ===== */
@@ -144,11 +144,6 @@
   white-space: nowrap;
 }
 
-/* Semantik uden hardcoded farver:
-   - Danger: accent stærkere + højere kontrast
-   - Good: accent medium
-   - Warn: ink/tone (neutral amber findes ikke som token)
-*/
 .metaChipDanger {
   background: color-mix(in srgb, var(--c-accent) 26%, var(--bnav-bg));
   border-color: color-mix(in srgb, var(--c-accent) 42%, var(--bnav-border));
@@ -167,7 +162,6 @@
   color: color-mix(in srgb, var(--c-ink) 90%, transparent);
 }
 
-/* endnu mindre på små mobiler */
 @media (max-width: 390px) {
   .metaChip {
     padding: 7px 9px;
@@ -214,29 +208,24 @@
   color: var(--c-ink);
 }
 
-/* ✅ Mobile: KPI bliver til “row” (label venstre, value højre) */
 @media (max-width: 640px) {
   .kpis {
     grid-template-columns: 1fr;
     gap: 10px;
   }
-
   .kpi {
     min-height: 52px;
     padding: 12px 14px;
-
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 14px;
   }
-
   .kpiLabel {
     margin: 0;
     font-size: 11px;
     letter-spacing: 0.06em;
   }
-
   .kpiValue {
     font-size: 20px;
     font-weight: 760;
@@ -251,7 +240,6 @@
   gap: 14px;
 }
 
-/* Section card */
 .section {
   border-radius: var(--r-xl);
   overflow: hidden;
@@ -278,7 +266,6 @@
   color: var(--muted);
 }
 
-/* Checklist */
 .checklist {
   padding: 0 16px 16px 16px;
   display: grid;
@@ -313,7 +300,6 @@
   color: var(--strong);
 }
 
-/* Paragraph blocks */
 .paragraph {
   padding: 0 16px 16px 16px;
 }
@@ -326,7 +312,6 @@
   white-space: pre-wrap;
 }
 
-/* Callouts (lookalikes/safety) */
 .callout {
   padding: 0 16px 16px 16px;
 }
@@ -345,7 +330,6 @@
   white-space: pre-wrap;
 }
 
-/* Footer meta */
 .footerMeta {
   padding: 12px clamp(16px, 4.2vw, 24px) clamp(18px, 4.2vw, 22px);
   color: var(--muted2);
@@ -353,90 +337,7 @@
   border-top: 1px solid color-mix(in srgb, var(--c-ink) 10%, transparent);
 }
 
-/* ===== Skeletons (brug disse i loading) ===== */
-
-.skel {
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--bnav-bg) 78%, transparent);
-  border: 1px solid var(--bnav-border);
-  box-shadow: var(--bnav-shadow);
-  position: relative;
-  overflow: hidden;
-}
-
-.skel::after {
-  content: "";
-  position: absolute;
-  inset: -40% -60%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    color-mix(in srgb, var(--c-ink) 10%, transparent),
-    transparent
-  );
-  transform: translateX(-30%);
-  animation: skelShimmer 1.2s ease-in-out infinite;
-}
-
-@keyframes skelShimmer {
-  0% { transform: translateX(-30%); }
-  100% { transform: translateX(60%); }
-}
-
-/* sizes */
-.skelTitle { height: 44px; width: min(520px, 92%); border-radius: 14px; }
-.skelSubline { height: 16px; width: min(520px, 78%); border-radius: 10px; }
-
-.skelChip { height: 32px; width: 160px; border-radius: 999px; }
-.skelChipSm { height: 32px; width: 110px; border-radius: 999px; }
-
-.skelKpiLabel { height: 12px; width: 80px; border-radius: 8px; }
-.skelKpiValue { height: 20px; width: 70px; border-radius: 10px; }
-
-.skelH2 { height: 18px; width: 220px; border-radius: 10px; }
-.skelP { height: 12px; width: 92%; border-radius: 8px; }
-
-.skelSectionHead {
-  padding: 16px 16px 8px;
-  display: grid;
-  gap: 10px;
-}
-
-.skelBlock {
-  padding: 0 16px 16px;
-  display: grid;
-  gap: 10px;
-}
-
-.skelFooter {
-  display: inline-block;
-  height: 12px;
-  width: 160px;
-  border-radius: 8px;
-}
-
-/* mobile tweaks */
-@media (max-width: 390px) {
-  .skelTitle { height: 40px; }
-  .skelChip { width: 140px; height: 30px; }
-  .skelChipSm { width: 96px; height: 30px; }
-}
-
-/* Rendered lists from SmartText */
-.list {
-  margin: 10px 0 0;
-  padding-left: 18px;
-  display: grid;
-  gap: 8px;
-  color: var(--strong);
-  font-size: 14px;
-  line-height: 1.6;
-}
-.list li {
-  margin: 0;
-}
-
-/* Top callouts under header */
+/* ===== Top callouts under header ===== */
 .callouts {
   display: grid;
   gap: 10px;
@@ -451,18 +352,106 @@
   margin-bottom: 6px;
 }
 
-/* Tone variants (no hardcoded colors; just accent/ink mix) */
 .calloutWarn .calloutText {
   background: color-mix(in srgb, var(--c-accent) 14%, var(--c-card));
   border-color: color-mix(in srgb, var(--c-accent) 24%, var(--c-ink) 10%);
 }
-
 .calloutInfo .calloutText {
   background: color-mix(in srgb, var(--c-ink) 6%, var(--c-card));
   border-color: color-mix(in srgb, var(--c-ink) 14%, transparent);
 }
-
 .calloutOk .calloutText {
   background: color-mix(in srgb, var(--c-accent) 10%, var(--c-card));
   border-color: color-mix(in srgb, var(--c-accent) 18%, var(--c-ink) 10%);
+}
+
+/* ===== TOC (desktop utility) ===== */
+.toc {
+  padding: 0 clamp(16px, 4.2vw, 24px) clamp(18px, 4.2vw, 22px);
+  display: none; /* mobile default */
+}
+
+.tocTitle {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted2);
+  margin: 8px 0 10px;
+}
+
+.tocLinks {
+  display: grid;
+  gap: 8px;
+}
+
+.tocLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+
+  background: color-mix(in srgb, var(--c-card) 84%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c-ink) 10%, transparent);
+
+  color: color-mix(in srgb, var(--c-ink) 90%, transparent);
+  text-decoration: none;
+}
+
+.tocLink:hover {
+  background: color-mix(in srgb, var(--c-accent) 10%, var(--c-card));
+  border-color: color-mix(in srgb, var(--c-accent) 16%, var(--c-ink) 10%);
+}
+
+.tocDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--c-ink) 55%, transparent);
+}
+
+/* ===== ✅ Desktop layout: 2 kolonner + sticky summary ===== */
+@media (min-width: 980px) {
+  .sheet {
+    display: grid;
+    grid-template-columns: minmax(320px, 420px) 1fr;
+    align-items: start;
+  }
+
+  .summary {
+    position: sticky;
+    top: 18px; /* spiller pænt med TopNav */
+    align-self: start;
+    border-right: 1px solid color-mix(in srgb, var(--c-ink) 10%, transparent);
+  }
+
+  .content {
+    min-width: 0;
+  }
+
+  .title {
+    font-size: clamp(44px, 3.2vw, 58px); /* ✅ mere desktop-hero typografi */
+    letter-spacing: -0.04em;
+  }
+
+  .kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .kpi {
+    min-height: 86px;
+  }
+
+  .sections {
+    padding-top: clamp(16px, 2vw, 22px);
+  }
+
+  .toc {
+    display: block;
+  }
+
+  /* Anchor scroll lidt pænere ift sticky */
+  .section {
+    scroll-margin-top: 96px;
+  }
 }
