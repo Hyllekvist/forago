@@ -441,3 +441,26 @@
   font-size: 12px;
   color: var(--muted2);
 }
+
+/* før: object-fit: cover; */
+.img { object-fit: contain; }
+
+/* gør rammen pæn, så siderne ikke bare bliver grå */
+.media{
+  background: radial-gradient(
+    120% 120% at 30% 10%,
+    color-mix(in srgb, var(--accent) 10%, transparent),
+    color-mix(in srgb, var(--card) 96%, transparent) 55%,
+    color-mix(in srgb, var(--card) 90%, transparent) 100%
+  );
+}
+
+/* shade kan være mildere når vi ikke “coverer” */
+.mediaShade{
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    color-mix(in srgb, var(--card) 12%, transparent) 60%,
+    color-mix(in srgb, var(--card) 26%, transparent) 100%
+  );
+}
