@@ -1,5 +1,5 @@
 /* src/app/[locale]/species/SpeciesIndex.module.css
-   Match: species index page.tsx
+   Match: species index page.tsx 
    Goals:
    - Stable background (ikke “udvasket/ulæseligt”)
    - Glassy cards som BottomNav (var(--card), var(--ink), var(--accent))
