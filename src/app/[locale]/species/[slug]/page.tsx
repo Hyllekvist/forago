@@ -320,10 +320,9 @@ export default async function SpeciesPage({
   const features = safeArray<IdFeature>(t?.id_features).slice(0, 6);
   const callouts = safeArray<IdCallout>(t?.id_callouts).slice(0, 6);
 
-  const sections = danger
-    ? (["safety", "lookalikes", "identification", "use"] as const)
-    : (["identification", "lookalikes", "use", "safety"] as const);
-
+const sections = danger
+  ? (["safety", "lookalikes", "identification", "notes"] as const)
+  : (["identification", "lookalikes", "use", "safety"] as const);
   return (
     <main className={styles.page}>
       <Script id="species-jsonld" type="application/ld+json">
@@ -451,87 +450,83 @@ export default async function SpeciesPage({
             </section>
 
             {/* Sektioner */}
-            {sections.map((key) => {
-              if (key === "identification") {
-                return (
-                  <section key={key} id="identification" className={styles.section}>
-                    <h2 className={styles.sectionTitle}>
-                      {locale === "dk" ? "Identifikation" : "Identification"}
-                    </h2>
-                    {t?.identification ? (
-                      <div className={styles.paragraph}>
-                        <SmartText text={t.identification} />
-                      </div>
-                    ) : (
-                      <p className={styles.sectionSub}>
-                        {locale === "dk"
-                          ? "Tilføj identification i species_translations."
-                          : "Add identification in species_translations."}
-                      </p>
-                    )}
-                  </section>
-                );
-              }
+{sections.map((key) => {
+  if (key === "identification") {
+    return (
+      <section key={key} id="identification" className={styles.section}>
+        <h2 className={styles.sectionTitle}>{locale === "dk" ? "Identifikation" : "Identification"}</h2>
+        {t?.identification ? (
+          <div className={styles.paragraph}><p>{t.identification}</p></div>
+        ) : (
+          <p className={styles.sectionSub}>
+            {locale === "dk" ? "Tilføj identification i species_translations." : "Add identification in species_translations."}
+          </p>
+        )}
+      </section>
+    );
+  }
 
-              if (key === "lookalikes") {
-                return (
-                  <section key={key} id="lookalikes" className={styles.section}>
-                    <h2 className={styles.sectionTitle}>
-                      {locale === "dk" ? "Forvekslinger" : "Look-alikes"}
-                    </h2>
-                    {t?.lookalikes ? (
-                      <div className={styles.callout}>
-                        <div className={styles.calloutText}>
-                          <SmartText text={t.lookalikes} />
-                        </div>
-                      </div>
-                    ) : (
-                      <p className={styles.sectionSub}>
-                        {locale === "dk"
-                          ? "Tilføj lookalikes (SEO-guld)."
-                          : "Add look-alikes (SEO gold)."}
-                      </p>
-                    )}
-                  </section>
-                );
-              }
+  if (key === "lookalikes") {
+    return (
+      <section key={key} id="lookalikes" className={styles.section}>
+        <h2 className={styles.sectionTitle}>{locale === "dk" ? "Forvekslinger" : "Look-alikes"}</h2>
+        {t?.lookalikes ? (
+          <div className={styles.callout}><p className={styles.calloutText}>{t.lookalikes}</p></div>
+        ) : (
+          <p className={styles.sectionSub}>
+            {locale === "dk" ? "Tilføj lookalikes (SEO-guld)." : "Add look-alikes (SEO gold)."}
+          </p>
+        )}
+      </section>
+    );
+  }
 
-              if (key === "use") {
-                return (
-                  <section key={key} id="use" className={styles.section}>
-                    <h2 className={styles.sectionTitle}>{locale === "dk" ? "Brug" : "Use"}</h2>
-                    {t?.usage_notes ? (
-                      <div className={styles.paragraph}>
-                        <SmartText text={t.usage_notes} />
-                      </div>
-                    ) : (
-                      <p className={styles.sectionSub}>
-                        {locale === "dk" ? "Tilføj usage_notes." : "Add usage_notes."}
-                      </p>
-                    )}
-                  </section>
-                );
-              }
+  if (key === "use") {
+    // ✅ Kun for ikke-giftige arter
+    return (
+      <section key={key} id="use" className={styles.section}>
+        <h2 className={styles.sectionTitle}>{locale === "dk" ? "Brug" : "Use"}</h2>
+        {t?.usage_notes ? (
+          <div className={styles.paragraph}><p>{t.usage_notes}</p></div>
+        ) : (
+          <p className={styles.sectionSub}>{locale === "dk" ? "Tilføj usage_notes." : "Add usage_notes."}</p>
+        )}
+      </section>
+    );
+  }
 
-              return (
-                <section key={key} id="safety" className={styles.section}>
-                  <h2 className={styles.sectionTitle}>{locale === "dk" ? "Sikkerhed" : "Safety"}</h2>
-                  {t?.safety_notes ? (
-                    <div className={styles.callout}>
-                      <div className={styles.calloutText}>
-                        <SmartText text={t.safety_notes} />
-                      </div>
-                    </div>
-                  ) : (
-                    <p className={styles.sectionSub}>
-                      {locale === "dk"
-                        ? "Tilføj safety_notes. Vær tydelig."
-                        : "Add safety_notes. Be explicit."}
-                    </p>
-                  )}
-                </section>
-              );
-            })}
+  if (key === "notes") {
+    // ✅ For giftige arter: vi viser "Bemærkninger" (tidl. brug)
+    return (
+      <section key={key} id="notes" className={styles.section}>
+        <h2 className={styles.sectionTitle}>{locale === "dk" ? "Bemærkninger" : "Notes"}</h2>
+        {t?.usage_notes ? (
+          <div className={styles.paragraph}><p>{t.usage_notes}</p></div>
+        ) : (
+          <p className={styles.sectionSub}>
+            {locale === "dk"
+              ? "Tilføj noter (fx foto, læring, lokalitets-hensyn)."
+              : "Add notes (photo, learning, location caution)."}
+          </p>
+        )}
+      </section>
+    );
+  }
+
+  // safety
+  return (
+    <section key={key} id="safety" className={styles.section}>
+      <h2 className={styles.sectionTitle}>{locale === "dk" ? "Sikkerhed" : "Safety"}</h2>
+      {t?.safety_notes ? (
+        <div className={styles.callout}><p className={styles.calloutText}>{t.safety_notes}</p></div>
+      ) : (
+        <p className={styles.sectionSub}>
+          {locale === "dk" ? "Tilføj safety_notes. Vær tydelig." : "Add safety_notes. Be explicit."}
+        </p>
+      )}
+    </section>
+  );
+})}
           </div>
 
           <div className={styles.footerMeta}>
