@@ -6,7 +6,6 @@ import { supabaseServer } from "@/lib/supabase/server";
 import styles from "./SpeciesIndex.module.css";
 import SearchBar from "./SearchBar";
 
-
 export const dynamic = "force-dynamic";
 export const revalidate = 3600;
 
@@ -74,15 +73,20 @@ export default async function SpeciesIndexPage({
   const groupRaw = searchParams?.group;
 
   const q = (Array.isArray(qRaw) ? qRaw[0] : qRaw ?? "").trim();
-  const group = (Array.isArray(groupRaw) ? groupRaw[0] : groupRaw ?? "").trim().toLowerCase();
+  const group = (Array.isArray(groupRaw) ? groupRaw[0] : groupRaw ?? "")
+    .trim()
+    .toLowerCase();
 
   const country = countryForLocale(locale);
 
   const supabase = await supabaseServer();
+
   // Base species list
   let spQuery = supabase
     .from("species")
-    .select("id, slug, primary_group, image_path, image_updated_at, created_at, is_poisonous, danger_level")
+    .select(
+      "id, slug, primary_group, image_path, image_updated_at, created_at, is_poisonous, danger_level"
+    )
     .order("created_at", { ascending: false })
     .limit(120);
 
@@ -94,7 +98,7 @@ export default async function SpeciesIndexPage({
   const rows = (spRows ?? []) as SpeciesListRow[];
   const ids = rows.map((r) => r.id);
 
-  // Translations
+  // Translations for names/descriptions
   const { data: trRows, error: trErr } = await supabase
     .from("species_translations")
     .select("species_id, common_name, short_description")
@@ -112,12 +116,13 @@ export default async function SpeciesIndexPage({
     });
   }
 
-  // Optional: stats RPC
-  let statsMap = new Map<string, { total: number; d30: number }>();
+  // Optional: stats RPC (safe if missing / errors)
+  const statsMap = new Map<string, { total: number; d30: number }>();
   const statsRes = await supabase.rpc("species_find_stats_many", {
     p_species_ids: ids,
     p_country: country,
   });
+
   if (!statsRes.error && Array.isArray(statsRes.data)) {
     for (const r of statsRes.data as any[]) {
       const sid = String(r.species_id);
@@ -128,7 +133,7 @@ export default async function SpeciesIndexPage({
     }
   }
 
-  // Filter
+  // Filter (server-side)
   const filtered = q
     ? rows.filter((r) => {
         const tr = trMap.get(r.id);
@@ -146,8 +151,11 @@ export default async function SpeciesIndexPage({
     const k = (r.primary_group || "other").toLowerCase();
     groups.set(k, [...(groups.get(k) ?? []), r]);
   }
-  const groupKeys = Array.from(groups.keys()).sort((a, b) => a.localeCompare(b));
+  const groupKeys = Array.from(groups.keys()).sort((a, b) =>
+    a.localeCompare(b)
+  );
 
+  // Helper: public image url
   function imgUrl(r: SpeciesListRow) {
     if (!r.image_path) return null;
     return (
@@ -158,6 +166,7 @@ export default async function SpeciesIndexPage({
 
   return (
     <main className={styles.page}>
+      {/* Header */}
       <header className={styles.header}>
         <div className={styles.headerTop}>
           <div className={styles.titleBlock}>
@@ -174,33 +183,8 @@ export default async function SpeciesIndexPage({
           </Link>
         </div>
 
-<SearchBar locale={locale} initialQ={q} initialGroup={group} />
-          <input
-            className={styles.searchInput}
-            type="search"
-            name="q"
-            placeholder={locale === "dk" ? "Søg (fx rørhat, brændenælde…)" : "Search (e.g., chanterelle…)"}
-            defaultValue={q}
-            aria-label={locale === "dk" ? "Søg arter" : "Search species"}
-          />
-
-          <select
-            className={styles.searchSelect}
-            name="group"
-            defaultValue={group}
-            aria-label={locale === "dk" ? "Vælg gruppe" : "Choose group"}
-          >
-            <option value="">{locale === "dk" ? "Alle grupper" : "All groups"}</option>
-            <option value="fungus">{locale === "dk" ? "Svampe" : "Fungi"}</option>
-            <option value="plant">{locale === "dk" ? "Planter" : "Plants"}</option>
-            <option value="berry">{locale === "dk" ? "Bær" : "Berries"}</option>
-            <option value="tree">{locale === "dk" ? "Træer" : "Trees"}</option>
-          </select>
-
-          <button className={styles.searchBtn} type="submit">
-            {locale === "dk" ? "Søg" : "Search"}
-          </button>
-        </form>
+        {/* Live search (client) */}
+        <SearchBar locale={locale} initialQ={q} initialGroup={group} />
 
         <div className={styles.kpis}>
           <div className={styles.kpi}>
@@ -214,12 +198,17 @@ export default async function SpeciesIndexPage({
         </div>
       </header>
 
+      {/* List */}
       <section className={styles.list}>
         {filtered.length === 0 ? (
           <div className={styles.empty}>
-            <div className={styles.emptyTitle}>{locale === "dk" ? "Ingen matches" : "No matches"}</div>
+            <div className={styles.emptyTitle}>
+              {locale === "dk" ? "Ingen matches" : "No matches"}
+            </div>
             <div className={styles.emptySub}>
-              {locale === "dk" ? "Prøv en anden søgning eller fjern filter." : "Try another query or clear filters."}
+              {locale === "dk"
+                ? "Prøv en anden søgning eller fjern filter."
+                : "Try another query or clear filters."}
             </div>
           </div>
         ) : (
@@ -229,7 +218,9 @@ export default async function SpeciesIndexPage({
               <div key={g} className={styles.groupBlock}>
                 <div className={styles.groupHead}>
                   <h2 className={styles.h2}>{groupLabel(locale, g)}</h2>
-                  <div className={styles.groupCount}>{fmtCompact(items.length, locale)}</div>
+                  <div className={styles.groupCount}>
+                    {fmtCompact(items.length, locale)}
+                  </div>
                 </div>
 
                 <div className={styles.grid}>
@@ -258,21 +249,43 @@ export default async function SpeciesIndexPage({
                     const d30 = stats ? stats.d30 : null;
 
                     return (
-                      <Link key={r.id} href={`/${locale}/species/${r.slug}`} className={styles.card}>
-<div className={styles.media}>
-  {img ? (
-    <>
-      <Image src={img} alt="" fill sizes="(max-width: 900px) 50vw, 25vw" className={styles.bgImg} />
-      <Image src={img} alt={name} fill sizes="(max-width: 900px) 50vw, 25vw" className={styles.img} />
-    </>
-  ) : (
-    <div className={styles.ph} aria-hidden="true" />
-  )}
+                      <Link
+                        key={r.id}
+                        href={`/${locale}/species/${r.slug}`}
+                        className={styles.card}
+                      >
+                        <div className={styles.media}>
+                          {img ? (
+                            <>
+                              {/* blurred background fill */}
+                              <Image
+                                src={img}
+                                alt=""
+                                fill
+                                sizes="(max-width: 900px) 50vw, 25vw"
+                                className={styles.bgImg}
+                              />
+                              {/* foreground image */}
+                              <Image
+                                src={img}
+                                alt={name}
+                                fill
+                                sizes="(max-width: 900px) 50vw, 25vw"
+                                className={styles.img}
+                              />
+                            </>
+                          ) : (
+                            <div className={styles.ph} aria-hidden="true" />
+                          )}
 
                           <div className={styles.mediaShade} aria-hidden="true" />
 
                           <div className={styles.badges}>
-                            {dangerLabel ? <span className={styles.badgeDanger}>☠ {dangerLabel}</span> : null}
+                            {dangerLabel ? (
+                              <span className={styles.badgeDanger}>
+                                ☠ {dangerLabel}
+                              </span>
+                            ) : null}
                             <span className={styles.badge}>{g}</span>
                           </div>
                         </div>
@@ -281,17 +294,27 @@ export default async function SpeciesIndexPage({
                           <div className={styles.name}>{name}</div>
 
                           <div className={styles.desc}>
-                            {desc || (locale === "dk" ? "Tilføj short_description." : "Add short_description.")}
+                            {desc ||
+                              (locale === "dk"
+                                ? "Tilføj short_description."
+                                : "Add short_description.")}
                           </div>
 
                           <div className={styles.statsRow}>
                             <div className={styles.statPill}>
-                              <span className={styles.statK}>{locale === "dk" ? "Fund" : "Finds"}</span>
-                              <span className={styles.statV}>{total === null ? "—" : fmtCompact(total, locale)}</span>
+                              <span className={styles.statK}>
+                                {locale === "dk" ? "Fund" : "Finds"}
+                              </span>
+                              <span className={styles.statV}>
+                                {total === null ? "—" : fmtCompact(total, locale)}
+                              </span>
                             </div>
+
                             <div className={styles.statPill}>
                               <span className={styles.statK}>30d</span>
-                              <span className={styles.statV}>{d30 === null ? "—" : fmtCompact(d30, locale)}</span>
+                              <span className={styles.statV}>
+                                {d30 === null ? "—" : fmtCompact(d30, locale)}
+                              </span>
                             </div>
                           </div>
                         </div>
