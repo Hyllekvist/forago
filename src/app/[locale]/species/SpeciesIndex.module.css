@@ -464,3 +464,43 @@
     color-mix(in srgb, var(--card) 26%, transparent) 100%
   );
 }
+
+.card { padding: 0; overflow: hidden; border-radius: 22px; }
+.body { padding: 14px 14px 16px; }
+
+.media{
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10; /* justér */
+  overflow: hidden;
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+}
+
+/* baggrund: fylder hele og giver “kant-til-kant” */
+.bgImg{
+  object-fit: cover;
+  transform: scale(1.08);
+  filter: blur(18px) saturate(1.1);
+  opacity: 0.55;
+}
+
+/* forgrund: viser hele arten (ingen cut) */
+.img{
+  object-fit: contain;
+  padding: 10px;  /* lidt luft så den ikke rammer kanter */
+}
+
+/* subtil vignette for læsbarhed */
+.media::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--card) 10%, transparent),
+    transparent 45%,
+    color-mix(in srgb, var(--card) 28%, transparent)
+  );
+  pointer-events:none;
+}
