@@ -87,48 +87,12 @@ function normalizeConfidence(conf: unknown): number | null {
   if (x <= 0) return 0;
   if (x <= 1) return x;
   if (x <= 100) return x / 100;
-  // if someone stored "8000" etc, clamp hard
   return 1;
 }
 
 function formatPercent01(x01: number) {
   const pct = Math.round(x01 * 100);
   return `${pct}%`;
-}
-
-// Render multiline text nicely and strip raw "\n" artifacts.
-function SmartText({ text }: { text?: string | null }) {
-  const raw = (text ?? "").replace(/\r/g, "").trim();
-  if (!raw) return null;
-
-  const lines = raw
-    .split("\n")
-    .map((l) => l.trim())
-    .filter(Boolean);
-
-  // bullets are lines starting with "- "
-  const bullets: string[] = [];
-  const paragraphs: string[] = [];
-
-  for (const line of lines) {
-    if (line.startsWith("- ")) bullets.push(line.replace(/^-+\s*/, ""));
-    else paragraphs.push(line);
-  }
-
-  return (
-    <>
-      {paragraphs.map((p, i) => (
-        <p key={`p-${i}`}>{p}</p>
-      ))}
-      {bullets.length > 0 ? (
-        <ul className={styles.list}>
-          {bullets.map((b, i) => (
-            <li key={`b-${i}`}>{b}</li>
-          ))}
-        </ul>
-      ) : null}
-    </>
-  );
 }
 
 type SpeciesRow = {
@@ -153,6 +117,7 @@ type TrRow = {
   lookalikes: string | null;
   usage_notes: string | null;
   safety_notes: string | null;
+  notes: string | null;
   updated_at: string | null;
   id_features: IdFeature[] | null;
   id_callouts: IdCallout[] | null;
@@ -228,7 +193,7 @@ export default async function SpeciesPage({
   const { data: tr, error: trErr } = await supabase
     .from("species_translations")
     .select(
-      "common_name, short_description, identification, lookalikes, usage_notes, safety_notes, updated_at, id_features, id_callouts"
+      "common_name, short_description, identification, lookalikes, usage_notes, safety_notes, notes, updated_at, id_features, id_callouts"
     )
     .eq("species_id", species.id)
     .eq("locale", locale)
@@ -316,13 +281,16 @@ export default async function SpeciesPage({
     ],
   };
 
-  // Quick ID should be structured (id_features). Fallback to short_description/identification.
   const features = safeArray<IdFeature>(t?.id_features).slice(0, 6);
   const callouts = safeArray<IdCallout>(t?.id_callouts).slice(0, 6);
 
-const sections = danger
-  ? (["safety", "lookalikes", "identification", "notes"] as const)
-  : (["identification", "lookalikes", "use", "safety"] as const);
+  // ✅ Prefer new notes, fallback to old usage_notes
+  const notesText = t?.notes ?? t?.usage_notes ?? null;
+
+  const sections = danger
+    ? (["safety", "lookalikes", "identification", "notes"] as const)
+    : (["identification", "lookalikes", "use", "safety"] as const);
+
   return (
     <main className={styles.page}>
       <Script id="species-jsonld" type="application/ld+json">
@@ -379,7 +347,9 @@ const sections = danger
 
             <div className={styles.kpis}>
               <div className={styles.kpi}>
-                <div className={styles.kpiLabel}>{locale === "dk" ? "Fund" : "Finds"}</div>
+                <div className={styles.kpiLabel}>
+                  {locale === "dk" ? "Fund" : "Finds"}
+                </div>
                 <div className={styles.kpiValue}>{fmtCompact(totalFinds)}</div>
               </div>
 
@@ -389,7 +359,6 @@ const sections = danger
               </div>
             </div>
 
-            {/* Optional: top callouts (especially for toxic species) */}
             {callouts.length ? (
               <div className={styles.callouts}>
                 {callouts.slice(0, 2).map((c, i) => (
@@ -412,7 +381,6 @@ const sections = danger
           </header>
 
           <div className={styles.sections}>
-            {/* Hurtig identifikation (from structured features) */}
             <section
               className={styles.section}
               aria-label={locale === "dk" ? "Hurtig identifikation" : "Quick identification"}
@@ -421,7 +389,9 @@ const sections = danger
                 {locale === "dk" ? "Hurtig identifikation" : "Quick identification"}
               </h2>
               <p className={styles.sectionSub}>
-                {locale === "dk" ? "Brug dette som tjekliste i marken." : "Use this as a field checklist."}
+                {locale === "dk"
+                  ? "Brug dette som tjekliste i marken."
+                  : "Use this as a field checklist."}
               </p>
 
               <div className={styles.checklist}>
@@ -436,7 +406,6 @@ const sections = danger
                     </div>
                   ))
                 ) : (
-                  // fallback if features missing
                   <div className={styles.check}>
                     <span className={styles.bullet} aria-hidden="true" />
                     <p className={styles.checkText}>
@@ -449,84 +418,104 @@ const sections = danger
               </div>
             </section>
 
-            {/* Sektioner */}
-{sections.map((key) => {
-  if (key === "identification") {
-    return (
-      <section key={key} id="identification" className={styles.section}>
-        <h2 className={styles.sectionTitle}>{locale === "dk" ? "Identifikation" : "Identification"}</h2>
-        {t?.identification ? (
-          <div className={styles.paragraph}><p>{t.identification}</p></div>
-        ) : (
-          <p className={styles.sectionSub}>
-            {locale === "dk" ? "Tilføj identification i species_translations." : "Add identification in species_translations."}
-          </p>
-        )}
-      </section>
-    );
-  }
+            {sections.map((key) => {
+              if (key === "identification") {
+                return (
+                  <section key={key} id="identification" className={styles.section}>
+                    <h2 className={styles.sectionTitle}>
+                      {locale === "dk" ? "Identifikation" : "Identification"}
+                    </h2>
+                    {t?.identification ? (
+                      <div className={styles.paragraph}>
+                        <p>{t.identification}</p>
+                      </div>
+                    ) : (
+                      <p className={styles.sectionSub}>
+                        {locale === "dk"
+                          ? "Tilføj identification i species_translations."
+                          : "Add identification in species_translations."}
+                      </p>
+                    )}
+                  </section>
+                );
+              }
 
-  if (key === "lookalikes") {
-    return (
-      <section key={key} id="lookalikes" className={styles.section}>
-        <h2 className={styles.sectionTitle}>{locale === "dk" ? "Forvekslinger" : "Look-alikes"}</h2>
-        {t?.lookalikes ? (
-          <div className={styles.callout}><p className={styles.calloutText}>{t.lookalikes}</p></div>
-        ) : (
-          <p className={styles.sectionSub}>
-            {locale === "dk" ? "Tilføj lookalikes (SEO-guld)." : "Add look-alikes (SEO gold)."}
-          </p>
-        )}
-      </section>
-    );
-  }
+              if (key === "lookalikes") {
+                return (
+                  <section key={key} id="lookalikes" className={styles.section}>
+                    <h2 className={styles.sectionTitle}>
+                      {locale === "dk" ? "Forvekslinger" : "Look-alikes"}
+                    </h2>
+                    {t?.lookalikes ? (
+                      <div className={styles.callout}>
+                        <p className={styles.calloutText}>{t.lookalikes}</p>
+                      </div>
+                    ) : (
+                      <p className={styles.sectionSub}>
+                        {locale === "dk"
+                          ? "Tilføj lookalikes (SEO-guld)."
+                          : "Add look-alikes (SEO gold)."}
+                      </p>
+                    )}
+                  </section>
+                );
+              }
 
-  if (key === "use") {
-    // ✅ Kun for ikke-giftige arter
-    return (
-      <section key={key} id="use" className={styles.section}>
-        <h2 className={styles.sectionTitle}>{locale === "dk" ? "Brug" : "Use"}</h2>
-        {t?.usage_notes ? (
-          <div className={styles.paragraph}><p>{t.usage_notes}</p></div>
-        ) : (
-          <p className={styles.sectionSub}>{locale === "dk" ? "Tilføj usage_notes." : "Add usage_notes."}</p>
-        )}
-      </section>
-    );
-  }
+              if (key === "use") {
+                return (
+                  <section key={key} id="use" className={styles.section}>
+                    <h2 className={styles.sectionTitle}>{locale === "dk" ? "Brug" : "Use"}</h2>
+                    {t?.usage_notes ? (
+                      <div className={styles.paragraph}>
+                        <p>{t.usage_notes}</p>
+                      </div>
+                    ) : (
+                      <p className={styles.sectionSub}>
+                        {locale === "dk" ? "Tilføj usage_notes." : "Add usage_notes."}
+                      </p>
+                    )}
+                  </section>
+                );
+              }
 
-  if (key === "notes") {
-    // ✅ For giftige arter: vi viser "Bemærkninger" (tidl. brug)
-    return (
-      <section key={key} id="notes" className={styles.section}>
-        <h2 className={styles.sectionTitle}>{locale === "dk" ? "Bemærkninger" : "Notes"}</h2>
-        {t?.usage_notes ? (
-          <div className={styles.paragraph}><p>{t.usage_notes}</p></div>
-        ) : (
-          <p className={styles.sectionSub}>
-            {locale === "dk"
-              ? "Tilføj noter (fx foto, læring, lokalitets-hensyn)."
-              : "Add notes (photo, learning, location caution)."}
-          </p>
-        )}
-      </section>
-    );
-  }
+              if (key === "notes") {
+                return (
+                  <section key={key} id="notes" className={styles.section}>
+                    <h2 className={styles.sectionTitle}>
+                      {locale === "dk" ? "Bemærkninger" : "Notes"}
+                    </h2>
+                    {notesText ? (
+                      <div className={styles.paragraph}>
+                        <p>{notesText}</p>
+                      </div>
+                    ) : (
+                      <p className={styles.sectionSub}>
+                        {locale === "dk"
+                          ? "Tilføj noter (fx foto, læring, lokalitets-hensyn)."
+                          : "Add notes (photo, learning, location caution)."}
+                      </p>
+                    )}
+                  </section>
+                );
+              }
 
-  // safety
-  return (
-    <section key={key} id="safety" className={styles.section}>
-      <h2 className={styles.sectionTitle}>{locale === "dk" ? "Sikkerhed" : "Safety"}</h2>
-      {t?.safety_notes ? (
-        <div className={styles.callout}><p className={styles.calloutText}>{t.safety_notes}</p></div>
-      ) : (
-        <p className={styles.sectionSub}>
-          {locale === "dk" ? "Tilføj safety_notes. Vær tydelig." : "Add safety_notes. Be explicit."}
-        </p>
-      )}
-    </section>
-  );
-})}
+              return (
+                <section key={key} id="safety" className={styles.section}>
+                  <h2 className={styles.sectionTitle}>{locale === "dk" ? "Sikkerhed" : "Safety"}</h2>
+                  {t?.safety_notes ? (
+                    <div className={styles.callout}>
+                      <p className={styles.calloutText}>{t.safety_notes}</p>
+                    </div>
+                  ) : (
+                    <p className={styles.sectionSub}>
+                      {locale === "dk"
+                        ? "Tilføj safety_notes. Vær tydelig."
+                        : "Add safety_notes. Be explicit."}
+                    </p>
+                  )}
+                </section>
+              );
+            })}
           </div>
 
           <div className={styles.footerMeta}>
