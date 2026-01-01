@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
+import SearchClient from "./SearchClient";
 import styles from "./Guides.module.css";
 
 export const dynamic = "force-dynamic";
@@ -17,14 +18,9 @@ type GuideRow = {
   }>;
 };
 
-export const metadata = {
-  title: "Guides · Forago",
-};
+export const metadata = { title: "Guides · Forago" };
 
-function pickTranslation<T extends { locale: string }>(
-  list: T[],
-  locale: string
-) {
+function pickTranslation<T extends { locale: string }>(list: T[], locale: string) {
   return (
     list.find((t) => t.locale === locale) ??
     list.find((t) => t.locale === "dk") ??
@@ -45,69 +41,42 @@ export default async function GuidesPage({ params }: { params: Params }) {
 
   if (error) notFound();
 
-  const rows = (data as unknown as GuideRow[]) ?? [];
+  const rows = ((data as unknown as GuideRow[]) ?? []).map((g) => {
+    const t = pickTranslation(g.guide_translations ?? [], locale);
+    return {
+      slug: g.slug,
+      title: t?.title || g.slug,
+      excerpt:
+        t?.excerpt || "Åbn guiden for konkrete tips, forvekslinger og sikkerhed.",
+    };
+  });
 
   return (
-    <main className={styles.wrap}>
-      <header className={styles.header}>
-        <div>
-          <h1 className={styles.h1}>Guides</h1>
-          <p className={styles.sub}>
-            Korte, praktiske guides til foraging, sikkerhed og sæson.
-          </p>
-        </div>
-
-        <div className={styles.actions}>
-          <Link className={styles.pill} href={`/${locale}/feed`}>
-            Feed
-          </Link>
-          <Link className={styles.pill} href={`/${locale}/season`}>
-            Sæson
-          </Link>
-        </div>
-      </header>
-
-      {rows.length === 0 ? (
-        <section className={styles.emptyCard}>
-          <div className={styles.emptyTitle}>Ingen guides endnu</div>
-          <div className={styles.emptyText}>
-            Opret rækker i <code>guides</code> og <code>guide_translations</code>,
-            og sæt <code>is_published=true</code>.
+    <main className={styles.page}>
+      <div className={styles.shell}>
+        {/* Topbar */}
+        <header className={styles.topbar}>
+          <div className={styles.topbarLeft}>
+            <div className={styles.kicker}>GUIDES</div>
+            <h1 className={styles.h1}>Guides</h1>
+            <p className={styles.sub}>
+              Korte, praktiske guides til foraging, sikkerhed og sæson — skrevet til virkeligheden.
+            </p>
           </div>
-        </section>
-      ) : (
-        <section className={styles.grid}>
-          {rows.map((g) => {
-            const t = pickTranslation(g.guide_translations ?? [], locale);
-            const title = t?.title || g.slug;
-            const excerpt =
-              t?.excerpt ||
-              "Åbn guiden for konkrete tips, forvekslinger og sikkerhed.";
 
-            return (
-              <Link
-                key={g.slug}
-                href={`/${locale}/guides/${encodeURIComponent(g.slug)}`}
-                className={styles.card}
-              >
-                <div className={styles.cardTop}>
-                  <div className={styles.cardTitle}>{title}</div>
-                  <div className={styles.badge}>Guide</div>
-                </div>
+          <div className={styles.topbarRight}>
+            <Link className={styles.topLink} href={`/${locale}/feed`}>Feed</Link>
+            <Link className={styles.topLink} href={`/${locale}/season`}>Sæson</Link>
+            <Link className={styles.topLink} href={`/${locale}/species`}>Arter</Link>
+          </div>
+        </header>
 
-                <div className={styles.cardExcerpt}>{excerpt}</div>
-
-                <div className={styles.cardMeta}>
-                  <span className={styles.cardSlug}>/{g.slug}</span>
-                  <span className={styles.cardArrow} aria-hidden>
-                    →
-                  </span>
-                </div>
-              </Link>
-            );
-          })}
-        </section>
-      )}
+        {/* Search + results (client) */}
+        <SearchClient
+          locale={locale}
+          guides={rows}
+        />
+      </div>
     </main>
   );
 }
