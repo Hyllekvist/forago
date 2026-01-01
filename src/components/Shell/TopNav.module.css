@@ -1,24 +1,31 @@
+/* src/components/Shell/TopNav.module.css */
+
 .header {
   position: sticky;
   top: 0;
   z-index: 60;
-
-  background: var(--nav-bg);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-
-  border-bottom: 1px solid var(--nav-border);
-  box-shadow: var(--nav-shadow);
+  padding: 10px 10px 0;
+  pointer-events: none; /* kun inner klikbar */
 }
 
 .inner {
-  height: 52px;
+  pointer-events: auto;
+  height: 56px;
   max-width: 1120px;
   margin: 0 auto;
-  padding: 0 14px;
+  padding: 0 12px;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
+
+  border-radius: 22px;
+  background: var(--glassBg, rgba(10, 14, 18, 0.72));
+  border: 1px solid var(--glassLine, rgba(255, 255, 255, 0.10));
+  box-shadow: var(--shadow-2, 0 16px 44px rgba(0, 0, 0, 0.42));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .brand {
@@ -26,52 +33,170 @@
   align-items: center;
   gap: 8px;
   text-decoration: none;
-  color: var(--nav-ink);
+  color: var(--ink, rgba(255, 255, 255, 0.92));
+  min-width: 120px;
 }
 
-.brandText {
+.logoWrap {
+  width: 30px;
+  height: 30px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+
+  background: color-mix(in srgb, var(--ink, rgba(255,255,255,.9)) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ink, rgba(255,255,255,.9)) 10%, transparent);
+}
+
+.logo {
+  opacity: 0.95;
+}
+
+.word {
   font-size: 15px;
-  font-weight: 650;
+  font-weight: 780;
   letter-spacing: -0.01em;
 }
 
-.nav { display: none; }
+/* Desktop nav hidden on mobile */
+.nav {
+  display: none;
+  min-width: 0;
+}
 
+/* Right area */
 .right {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-/* Desktop */
-@media (min-width: 768px) {
-  .inner { height: 60px; padding: 0 20px; }
+/* Mobile quick pills */
+.mobileQuick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quickPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 999px;
+
+  text-decoration: none;
+  color: color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 86%, transparent);
+  font-size: 13px;
+  font-weight: 650;
+
+  background: color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 12%, transparent);
+}
+
+.quickActive {
+  color: var(--ink, rgba(255,255,255,.92));
+  background: color-mix(in srgb, var(--accent, #6ee7b7) 14%, transparent);
+  border-color: color-mix(in srgb, var(--accent, #6ee7b7) 20%, transparent);
+}
+
+/* Me/Login pill */
+.mePill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 999px;
+
+  text-decoration: none;
+  color: color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 88%, transparent);
+  font-size: 13px;
+  font-weight: 700;
+
+  background: color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 12%, transparent);
+}
+
+.meActive {
+  color: var(--ink, rgba(255,255,255,.92));
+  background: color-mix(in srgb, var(--accent, #6ee7b7) 14%, transparent);
+  border-color: color-mix(in srgb, var(--accent, #6ee7b7) 20%, transparent);
+}
+
+.toggleWrap {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Desktop upgrade */
+@media (min-width: 820px) {
+  .inner {
+    height: 64px;
+    padding: 0 16px;
+  }
+
+  .mobileQuick {
+    display: none;
+  }
 
   .nav {
     display: flex;
+    justify-content: center;
+    flex: 1;
+  }
+
+  .segment {
+    display: grid;
+    grid-auto-flow: column;
+    gap: 6px;
+
+    padding: 6px;
+    border-radius: 999px;
+
+    background: color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 6%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 10%, transparent);
+  }
+
+  .segItem {
+    height: 40px;
+    padding: 0 14px;
+    border-radius: 999px;
+
+    display: inline-flex;
     align-items: center;
-    gap: 18px;
-  }
+    justify-content: center;
 
-  .link {
-    position: relative;
     text-decoration: none;
-    color: var(--nav-ink);
-    font-size: 14px;
-    opacity: 0.78;
-    transition: opacity 120ms ease;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -0.005em;
+
+    color: color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 78%, transparent);
+    transition: background 120ms ease, color 120ms ease, transform 120ms ease, border-color 120ms ease;
   }
 
-  .link:hover { opacity: 1; }
-  .active { opacity: 1; }
+  .segItem:hover {
+    color: color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 92%, transparent);
+    background: color-mix(in srgb, var(--ink, rgba(255,255,255,.92)) 7%, transparent);
+  }
 
-  .active::after {
-    content: "";
-    position: absolute;
-    left: 0; right: 0;
-    bottom: -6px;
-    height: 2px;
-    border-radius: 2px;
-    background: var(--nav-accent);
+  .segActive {
+    color: var(--ink, rgba(255,255,255,.92));
+    background: color-mix(in srgb, var(--accent, #6ee7b7) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent, #6ee7b7) 22%, transparent);
+    box-shadow: 0 10px 26px color-mix(in srgb, var(--accent, #6ee7b7) 10%, transparent);
+  }
+
+  .segActive:hover {
+    transform: translateY(-0.5px);
+  }
+}
+
+/* iOS safe area for header padding top */
+@supports (padding: max(0px)) {
+  .header {
+    padding-top: max(10px, env(safe-area-inset-top));
   }
 }
