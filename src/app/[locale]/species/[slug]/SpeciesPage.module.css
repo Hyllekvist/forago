@@ -1,5 +1,3 @@
-/* src/app/[locale]/species/[slug]/SpeciesPage.module.css */
-
 .page {
   width: 100%;
   padding: 0;
@@ -8,7 +6,7 @@
 /* ===== Layout wrapper ===== */
 .shell {
   width: 100%;
-  max-width: 1320px; /* ✅ større desktop */
+  max-width: 1320px;
   margin: 0 auto;
 
   padding-inline: clamp(14px, 4vw, 28px);
@@ -18,6 +16,7 @@
   display: grid;
   gap: clamp(12px, 2.8vw, 18px);
 
+  /* default overlap (mobil/tablet hero over sheet) */
   --sheet-overlap: 56px;
 
   --r-xl: 22px;
@@ -46,6 +45,10 @@
   --bnav-pill: color-mix(in srgb, var(--c-accent) 18%, transparent);
 }
 
+/* ✅ hero placements */
+.heroTop { display: block; }
+.heroSide { display: none; }
+
 /* ===== SHEET ===== */
 .sheet {
   position: relative;
@@ -61,18 +64,11 @@
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 
-  /* ✅ default: mobile/medium = one column */
-  display: block;
+  display: block; /* mobile default */
 }
 
-/* ===== SUMMARY (venstre) + CONTENT (højre) ===== */
-.summary {
-  /* mobile: bare en normal blok */
-}
-
-.content {
-  /* mobile: normal flow */
-}
+.summary {}
+.content {}
 
 /* ===== Header ===== */
 .header {
@@ -109,9 +105,7 @@
   color: color-mix(in srgb, var(--c-ink) 82%, transparent);
 }
 
-.dot {
-  opacity: 0.55;
-}
+.dot { opacity: 0.55; }
 
 /* ===== Meta chips ===== */
 .metaRow {
@@ -209,10 +203,8 @@
 }
 
 @media (max-width: 640px) {
-  .kpis {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
+  .kpis { grid-template-columns: 1fr; gap: 10px; }
+
   .kpi {
     min-height: 52px;
     padding: 12px 14px;
@@ -221,16 +213,9 @@
     justify-content: space-between;
     gap: 14px;
   }
-  .kpiLabel {
-    margin: 0;
-    font-size: 11px;
-    letter-spacing: 0.06em;
-  }
-  .kpiValue {
-    font-size: 20px;
-    font-weight: 760;
-    letter-spacing: -0.01em;
-  }
+
+  .kpiLabel { margin: 0; font-size: 11px; letter-spacing: 0.06em; }
+  .kpiValue { font-size: 20px; font-weight: 760; letter-spacing: -0.01em; }
 }
 
 /* ===== Sections wrapper ===== */
@@ -300,10 +285,7 @@
   color: var(--strong);
 }
 
-.paragraph {
-  padding: 0 16px 16px 16px;
-}
-
+.paragraph { padding: 0 16px 16px 16px; }
 .paragraph p {
   margin: 0;
   font-size: 14px;
@@ -312,10 +294,7 @@
   white-space: pre-wrap;
 }
 
-.callout {
-  padding: 0 16px 16px 16px;
-}
-
+.callout { padding: 0 16px 16px 16px; }
 .calloutText {
   margin: 0;
   padding: 14px;
@@ -338,11 +317,7 @@
 }
 
 /* ===== Top callouts under header ===== */
-.callouts {
-  display: grid;
-  gap: 10px;
-  margin-top: 10px;
-}
+.callouts { display: grid; gap: 10px; margin-top: 10px; }
 
 .calloutTitle {
   font-size: 12px;
@@ -352,23 +327,26 @@
   margin-bottom: 6px;
 }
 
+/* Tone variants */
 .calloutWarn .calloutText {
   background: color-mix(in srgb, var(--c-accent) 14%, var(--c-card));
   border-color: color-mix(in srgb, var(--c-accent) 24%, var(--c-ink) 10%);
 }
+
 .calloutInfo .calloutText {
   background: color-mix(in srgb, var(--c-ink) 6%, var(--c-card));
   border-color: color-mix(in srgb, var(--c-ink) 14%, transparent);
 }
+
 .calloutOk .calloutText {
   background: color-mix(in srgb, var(--c-accent) 10%, var(--c-card));
   border-color: color-mix(in srgb, var(--c-accent) 18%, var(--c-ink) 10%);
 }
 
-/* ===== TOC (desktop utility) ===== */
+/* ===== TOC ===== */
 .toc {
   padding: 0 clamp(16px, 4.2vw, 24px) clamp(18px, 4.2vw, 22px);
-  display: none; /* mobile default */
+  display: none;
 }
 
 .tocTitle {
@@ -379,10 +357,7 @@
   margin: 8px 0 10px;
 }
 
-.tocLinks {
-  display: grid;
-  gap: 8px;
-}
+.tocLinks { display: grid; gap: 8px; }
 
 .tocLink {
   display: inline-flex;
@@ -410,48 +385,43 @@
   background: color-mix(in srgb, var(--c-ink) 55%, transparent);
 }
 
-/* ===== ✅ Desktop layout: 2 kolonner + sticky summary ===== */
+/* ✅ Desktop layout: 2 kolonner + sticky summary + hero i venstre */
 @media (min-width: 980px) {
+  /* flyt hero ind i venstre kolonne */
+  .heroTop { display: none; }
+  .heroSide { display: block; padding: 18px clamp(16px, 2vw, 22px) 0; }
+
+  /* top-hero er væk => drop overlap */
+  .shell { --sheet-overlap: 0px; }
+
   .sheet {
     display: grid;
-    grid-template-columns: minmax(320px, 420px) 1fr;
+    grid-template-columns: minmax(340px, 440px) 1fr;
     align-items: start;
+    margin-top: 0;
   }
 
   .summary {
     position: sticky;
-    top: 18px; /* spiller pænt med TopNav */
+    top: 18px;
     align-self: start;
     border-right: 1px solid color-mix(in srgb, var(--c-ink) 10%, transparent);
+    padding-bottom: 18px;
   }
 
-  .content {
-    min-width: 0;
-  }
+  .content { min-width: 0; }
 
   .title {
-    font-size: clamp(44px, 3.2vw, 58px); /* ✅ mere desktop-hero typografi */
+    font-size: clamp(42px, 3vw, 56px);
     letter-spacing: -0.04em;
   }
 
-  .kpis {
-    grid-template-columns: 1fr;
-  }
+  .kpis { grid-template-columns: 1fr; }
+  .kpi { min-height: 86px; }
 
-  .kpi {
-    min-height: 86px;
-  }
+  .sections { padding-top: clamp(16px, 2vw, 22px); }
 
-  .sections {
-    padding-top: clamp(16px, 2vw, 22px);
-  }
+  .toc { display: block; }
 
-  .toc {
-    display: block;
-  }
-
-  /* Anchor scroll lidt pænere ift sticky */
-  .section {
-    scroll-margin-top: 96px;
-  }
+  .section { scroll-margin-top: 96px; }
 }
