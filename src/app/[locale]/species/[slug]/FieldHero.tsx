@@ -1,4 +1,3 @@
-// src/app/[locale]/species/[slug]/FieldHero.tsx
 "use client";
 
 import Image from "next/image";
@@ -14,19 +13,31 @@ export default function FieldHero({ imageUrl, alt = "" }: Props) {
     <section className={styles.hero} aria-label={alt || "Foto"}>
       <div className={styles.media}>
         {imageUrl ? (
-          <Image
-            src={imageUrl}
-            alt={alt}
-            fill
-            priority
-            sizes="(min-width: 980px) 1320px, 100vw"
-            className={styles.img}
-          />
+          <>
+            {/* Background layer (cover + blur) */}
+            <Image
+              src={imageUrl}
+              alt=""
+              fill
+              priority
+              sizes="(min-width: 980px) 440px, 100vw"
+              className={styles.bgImg}
+            />
+
+            {/* Foreground layer (contain = full subject) */}
+            <Image
+              src={imageUrl}
+              alt={alt}
+              fill
+              priority
+              sizes="(min-width: 980px) 440px, 100vw"
+              className={styles.fgImg}
+            />
+          </>
         ) : (
           <div className={styles.fallback} aria-hidden="true" />
         )}
 
-        {/* polish */}
         <div className={styles.vignette} aria-hidden="true" />
         <div className={styles.grain} aria-hidden="true" />
       </div>
