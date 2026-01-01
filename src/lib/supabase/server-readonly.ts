@@ -1,4 +1,4 @@
-// src/lib/supabase/server-readonly.ts
+// src/lib/supabase/server-readonly.ts 
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
