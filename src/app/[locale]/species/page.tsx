@@ -62,18 +62,21 @@ export default async function SpeciesIndexPage({
   searchParams,
 }: {
   params: { locale: string };
-  searchParams?: { q?: string; group?: string };
+  searchParams?: Record<string, string | string[] | undefined>;
 }) {
   const locParam = params?.locale;
   if (!isLocale(locParam)) return notFound();
   const locale = locParam;
 
-  const q = (searchParams?.q ?? "").trim();
-  const group = (searchParams?.group ?? "").trim().toLowerCase();
+  const qRaw = searchParams?.q;
+  const groupRaw = searchParams?.group;
+
+  const q = (Array.isArray(qRaw) ? qRaw[0] : qRaw ?? "").trim();
+  const group = (Array.isArray(groupRaw) ? groupRaw[0] : groupRaw ?? "").trim().toLowerCase();
+
   const country = countryForLocale(locale);
 
   const supabase = await supabaseServer();
-
   // Base species list
   let spQuery = supabase
     .from("species")
