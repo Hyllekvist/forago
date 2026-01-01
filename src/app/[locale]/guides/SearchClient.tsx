@@ -132,20 +132,24 @@ export default function SearchClient({
             ) : null}
           </div>
 
-          <div className={styles.quickRow}>
-            {quick.map((x) => (
-              <button
-                key={x.q}
-                className={styles.quickChip}
-                onClick={() => setQ(x.q)}
-              >
-                {x.label}
-              </button>
-            ))}
-            <Link className={styles.quickGhost} href={`/${locale}/species`}>
-              Udforsk alle arter →
-            </Link>
-          </div>
+<div className={styles.quickRow}>
+  <div className={styles.quickChips} role="list" aria-label="Hurtige emner">
+    {quick.map((x) => (
+      <button
+        key={x.q}
+        className={styles.quickChip}
+        onClick={() => setQ(x.q)}
+        type="button"
+      >
+        {x.label}
+      </button>
+    ))}
+  </div>
+
+  <Link className={styles.quickCta} href={`/${locale}/species`}>
+    Udforsk alle arter <span className={styles.ctaArrow} aria-hidden>→</span>
+  </Link>
+</div>
 
           <div className={styles.heroMeta}>
             <span className={styles.heroMetaPill}>{filteredGuides.length} guides</span>
