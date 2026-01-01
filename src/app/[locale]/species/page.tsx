@@ -259,18 +259,15 @@ export default async function SpeciesIndexPage({
 
                     return (
                       <Link key={r.id} href={`/${locale}/species/${r.slug}`} className={styles.card}>
-                        <div className={styles.media}>
-                          {img ? (
-                            <Image
-                              src={img}
-                              alt={name}
-                              fill
-                              sizes="(max-width: 900px) 92vw, (max-width: 1200px) 45vw, 30vw"
-                              className={styles.img}
-                            />
-                          ) : (
-                            <div className={styles.ph} aria-hidden="true" />
-                          )}
+<div className={styles.media}>
+  {img ? (
+    <>
+      <Image src={img} alt="" fill sizes="(max-width: 900px) 50vw, 25vw" className={styles.bgImg} />
+      <Image src={img} alt={name} fill sizes="(max-width: 900px) 50vw, 25vw" className={styles.img} />
+    </>
+  ) : (
+    <div className={styles.ph} aria-hidden="true" />
+  )}
 
                           <div className={styles.mediaShade} aria-hidden="true" />
 
