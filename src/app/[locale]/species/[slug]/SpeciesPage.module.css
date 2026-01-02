@@ -1,3 +1,6 @@
+/* src/app/[locale]/species/[slug]/SpeciesPage.module.css */
+
+/* ===== Page ===== */
 .page {
   width: 100%;
   padding: 0;
@@ -23,31 +26,31 @@
   --r-lg: 18px;
   --r-md: 14px;
 
-  --c-card: var(--card);
+  /* aliases */
+  --c-card: var(--panel);
   --c-ink: var(--ink);
   --c-accent: var(--accent);
 
   --glass-bg: color-mix(in srgb, var(--c-card) 82%, transparent);
   --glass-border: color-mix(in srgb, var(--c-ink) 12%, transparent);
-  --glass-shadow: 0 22px 70px rgba(0, 0, 0, 0.28);
+  --glass-shadow: var(--shadow-2);
 
   --panel-bg: color-mix(in srgb, var(--c-card) 86%, transparent);
   --panel-border: color-mix(in srgb, var(--c-ink) 10%, transparent);
-  --panel-shadow: 0 12px 40px rgba(0, 0, 0, 0.14);
+  --panel-shadow: var(--shadow-1);
 
-  --muted: color-mix(in srgb, var(--c-ink) 70%, transparent);
-  --muted2: color-mix(in srgb, var(--c-ink) 60%, transparent);
+  --muted: var(--muted);
+  --muted2: var(--muted2);
   --strong: color-mix(in srgb, var(--c-ink) 86%, transparent);
-
-  --bnav-bg: color-mix(in srgb, var(--c-card) 82%, transparent);
-  --bnav-border: color-mix(in srgb, var(--c-ink) 12%, transparent);
-  --bnav-shadow: 0 18px 50px rgba(0, 0, 0, 0.26);
-  --bnav-pill: color-mix(in srgb, var(--c-accent) 18%, transparent);
 }
 
 /* ✅ hero placements */
-.heroTop { display: block; }
-.heroSide { display: none; }
+.heroTop {
+  display: block;
+}
+.heroSide {
+  display: none;
+}
 
 /* ===== SHEET ===== */
 .sheet {
@@ -105,7 +108,9 @@
   color: color-mix(in srgb, var(--c-ink) 82%, transparent);
 }
 
-.dot { opacity: 0.55; }
+.dot {
+  opacity: 0.55;
+}
 
 /* ===== Meta chips ===== */
 .metaRow {
@@ -116,51 +121,65 @@
   margin-top: 8px;
 }
 
+/* Single source of truth: global chip tokens */
 .metaChip {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.45rem;
 
   min-height: 34px;
-  padding: 8px 10px;
+  padding: 0.48rem 0.72rem;
   border-radius: 999px;
 
-  background: var(--bnav-bg);
-  border: 1px solid var(--bnav-border);
-  box-shadow: var(--bnav-shadow);
-
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-
-  color: color-mix(in srgb, var(--c-ink) 88%, transparent);
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 600;
   line-height: 1;
+
+  color: var(--chipInk, color-mix(in srgb, var(--ink) 88%, transparent));
+  background: var(--chipBg, rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--chipLine, rgba(255, 255, 255, 0.16));
+
   white-space: nowrap;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
-.metaChipDanger {
-  background: color-mix(in srgb, var(--c-accent) 26%, var(--bnav-bg));
-  border-color: color-mix(in srgb, var(--c-accent) 42%, var(--bnav-border));
-  color: color-mix(in srgb, var(--c-ink) 94%, transparent);
+.metaChip[data-tone="ok"] {
+  background: var(--goodBg);
+  border-color: var(--goodLine);
+  color: var(--goodInk, var(--chipInk));
 }
 
-.metaChipGood {
-  background: color-mix(in srgb, var(--c-accent) 18%, var(--bnav-bg));
-  border-color: color-mix(in srgb, var(--c-accent) 30%, var(--bnav-border));
-  color: color-mix(in srgb, var(--c-ink) 92%, transparent);
+.metaChip[data-tone="warn"] {
+  background: var(--warnBg);
+  border-color: var(--warnLine);
+  color: var(--warnInk, var(--chipInk));
 }
 
-.metaChipWarn {
-  background: color-mix(in srgb, var(--c-ink) 8%, var(--bnav-bg));
-  border-color: color-mix(in srgb, var(--c-ink) 18%, var(--bnav-border));
-  color: color-mix(in srgb, var(--c-ink) 90%, transparent);
+.metaChip[data-tone="danger"] {
+  background: var(--dangerBg, color-mix(in srgb, var(--accent) 22%, transparent));
+  border-color: var(--dangerLine, color-mix(in srgb, var(--accent) 38%, transparent));
+  color: var(--dangerInk, var(--chipInk));
 }
+
+.metaChip[data-tone="info"] {
+  background: var(--infoBg, var(--chipBg));
+  border-color: var(--infoLine, var(--chipLine));
+  color: var(--infoInk, var(--chipInk));
+}
+
+/* Legacy class hooks -> map to tones (så TSX kan bruge eksisterende classnames) */
+.metaChipDanger { }
+.metaChipDanger { /* keep class for TSX, but tone should drive color */ }
+
+.metaChipGood { }
+.metaChipWarn { }
 
 @media (max-width: 390px) {
   .metaChip {
-    padding: 7px 9px;
+    padding: 0.44rem 0.66rem;
     font-size: 11px;
-    gap: 7px;
+    gap: 0.4rem;
     min-height: 32px;
   }
 }
@@ -179,7 +198,7 @@
 
   background: color-mix(in srgb, var(--c-card) 78%, transparent);
   border: 1px solid color-mix(in srgb, var(--c-ink) 12%, transparent);
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--shadow-1);
 
   display: grid;
   gap: 8px;
@@ -203,7 +222,10 @@
 }
 
 @media (max-width: 640px) {
-  .kpis { grid-template-columns: 1fr; gap: 10px; }
+  .kpis {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
 
   .kpi {
     min-height: 52px;
@@ -214,8 +236,16 @@
     gap: 14px;
   }
 
-  .kpiLabel { margin: 0; font-size: 11px; letter-spacing: 0.06em; }
-  .kpiValue { font-size: 20px; font-weight: 760; letter-spacing: -0.01em; }
+  .kpiLabel {
+    margin: 0;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+  }
+  .kpiValue {
+    font-size: 20px;
+    font-weight: 760;
+    letter-spacing: -0.01em;
+  }
 }
 
 /* ===== Sections wrapper ===== */
@@ -285,7 +315,9 @@
   color: var(--strong);
 }
 
-.paragraph { padding: 0 16px 16px 16px; }
+.paragraph {
+  padding: 0 16px 16px 16px;
+}
 .paragraph p {
   margin: 0;
   font-size: 14px;
@@ -294,7 +326,9 @@
   white-space: pre-wrap;
 }
 
-.callout { padding: 0 16px 16px 16px; }
+.callout {
+  padding: 0 16px 16px 16px;
+}
 .calloutText {
   margin: 0;
   padding: 14px;
@@ -317,7 +351,11 @@
 }
 
 /* ===== Top callouts under header ===== */
-.callouts { display: grid; gap: 10px; margin-top: 10px; }
+.callouts {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
 
 .calloutTitle {
   font-size: 12px;
@@ -327,20 +365,18 @@
   margin-bottom: 6px;
 }
 
-/* Tone variants */
+/* Tone variants (callout containers) */
 .calloutWarn .calloutText {
-  background: color-mix(in srgb, var(--c-accent) 14%, var(--c-card));
-  border-color: color-mix(in srgb, var(--c-accent) 24%, var(--c-ink) 10%);
+  background: color-mix(in srgb, var(--accent) 14%, var(--c-card));
+  border-color: color-mix(in srgb, var(--accent) 24%, color-mix(in srgb, var(--c-ink) 10%, transparent));
 }
-
 .calloutInfo .calloutText {
   background: color-mix(in srgb, var(--c-ink) 6%, var(--c-card));
   border-color: color-mix(in srgb, var(--c-ink) 14%, transparent);
 }
-
 .calloutOk .calloutText {
-  background: color-mix(in srgb, var(--c-accent) 10%, var(--c-card));
-  border-color: color-mix(in srgb, var(--c-accent) 18%, var(--c-ink) 10%);
+  background: color-mix(in srgb, var(--accent) 10%, var(--c-card));
+  border-color: color-mix(in srgb, var(--accent) 18%, color-mix(in srgb, var(--c-ink) 10%, transparent));
 }
 
 /* ===== TOC ===== */
@@ -357,7 +393,10 @@
   margin: 8px 0 10px;
 }
 
-.tocLinks { display: grid; gap: 8px; }
+.tocLinks {
+  display: grid;
+  gap: 8px;
+}
 
 .tocLink {
   display: inline-flex;
@@ -374,8 +413,8 @@
 }
 
 .tocLink:hover {
-  background: color-mix(in srgb, var(--c-accent) 10%, var(--c-card));
-  border-color: color-mix(in srgb, var(--c-accent) 16%, var(--c-ink) 10%);
+  background: color-mix(in srgb, var(--accent) 10%, var(--c-card));
+  border-color: color-mix(in srgb, var(--accent) 16%, color-mix(in srgb, var(--c-ink) 10%, transparent));
 }
 
 .tocDot {
@@ -387,21 +426,25 @@
 
 /* ✅ Desktop layout: 2 kolonner + sticky summary + hero i venstre */
 @media (min-width: 980px) {
-  /* flyt hero ind i venstre kolonne */
-  .heroTop { display: none; }
-.heroSide{
-  display:block;
-  padding: 0;
-  margin: 18px clamp(16px, 2vw, 22px) 0; /* ydre luft */
-}
+  .heroTop {
+    display: none;
+  }
 
-.heroSide :global(.hero){
-  border-radius: 18px;
-  overflow: hidden;
-}
+  .heroSide {
+    display: block;
+    padding: 0;
+    margin: 18px clamp(16px, 2vw, 22px) 0;
+  }
+
+  .heroSide :global(.hero) {
+    border-radius: 18px;
+    overflow: hidden;
+  }
 
   /* top-hero er væk => drop overlap */
-  .shell { --sheet-overlap: 0px; }
+  .shell {
+    --sheet-overlap: 0px;
+  }
 
   .sheet {
     display: grid;
@@ -418,68 +461,31 @@
     padding-bottom: 18px;
   }
 
-  .content { min-width: 0; }
+  .content {
+    min-width: 0;
+  }
 
   .title {
     font-size: clamp(42px, 3vw, 56px);
     letter-spacing: -0.04em;
   }
 
-  .kpis { grid-template-columns: 1fr; }
-  .kpi { min-height: 86px; }
+  .kpis {
+    grid-template-columns: 1fr;
+  }
+  .kpi {
+    min-height: 86px;
+  }
 
-  .sections { padding-top: clamp(16px, 2vw, 22px); }
+  .sections {
+    padding-top: clamp(16px, 2vw, 22px);
+  }
 
-  .toc { display: block; }
+  .toc {
+    display: block;
+  }
 
-  .section { scroll-margin-top: 96px; }
-}
-
-/* =========================
-   Meta chips (global tokens)
-   ========================= */
-
-.metaChip{
-  display: inline-flex;
-  align-items: center;
-  gap: .45rem;
-
-  padding: .48rem .72rem;
-  border-radius: 999px;
-
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1;
-
-  color: var(--chipInk);
-  background: var(--chipBg);
-  border: 1px solid var(--chipLine);
-
-  white-space: nowrap;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-
-.metaChip[data-tone="ok"]{
-  background: var(--goodBg);
-  border-color: var(--goodLine);
-  color: var(--goodInk);
-}
-
-.metaChip[data-tone="warn"]{
-  background: var(--warnBg);
-  border-color: var(--warnLine);
-  color: var(--warnInk);
-}
-
-.metaChip[data-tone="danger"]{
-  background: var(--dangerBg);
-  border-color: var(--dangerLine);
-  color: var(--dangerInk);
-}
-
-.metaChip[data-tone="info"]{
-  background: var(--infoBg);
-  border-color: var(--infoLine);
-  color: var(--infoInk);
+  .section {
+    scroll-margin-top: 96px;
+  }
 }
