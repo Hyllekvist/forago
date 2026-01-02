@@ -148,10 +148,10 @@ export default function MapClient({ spots }: Props) {
 
 // Lock scroll on Shell stack to prevent iOS Safari header jump
 useEffect(() => {
-  const el =
-    (document.querySelector('[data-shell-stack="1"]') as HTMLElement | null) ??
-    document.scrollingElement ??
-    document.documentElement;
+const el =
+  (document.querySelector('[data-shell-stack="1"]') as HTMLElement | null) ??
+  (document.scrollingElement as HTMLElement | null) ??
+  (document.documentElement as HTMLElement);
 
   const prevOverflow = el.style.overflow;
   const prevOverscroll = (el.style as any).overscrollBehavior;
@@ -165,40 +165,7 @@ useEffect(() => {
   };
 }, []);
 
-// iOS Safari: lock page scroll so map-pan doesn't move header
-useEffect(() => {
-  const doc = document.documentElement;
-  const body = document.body;
 
-  const prevHtmlOverflow = doc.style.overflow;
-  const prevHtmlOverscroll = doc.style.overscrollBehavior;
-  const prevBodyOverflow = body.style.overflow;
-  const prevBodyPosition = body.style.position;
-  const prevBodyTop = body.style.top;
-  const prevBodyWidth = body.style.width;
-
-  const y = window.scrollY || 0;
-
-  doc.style.overflow = "hidden";
-  doc.style.overscrollBehavior = "none";
-
-  body.style.overflow = "hidden";
-  body.style.position = "fixed";
-  body.style.top = `-${y}px`;
-  body.style.width = "100%";
-
-  return () => {
-    doc.style.overflow = prevHtmlOverflow;
-    doc.style.overscrollBehavior = prevHtmlOverscroll;
-
-    body.style.overflow = prevBodyOverflow;
-    body.style.position = prevBodyPosition;
-    body.style.top = prevBodyTop;
-    body.style.width = prevBodyWidth;
-
-    window.scrollTo(0, y);
-  };
-}, []);
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedVisibleIds(visibleIds), 250);
@@ -745,7 +712,7 @@ useEffect(() => {
             onMapClick={onMapClick}
           />
 
-{mode === "forage" && recommendedSpot && !drop && !isEmptyProd && !selectedSpot && !sheetExpanded ? (
+{mode === "forage" && recommendedSpot && !drop && !isEmptyProd && !selectedId && !sheetExpanded ? (
   <button type="button" className={styles.fabCta} onClick={onGoRecommended}>
     Start sanketur
   </button>
