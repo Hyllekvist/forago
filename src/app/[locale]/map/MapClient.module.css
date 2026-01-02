@@ -10,7 +10,7 @@
   --top-offset: 0px;
 
   /* bottom-nav kan være 0 på map (Shell sætter den) */
---dock-bottom: calc(var(--bottom-nav-h, 0px) + 34px + env(safe-area-inset-bottom));
+--dock-bottom: calc(var(--bottom-nav-h, 0px) + 42px + env(safe-area-inset-bottom));
 }
 
 /* Top UI wrapper */
@@ -114,7 +114,7 @@
 .page[data-mobile-dock="none"] .peekWrap { display: none; }
 
 .page[data-sheet-open="1"]{
-  --dock-bottom: calc(var(--bottom-nav-h, 0px) + 26px + env(safe-area-inset-bottom));
+  --dock-bottom: calc(var(--bottom-nav-h, 0px) + 34px + env(safe-area-inset-bottom));
 }
 
 @media (max-width: 420px) {
