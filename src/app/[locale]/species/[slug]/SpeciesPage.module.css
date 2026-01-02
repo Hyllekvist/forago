@@ -434,3 +434,52 @@
 
   .section { scroll-margin-top: 96px; }
 }
+
+/* =========================
+   Meta chips (global tokens)
+   ========================= */
+
+.metaChip{
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+
+  padding: .48rem .72rem;
+  border-radius: 999px;
+
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+
+  color: var(--chipInk);
+  background: var(--chipBg);
+  border: 1px solid var(--chipLine);
+
+  white-space: nowrap;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.metaChip[data-tone="ok"]{
+  background: var(--goodBg);
+  border-color: var(--goodLine);
+  color: var(--goodInk);
+}
+
+.metaChip[data-tone="warn"]{
+  background: var(--warnBg);
+  border-color: var(--warnLine);
+  color: var(--warnInk);
+}
+
+.metaChip[data-tone="danger"]{
+  background: var(--dangerBg);
+  border-color: var(--dangerLine);
+  color: var(--dangerInk);
+}
+
+.metaChip[data-tone="info"]{
+  background: var(--infoBg);
+  border-color: var(--infoLine);
+  color: var(--infoInk);
+}
