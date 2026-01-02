@@ -1,4 +1,3 @@
-// src/components/Shell/Shell.tsx
 "use client";
 
 import { useEffect, useMemo } from "react";
@@ -32,8 +31,6 @@ export default function Shell({
   }, [user]);
 
   const hideBottomNav = useMemo(() => {
-    // Skjul på map (og evt. underpaths)
-    // matcher både /dk/map og /dk/map/...
     const base = `/${locale}/map`;
     return pathname === base || pathname?.startsWith(base + "/");
   }, [pathname, locale]);
