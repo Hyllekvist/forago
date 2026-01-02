@@ -42,7 +42,7 @@ export default function Shell({
 
       <TopNav locale={locale} user={user} />
 
-      <div className={styles.stack}>{children}</div>
+<div className={styles.stack} data-shell-stack="1">{children}</div>
 
       {hideBottomNav ? null : <BottomNav locale={locale} user={user} />}
     </div>
