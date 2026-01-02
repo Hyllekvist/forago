@@ -14,11 +14,36 @@
 
 .left{ min-width:0; }
 
+.row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width: 0;
+}
+
+.backBtn{
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: var(--stroke) solid var(--chipLine);
+  background: var(--chipBg);
+  color: inherit;
+  font-weight: 900;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex: 0 0 auto;
+}
+
+.backBtn:active{ transform: translateY(1px); }
+
 .title{
   font-size: 15px;
   font-weight: 900;
   letter-spacing: -0.01em;
   line-height: 1.2;
+  min-width: 0;
 }
 
 .sub{
@@ -43,6 +68,7 @@
   font-weight: 850;
   font-size: 12px;
   cursor:pointer;
+  flex: 0 0 auto;
 }
 
 .modeDot{
