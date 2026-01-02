@@ -1,16 +1,10 @@
-/* src/app/[locale]/species/SpeciesIndex.module.css
-   Match: species index page.tsx 
-   Goals:
-   - Stable background (ikke “udvasket/ulæseligt”)
-   - Glassy cards som BottomNav (var(--card), var(--ink), var(--accent))
-   - Ingen hardcodede farver (danger bruger var(--danger, var(--accent)))
-*/
+
+/* src/app/[locale]/species/SpeciesIndex.module.css */
 
 .page {
   width: 100%;
   min-height: 100svh;
 
-  /* stabil base så teksten altid kan læses */
   background: color-mix(in srgb, var(--card) 22%, transparent);
   color: var(--ink);
 
@@ -32,15 +26,10 @@
   --glass-border: color-mix(in srgb, var(--ink) 12%, transparent);
   --glass-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
 
-  --panel-bg: color-mix(in srgb, var(--card) 92%, transparent);
-  --panel-border: color-mix(in srgb, var(--ink) 10%, transparent);
   --panel-shadow: 0 12px 38px rgba(0, 0, 0, 0.12);
 
   --muted: color-mix(in srgb, var(--ink) 68%, transparent);
   --muted2: color-mix(in srgb, var(--ink) 56%, transparent);
-  --strong: color-mix(in srgb, var(--ink) 88%, transparent);
-
-  --danger: var(--danger, var(--accent));
 }
 
 /* ===== Header ===== */
@@ -259,7 +248,7 @@
   text-decoration: none;
   color: inherit;
 
-  border-radius: var(--r-xl);
+  border-radius: 22px;
   overflow: hidden;
 
   background: var(--glass-bg);
@@ -276,18 +265,37 @@
   transform: scale(0.995);
 }
 
-/* Media */
+/* ===== Media ===== */
 .media {
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 10;
-  background: color-mix(in srgb, var(--card) 94%, transparent);
+  overflow: hidden;
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+
+  background: radial-gradient(
+    120% 120% at 30% 10%,
+    color-mix(in srgb, var(--accent) 10%, transparent),
+    color-mix(in srgb, var(--card) 96%, transparent) 55%,
+    color-mix(in srgb, var(--card) 90%, transparent) 100%
+  );
 }
 
-.img {
+/* baggrund: fylder hele og giver “kant-til-kant” */
+.bgImg {
   object-fit: cover;
+  transform: scale(1.08);
+  filter: blur(18px) saturate(1.1);
+  opacity: 0.55;
 }
 
+/* forgrund: viser hele arten (ingen cut) */
+.img {
+  object-fit: contain;
+  padding: 10px;
+}
+
+/* placeholder hvis ingen image */
 .ph {
   position: absolute;
   inset: 0;
@@ -298,20 +306,34 @@
   );
 }
 
-/* mørk/lys læsbarhed ovenpå billede */
+/* mild shade for badges */
 .mediaShade {
   position: absolute;
   inset: 0;
   background: linear-gradient(
     180deg,
     transparent 0%,
-    color-mix(in srgb, var(--card) 14%, transparent) 55%,
-    color-mix(in srgb, var(--card) 32%, transparent) 100%
+    color-mix(in srgb, var(--card) 12%, transparent) 60%,
+    color-mix(in srgb, var(--card) 26%, transparent) 100%
   );
   pointer-events: none;
 }
 
-/* Badges */
+/* subtil vignette for læsbarhed */
+.media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--card) 10%, transparent),
+    transparent 45%,
+    color-mix(in srgb, var(--card) 28%, transparent)
+  );
+  pointer-events: none;
+}
+
+/* ===== Badges ===== */
 .badges {
   position: absolute;
   left: 10px;
@@ -331,26 +353,42 @@
   padding: 7px 10px;
   border-radius: 999px;
 
-  background: color-mix(in srgb, var(--card) 78%, transparent);
-  border: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
-  color: color-mix(in srgb, var(--ink) 90%, transparent);
+  background: var(--chipBg);
+  border: 1px solid var(--chipLine);
+  color: var(--ink);
 
   font-size: 11px;
   font-weight: 750;
   line-height: 1;
+
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
 }
 
-.badgeDanger {
-  composes: badge;
-  background: color-mix(in srgb, var(--danger) 18%, transparent);
-  border-color: color-mix(in srgb, var(--danger) 26%, transparent);
+/* tone styles (global tokens) */
+.badge[data-tone="ok"] {
+  background: var(--goodBg);
+  border-color: var(--goodLine);
 }
 
-/* Body */
+.badge[data-tone="warn"] {
+  background: var(--warnBg);
+  border-color: var(--warnLine);
+}
+
+.badge[data-tone="danger"] {
+  background: var(--dangerBg);
+  border-color: var(--dangerLine);
+}
+
+.badge[data-tone="info"] {
+  background: var(--chipBg);
+  border-color: var(--chipLine);
+}
+
+/* ===== Body ===== */
 .body {
-  padding: 12px 12px 14px;
+  padding: 14px 14px 16px;
   display: grid;
   gap: 10px;
 }
@@ -440,67 +478,4 @@
 .footerNote {
   font-size: 12px;
   color: var(--muted2);
-}
-
-/* før: object-fit: cover; */
-.img { object-fit: contain; }
-
-/* gør rammen pæn, så siderne ikke bare bliver grå */
-.media{
-  background: radial-gradient(
-    120% 120% at 30% 10%,
-    color-mix(in srgb, var(--accent) 10%, transparent),
-    color-mix(in srgb, var(--card) 96%, transparent) 55%,
-    color-mix(in srgb, var(--card) 90%, transparent) 100%
-  );
-}
-
-/* shade kan være mildere når vi ikke “coverer” */
-.mediaShade{
-  background: linear-gradient(
-    180deg,
-    transparent 0%,
-    color-mix(in srgb, var(--card) 12%, transparent) 60%,
-    color-mix(in srgb, var(--card) 26%, transparent) 100%
-  );
-}
-
-.card { padding: 0; overflow: hidden; border-radius: 22px; }
-.body { padding: 14px 14px 16px; }
-
-.media{
-  position: relative;
-  width: 100%;
-  aspect-ratio: 16 / 10; /* justér */
-  overflow: hidden;
-  border-bottom: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
-  background: color-mix(in srgb, var(--card) 92%, transparent);
-}
-
-/* baggrund: fylder hele og giver “kant-til-kant” */
-.bgImg{
-  object-fit: cover;
-  transform: scale(1.08);
-  filter: blur(18px) saturate(1.1);
-  opacity: 0.55;
-}
-
-/* forgrund: viser hele arten (ingen cut) */
-.img{
-  object-fit: contain;
-  padding: 10px;  /* lidt luft så den ikke rammer kanter */
-}
-
-/* subtil vignette for læsbarhed */
-.media::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--card) 10%, transparent),
-    transparent 45%,
-    color-mix(in srgb, var(--card) 28%, transparent)
-  );
-  pointer-events:none;
 }
