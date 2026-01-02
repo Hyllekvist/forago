@@ -224,3 +224,13 @@
 .dropSheet {
   bottom: var(--dock-bottom);
 }
+
+.page{
+  overscroll-behavior: none;
+  touch-action: none; /* page itself */
+}
+
+/* allow gestures inside the map */
+.mapShell{
+  touch-action: pan-x pan-y;
+}
