@@ -20,8 +20,8 @@
 
 /* Desktop figure (venstre kolonne) */
 @media (min-width: 980px) {
-  .media {
-    height: clamp(220px, 26vh, 340px);
+  .media{
+    height: clamp(320px, 36vh, 520px); /* ✅ meget større */
   }
 }
 
@@ -35,10 +35,10 @@
 }
 
 /* Foreground: contain = hele arten */
-.fgImg {
+.fgImg{
   object-fit: contain;
   object-position: center;
-  padding: clamp(10px, 1.6vw, 18px);
+  padding: 0;            /* ✅ fjerner “lille billede i midten” */
   transform: translateZ(0);
 }
 
