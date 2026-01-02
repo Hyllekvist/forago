@@ -19,10 +19,8 @@
 }
 
 /* Desktop figure (venstre kolonne) */
-@media (min-width: 980px) {
-  .media{
-    height: clamp(320px, 36vh, 520px); /* ✅ meget større */
-  }
+@media (min-width: 980px){
+  .fgImg{ object-fit: cover; }  /* fylder hele feltet */
 }
 
 /* Background: cover + blur */
