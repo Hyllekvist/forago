@@ -691,11 +691,11 @@ export default function MapClient({ spots }: Props) {
             onMapClick={onMapClick}
           />
 
-          {mode === "forage" && recommendedSpot && !drop && !isEmptyProd ? (
-            <button type="button" className={styles.fabCta} onClick={onGoRecommended}>
-              Start sanketur
-            </button>
-          ) : null}
+{mode === "forage" && recommendedSpot && !drop && !isEmptyProd && !selectedSpot && !sheetExpanded ? (
+  <button type="button" className={styles.fabCta} onClick={onGoRecommended}>
+    Start sanketur
+  </button>
+) : null}
 
           <div className={styles.mobileDock}>
             {isEmptyProd ? (
