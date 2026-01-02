@@ -146,6 +146,41 @@ export default function MapClient({ spots }: Props) {
     );
   }, []);
 
+// iOS Safari: lock page scroll so map-pan doesn't move header
+useEffect(() => {
+  const doc = document.documentElement;
+  const body = document.body;
+
+  const prevHtmlOverflow = doc.style.overflow;
+  const prevHtmlOverscroll = doc.style.overscrollBehavior;
+  const prevBodyOverflow = body.style.overflow;
+  const prevBodyPosition = body.style.position;
+  const prevBodyTop = body.style.top;
+  const prevBodyWidth = body.style.width;
+
+  const y = window.scrollY || 0;
+
+  doc.style.overflow = "hidden";
+  doc.style.overscrollBehavior = "none";
+
+  body.style.overflow = "hidden";
+  body.style.position = "fixed";
+  body.style.top = `-${y}px`;
+  body.style.width = "100%";
+
+  return () => {
+    doc.style.overflow = prevHtmlOverflow;
+    doc.style.overscrollBehavior = prevHtmlOverscroll;
+
+    body.style.overflow = prevBodyOverflow;
+    body.style.position = prevBodyPosition;
+    body.style.top = prevBodyTop;
+    body.style.width = prevBodyWidth;
+
+    window.scrollTo(0, y);
+  };
+}, []);
+
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedVisibleIds(visibleIds), 250);
     return () => window.clearTimeout(t);
