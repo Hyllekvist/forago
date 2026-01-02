@@ -389,7 +389,16 @@
 @media (min-width: 980px) {
   /* flyt hero ind i venstre kolonne */
   .heroTop { display: none; }
-  .heroSide { display: block; padding: 18px clamp(16px, 2vw, 22px) 0; }
+.heroSide{
+  display:block;
+  padding: 0;
+  margin: 18px clamp(16px, 2vw, 22px) 0; /* ydre luft */
+}
+
+.heroSide :global(.hero){
+  border-radius: 18px;
+  overflow: hidden;
+}
 
   /* top-hero er væk => drop overlap */
   .shell { --sheet-overlap: 0px; }
