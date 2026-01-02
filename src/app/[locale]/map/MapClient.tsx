@@ -146,6 +146,25 @@ export default function MapClient({ spots }: Props) {
     );
   }, []);
 
+// Lock scroll on Shell stack to prevent iOS Safari header jump
+useEffect(() => {
+  const el =
+    (document.querySelector('[data-shell-stack="1"]') as HTMLElement | null) ??
+    document.scrollingElement ??
+    document.documentElement;
+
+  const prevOverflow = el.style.overflow;
+  const prevOverscroll = (el.style as any).overscrollBehavior;
+
+  el.style.overflow = "hidden";
+  (el.style as any).overscrollBehavior = "none";
+
+  return () => {
+    el.style.overflow = prevOverflow;
+    (el.style as any).overscrollBehavior = prevOverscroll;
+  };
+}, []);
+
 // iOS Safari: lock page scroll so map-pan doesn't move header
 useEffect(() => {
   const doc = document.documentElement;
