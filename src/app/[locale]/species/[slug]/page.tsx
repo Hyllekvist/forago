@@ -345,22 +345,13 @@ export default async function SpeciesPage({
                 </span>
               </p>
 
+              {/* ✅ NEW: global tone-based chips */}
               <div className={styles.metaRow}>
-                {danger ? (
-                  <span className={`${styles.metaChip} ${styles.metaChipDanger}`}>
-                    ☠️ {dangerLabel}
-                  </span>
-                ) : (
-                  <span className={styles.metaChip}>
-                    {locale === "dk" ? "Ikke giftig" : "Not toxic"}
-                  </span>
-                )}
+                <span className={styles.metaChip} data-tone={danger ? "danger" : "ok"}>
+                  {danger ? `☠️ ${dangerLabel}` : locale === "dk" ? "Ikke giftig" : "Not toxic"}
+                </span>
 
-                <span
-                  className={`${styles.metaChip} ${
-                    inSeasonNow ? styles.metaChipGood : styles.metaChipWarn
-                  }`}
-                >
+                <span className={styles.metaChip} data-tone={inSeasonNow ? "ok" : "warn"}>
                   {inSeasonNow
                     ? locale === "dk"
                       ? "I sæson"
@@ -371,7 +362,7 @@ export default async function SpeciesPage({
                   {typeof conf01 === "number" ? ` · ${formatPercent01(conf01)}` : ""}
                 </span>
 
-                <span className={styles.metaChip}>
+                <span className={styles.metaChip} data-tone="info">
                   {locale === "dk" ? "Land:" : "Country:"} {country.toUpperCase()}
                 </span>
               </div>
