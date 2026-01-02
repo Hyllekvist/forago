@@ -3,7 +3,6 @@
   top: 0;
   z-index: 60;
 
-  /* base glass */
   background: color-mix(in srgb, var(--glassBg, rgba(0, 0, 0, 0.55)) 92%, transparent);
   border-bottom: 1px solid color-mix(in srgb, var(--glassLine, rgba(255, 255, 255, 0.12)) 85%, transparent);
 
@@ -19,6 +18,7 @@
   box-shadow: var(--shadow-1, 0 10px 30px rgba(0, 0, 0, 0.35));
 }
 
+/* MOBILE: kun brand + right */
 .inner {
   height: 54px;
   max-width: var(--maxw, 1120px);
@@ -32,6 +32,7 @@
 }
 
 .brand {
+  grid-column: 1;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -46,7 +47,6 @@
   border-radius: 12px;
   display: grid;
   place-items: center;
-
   background: color-mix(in srgb, var(--chipBg, rgba(255,255,255,0.06)) 100%, transparent);
   border: 1px solid color-mix(in srgb, var(--chipLine, rgba(255,255,255,0.14)) 90%, transparent);
 }
@@ -60,145 +60,35 @@
   white-space: nowrap;
 }
 
-/* ===== Desktop search (hidden on mobile) ===== */
-.search {
-  display: none;
-  justify-self: center;
-  width: 100%;
-  max-width: 560px;
-}
-
-.searchForm {
-  width: 100%;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 10px;
-
-  padding: 8px 10px;
-  border-radius: 999px;
-
-  background: color-mix(in srgb, var(--panel, rgba(255,255,255,0.06)) 100%, transparent);
-  border: 1px solid color-mix(in srgb, var(--line, rgba(255,255,255,0.12)) 100%, transparent);
-}
-
-.searchScope {
-  display: inline-flex;
-  gap: 6px;
-  padding-left: 2px;
-}
-
-.scopeBtn {
-  height: 30px;
-  padding: 0 10px;
-  border-radius: 999px;
-
-  border: 1px solid transparent;
-  background: transparent;
-
-  color: color-mix(in srgb, var(--ink) 72%, transparent);
-  font-size: 12px;
-  font-weight: 750;
-  letter-spacing: -0.01em;
-  cursor: pointer;
-}
-
-.scopeActive {
-  background: color-mix(in srgb, var(--tapBg, rgba(255,255,255,0.08)) 100%, transparent);
-  border-color: color-mix(in srgb, var(--tapLine, rgba(255,255,255,0.14)) 100%, transparent);
-  color: var(--ink);
-}
-
-.searchInput {
-  width: 100%;
-  min-width: 0;
-  border: 0;
-  outline: none;
-  background: transparent;
-
-  color: var(--ink, rgba(255, 255, 255, 0.92));
-  font-size: 14px;
-  padding: 6px 4px;
-}
-
-.searchInput::placeholder {
-  color: color-mix(in srgb, var(--muted, rgba(255,255,255,0.7)) 85%, transparent);
-}
-
-.searchGo {
-  height: 34px;
-  width: 38px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--line, rgba(255,255,255,0.12)) 100%, transparent);
-
-  background: color-mix(in srgb, var(--tapBg, rgba(255,255,255,0.08)) 100%, transparent);
-  color: var(--ink);
-  cursor: pointer;
-}
-
-.searchGo:active { transform: translateY(1px); }
-
-.searchGoIcon {
-  font-size: 16px;
-  line-height: 1;
-  opacity: 0.9;
-}
-
-/* ===== Desktop nav (hidden on mobile) ===== */
+/* hidden on mobile */
+.search { display: none; }
 .nav { display: none; }
 
-.link {
-  position: relative;
-  text-decoration: none;
-  color: color-mix(in srgb, var(--ink) 78%, transparent);
-  font-size: 13px;
-  font-weight: 750;
-  opacity: 0.78;
-  transition: opacity 120ms ease;
-  padding: 8px 2px;
-}
-
-.link:hover { opacity: 1; }
-.active { opacity: 1; }
-
-.active::after {
-  content: "";
-  position: absolute;
-  left: 0; right: 0;
-  bottom: -6px;
-  height: 2px;
-  border-radius: 2px;
-  background: color-mix(in srgb, var(--accent, #6ee7b7) 70%, transparent);
-}
-
 .right {
+  grid-column: 3;
   display: inline-flex;
   align-items: center;
   gap: 10px;
   justify-self: end;
 }
 
-/* ===== Profile / Login ===== */
+/* knowing profile/login */
 .profileWrap {
   position: relative;
   display: inline-flex;
   align-items: center;
 }
 
-/* login button (shows on all sizes) */
 .loginBtn {
   height: 36px;
   padding: 0 12px;
   border-radius: 999px;
-
   display: inline-flex;
   align-items: center;
   justify-content: center;
-
   text-decoration: none;
   font-size: 13px;
   font-weight: 800;
-
   color: color-mix(in srgb, var(--ink) 90%, transparent);
   background: color-mix(in srgb, var(--chipBg, rgba(255,255,255,0.06)) 100%, transparent);
   border: 1px solid color-mix(in srgb, var(--chipLine, rgba(255,255,255,0.14)) 100%, transparent);
@@ -208,143 +98,230 @@
   border-color: color-mix(in srgb, var(--accent, #6ee7b7) 40%, transparent);
 }
 
-/* avatar button */
 .avatarBtn {
   height: 38px;
   width: 38px;
   border-radius: 999px;
-
   border: 1px solid color-mix(in srgb, var(--chipLine, rgba(255,255,255,0.14)) 100%, transparent);
   background: color-mix(in srgb, var(--chipBg, rgba(255,255,255,0.06)) 100%, transparent);
   cursor: pointer;
-
   display: grid;
   place-items: center;
 }
-
 .avatarBtn:active { transform: translateY(1px); }
 
 .avatar {
   width: 30px;
   height: 30px;
   border-radius: 999px;
-
   display: grid;
   place-items: center;
-
   background: color-mix(in srgb, var(--accent, #6ee7b7) 14%, transparent);
   border: 1px solid color-mix(in srgb, var(--accent, #6ee7b7) 28%, transparent);
-
   color: var(--ink);
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.02em;
 }
 
-/* dropdown (desktop only) */
-.menu {
-  display: none;
-  position: absolute;
-  right: 0;
-  top: calc(100% + 10px);
-  width: 220px;
-  padding: 10px;
-  border-radius: 16px;
+/* dropdown hidden on mobile */
+.menu { display: none; }
 
-  background: color-mix(in srgb, var(--glassBg, rgba(0,0,0,0.72)) 92%, transparent);
-  border: 1px solid color-mix(in srgb, var(--glassLine, rgba(255,255,255,0.12)) 100%, transparent);
-  box-shadow: var(--shadow-2, 0 16px 44px rgba(0,0,0,0.42));
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-
-  transform: translateY(-4px);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 140ms ease, transform 140ms ease;
-}
-
-.menu[data-open="true"] {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
-}
-
-.menuItem {
-  width: 100%;
-  height: 42px;
-  padding: 0 12px;
-  border-radius: 12px;
-
-  display: flex;
-  align-items: center;
-  text-decoration: none;
-
-  color: color-mix(in srgb, var(--ink) 92%, transparent);
-  background: transparent;
-  border: 1px solid transparent;
-
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.menuItem:hover {
-  background: color-mix(in srgb, var(--tapBg, rgba(255,255,255,0.08)) 100%, transparent);
-  border-color: color-mix(in srgb, var(--tapLine, rgba(255,255,255,0.14)) 100%, transparent);
-}
-
-.menuRule {
-  height: 1px;
-  margin: 8px 6px;
-  background: color-mix(in srgb, var(--line, rgba(255,255,255,0.12)) 100%, transparent);
-}
-
-.menuDanger {
-  width: 100%;
-  height: 42px;
-  padding: 0 12px;
-  border-radius: 12px;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  background: transparent;
-  border: 1px solid transparent;
-
-  color: color-mix(in srgb, var(--ink) 92%, transparent);
-  font-size: 13px;
-  font-weight: 850;
-  cursor: pointer;
-}
-
-.menuDanger:hover {
-  background: color-mix(in srgb, rgba(239, 68, 68, 0.14) 100%, transparent);
-  border-color: color-mix(in srgb, rgba(239, 68, 68, 0.28) 100%, transparent);
-}
-
-/* ===== Responsive ===== */
+/* ===== DESKTOP ===== */
 @media (min-width: 900px) {
+  /* ✅ 4 kolonner så right ikke ryger ned på ny række */
   .inner {
     height: 62px;
     padding: 0 18px;
-    grid-template-columns: auto minmax(320px, 1fr) auto;
+    grid-template-columns: auto minmax(340px, 1fr) auto auto;
     gap: 14px;
   }
 
-  .search { display: block; }
+  .search {
+    display: block;
+    grid-column: 2;
+    justify-self: center;
+    width: 100%;
+    max-width: 560px;
+  }
+
+  .searchForm {
+    width: 100%;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--panel, rgba(255,255,255,0.06)) 100%, transparent);
+    border: 1px solid color-mix(in srgb, var(--line, rgba(255,255,255,0.12)) 100%, transparent);
+  }
+
+  .searchScope { display: inline-flex; gap: 6px; padding-left: 2px; }
+
+  .scopeBtn {
+    height: 30px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: color-mix(in srgb, var(--ink) 72%, transparent);
+    font-size: 12px;
+    font-weight: 750;
+    letter-spacing: -0.01em;
+    cursor: pointer;
+  }
+
+  .scopeActive {
+    background: color-mix(in srgb, var(--tapBg, rgba(255,255,255,0.08)) 100%, transparent);
+    border-color: color-mix(in srgb, var(--tapLine, rgba(255,255,255,0.14)) 100%, transparent);
+    color: var(--ink);
+  }
+
+  .searchInput {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: var(--ink, rgba(255, 255, 255, 0.92));
+    font-size: 14px;
+    padding: 6px 4px;
+  }
+
+  .searchInput::placeholder {
+    color: color-mix(in srgb, var(--muted, rgba(255,255,255,0.7)) 85%, transparent);
+  }
+
+  .searchGo {
+    height: 34px;
+    width: 38px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--line, rgba(255,255,255,0.12)) 100%, transparent);
+    background: color-mix(in srgb, var(--tapBg, rgba(255,255,255,0.08)) 100%, transparent);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .searchGo:active { transform: translateY(1px); }
+
+  .searchGoIcon { font-size: 16px; line-height: 1; opacity: 0.9; }
 
   .nav {
     display: inline-flex;
+    grid-column: 3;
     align-items: center;
     gap: 16px;
-    justify-self: center;
+    justify-self: end;
+    white-space: nowrap;
   }
 
-  /* dropdown only on desktop */
-  .menu { display: block; }
+  .link {
+    position: relative;
+    text-decoration: none;
+    color: color-mix(in srgb, var(--ink) 78%, transparent);
+    font-size: 13px;
+    font-weight: 750;
+    opacity: 0.78;
+    transition: opacity 120ms ease;
+    padding: 8px 2px;
+  }
+  .link:hover { opacity: 1; }
+  .active { opacity: 1; }
+
+  .active::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0;
+    bottom: -6px;
+    height: 2px;
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--accent, #6ee7b7) 70%, transparent);
+  }
+
+  .right {
+    grid-column: 4; /* ✅ bliver på samme række */
+    justify-self: end;
+  }
+
+  /* dropdown kun på desktop */
+  .menu {
+    display: block;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 10px);
+    width: 220px;
+    padding: 10px;
+    border-radius: 16px;
+
+    background: color-mix(in srgb, var(--glassBg, rgba(0,0,0,0.72)) 92%, transparent);
+    border: 1px solid color-mix(in srgb, var(--glassLine, rgba(255,255,255,0.12)) 100%, transparent);
+    box-shadow: var(--shadow-2, 0 16px 44px rgba(0,0,0,0.42));
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+
+    transform: translateY(-4px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 140ms ease, transform 140ms ease;
+  }
+
+  .menu[data-open="true"] {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .menuItem {
+    width: 100%;
+    height: 42px;
+    padding: 0 12px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+
+    color: color-mix(in srgb, var(--ink) 92%, transparent);
+    background: transparent;
+    border: 1px solid transparent;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .menuItem:hover {
+    background: color-mix(in srgb, var(--tapBg, rgba(255,255,255,0.08)) 100%, transparent);
+    border-color: color-mix(in srgb, var(--tapLine, rgba(255,255,255,0.14)) 100%, transparent);
+  }
+
+  .menuRule {
+    height: 1px;
+    margin: 8px 6px;
+    background: color-mix(in srgb, var(--line, rgba(255,255,255,0.12)) 100%, transparent);
+  }
+
+  .menuDanger {
+    width: 100%;
+    height: 42px;
+    padding: 0 12px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    background: transparent;
+    border: 1px solid transparent;
+
+    color: color-mix(in srgb, var(--ink) 92%, transparent);
+    font-size: 13px;
+    font-weight: 850;
+    cursor: pointer;
+  }
+
+  .menuDanger:hover {
+    background: color-mix(in srgb, rgba(239, 68, 68, 0.14) 100%, transparent);
+    border-color: color-mix(in srgb, rgba(239, 68, 68, 0.28) 100%, transparent);
+  }
 }
 
-/* very small phones */
 @media (max-width: 360px) {
   .word { font-size: 13px; }
   .logoWrap { width: 28px; height: 28px; border-radius: 11px; }
