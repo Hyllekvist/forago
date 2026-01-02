@@ -234,3 +234,6 @@
 .mapShell{
   touch-action: pan-x pan-y;
 }
+
+.page { overscroll-behavior: none; }
+.mapShell { touch-action: pan-x pan-y; }
