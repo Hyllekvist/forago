@@ -1,3 +1,4 @@
+// src/app/[locale]/species/[slug]/page.tsx
 import { notFound } from "next/navigation";
 import Script from "next/script";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -89,9 +90,33 @@ function normalizeConfidence(conf: unknown): number | null {
   return 1;
 }
 
-function formatPercent01(x01: number) {
-  const pct = Math.round(x01 * 100);
-  return `${pct}%`;
+/** ✅ Replace % with qualitative "data quality" */
+function confidenceLabel(
+  locale: Locale,
+  conf01: number | null
+): { text: string; tone: "ok" | "warn" | "info" } | null {
+  if (conf01 === null) {
+    return {
+      text: locale === "dk" ? "Datakvalitet ukendt" : "Data quality unknown",
+      tone: "info",
+    };
+  }
+  if (conf01 >= 0.8) {
+    return {
+      text: locale === "dk" ? "Høj datakvalitet" : "High data quality",
+      tone: "ok",
+    };
+  }
+  if (conf01 >= 0.5) {
+    return {
+      text: locale === "dk" ? "Mellem datakvalitet" : "Medium data quality",
+      tone: "warn",
+    };
+  }
+  return {
+    text: locale === "dk" ? "Lav datakvalitet" : "Low data quality",
+    tone: "info",
+  };
 }
 
 type SpeciesRow = {
@@ -218,6 +243,7 @@ export default async function SpeciesPage({
   const from = (seasonRow?.month_from as number | undefined) ?? undefined;
   const to = (seasonRow?.month_to as number | undefined) ?? undefined;
   const conf01 = normalizeConfidence(seasonRow?.confidence);
+  const conf = confidenceLabel(locale, conf01);
 
   const inSeasonNow = from && to ? isInSeason(month, from, to) : false;
   const seasonText =
@@ -345,13 +371,22 @@ export default async function SpeciesPage({
                 </span>
               </p>
 
-              {/* ✅ NEW: global tone-based chips */}
               <div className={styles.metaRow}>
-                <span className={styles.metaChip} data-tone={danger ? "danger" : "ok"}>
-                  {danger ? `☠️ ${dangerLabel}` : locale === "dk" ? "Ikke giftig" : "Not toxic"}
-                </span>
+                {danger ? (
+                  <span className={`${styles.metaChip} ${styles.metaChipDanger}`}>
+                    ☠️ {dangerLabel}
+                  </span>
+                ) : (
+                  <span className={styles.metaChip}>
+                    {locale === "dk" ? "Ikke giftig" : "Not toxic"}
+                  </span>
+                )}
 
-                <span className={styles.metaChip} data-tone={inSeasonNow ? "ok" : "warn"}>
+                <span
+                  className={`${styles.metaChip} ${
+                    inSeasonNow ? styles.metaChipGood : styles.metaChipWarn
+                  }`}
+                >
                   {inSeasonNow
                     ? locale === "dk"
                       ? "I sæson"
@@ -359,19 +394,17 @@ export default async function SpeciesPage({
                     : locale === "dk"
                     ? "Ikke i sæson"
                     : "Out of season"}
-                  {typeof conf01 === "number" ? ` · ${formatPercent01(conf01)}` : ""}
+                  {conf ? ` · ${conf.text}` : ""}
                 </span>
 
-                <span className={styles.metaChip} data-tone="info">
+                <span className={styles.metaChip}>
                   {locale === "dk" ? "Land:" : "Country:"} {country.toUpperCase()}
                 </span>
               </div>
 
               <div className={styles.kpis}>
                 <div className={styles.kpi}>
-                  <div className={styles.kpiLabel}>
-                    {locale === "dk" ? "Fund" : "Finds"}
-                  </div>
+                  <div className={styles.kpiLabel}>{locale === "dk" ? "Fund" : "Finds"}</div>
                   <div className={styles.kpiValue}>{fmtCompact(totalFinds)}</div>
                 </div>
 
@@ -426,9 +459,7 @@ export default async function SpeciesPage({
                   {locale === "dk" ? "Hurtig identifikation" : "Quick identification"}
                 </h2>
                 <p className={styles.sectionSub}>
-                  {locale === "dk"
-                    ? "Brug dette som tjekliste i marken."
-                    : "Use this as a field checklist."}
+                  {locale === "dk" ? "Brug dette som tjekliste i marken." : "Use this as a field checklist."}
                 </p>
 
                 <div className={styles.checklist}>
@@ -489,9 +520,7 @@ export default async function SpeciesPage({
                         </div>
                       ) : (
                         <p className={styles.sectionSub}>
-                          {locale === "dk"
-                            ? "Tilføj lookalikes (SEO-guld)."
-                            : "Add look-alikes (SEO gold)."}
+                          {locale === "dk" ? "Tilføj lookalikes (SEO-guld)." : "Add look-alikes (SEO gold)."}
                         </p>
                       )}
                     </section>
@@ -518,9 +547,7 @@ export default async function SpeciesPage({
                 if (key === "notes") {
                   return (
                     <section key={key} id="notes" className={styles.section}>
-                      <h2 className={styles.sectionTitle}>
-                        {locale === "dk" ? "Bemærkninger" : "Notes"}
-                      </h2>
+                      <h2 className={styles.sectionTitle}>{locale === "dk" ? "Bemærkninger" : "Notes"}</h2>
                       {notesText ? (
                         <div className={styles.paragraph}>
                           <p>{notesText}</p>
@@ -538,18 +565,14 @@ export default async function SpeciesPage({
 
                 return (
                   <section key={key} id="safety" className={styles.section}>
-                    <h2 className={styles.sectionTitle}>
-                      {locale === "dk" ? "Sikkerhed" : "Safety"}
-                    </h2>
+                    <h2 className={styles.sectionTitle}>{locale === "dk" ? "Sikkerhed" : "Safety"}</h2>
                     {t?.safety_notes ? (
                       <div className={styles.callout}>
                         <p className={styles.calloutText}>{t.safety_notes}</p>
                       </div>
                     ) : (
                       <p className={styles.sectionSub}>
-                        {locale === "dk"
-                          ? "Tilføj safety_notes. Vær tydelig."
-                          : "Add safety_notes. Be explicit."}
+                        {locale === "dk" ? "Tilføj safety_notes. Vær tydelig." : "Add safety_notes. Be explicit."}
                       </p>
                     )}
                   </section>
