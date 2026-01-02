@@ -1,4 +1,4 @@
-"use client"; 
+"use client";
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -28,12 +28,7 @@ function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
   const dLng = ((b.lng - a.lng) * Math.PI) / 180;
   const s1 = Math.sin(dLat / 2);
   const s2 = Math.sin(dLng / 2);
-  const q =
-    s1 * s1 +
-    Math.cos((a.lat * Math.PI) / 180) *
-      Math.cos((b.lat * Math.PI) / 180) *
-      s2 *
-      s2;
+  const q = s1 * s1 + Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * s2 * s2;
   return 2 * R * Math.asin(Math.sqrt(q));
 }
 
@@ -42,7 +37,9 @@ function isDesktopNow() {
   return window.matchMedia?.("(min-width: 1024px)")?.matches ?? false;
 }
 
-function safeParseDrop(raw: string | null): { lat: number; lng: number; name?: string; speciesSlug?: string | null } | null {
+function safeParseDrop(
+  raw: string | null
+): { lat: number; lng: number; name?: string; speciesSlug?: string | null } | null {
   if (!raw) return null;
   try {
     const obj = JSON.parse(raw);
@@ -53,7 +50,8 @@ function safeParseDrop(raw: string | null): { lat: number; lng: number; name?: s
       lat,
       lng,
       name: typeof obj?.name === "string" ? obj.name : undefined,
-      speciesSlug: typeof obj?.speciesSlug === "string" ? obj.speciesSlug : obj?.speciesSlug === null ? null : undefined,
+      speciesSlug:
+        typeof obj?.speciesSlug === "string" ? obj.speciesSlug : obj?.speciesSlug === null ? null : undefined,
     };
   } catch {
     return null;
@@ -106,6 +104,13 @@ export default function MapClient({ spots }: Props) {
   const [dropErr, setDropErr] = useState<string | null>(null);
 
   const isEmptyProd = spotsLocal.length === 0;
+
+  // ===== Top UI collapse (more map height on mobile) =====
+  const [topCollapsed, setTopCollapsed] = useState(false);
+  useEffect(() => {
+    const shouldCollapse = isPanning || (!isDesktopNow() && sheetExpanded);
+    setTopCollapsed(shouldCollapse);
+  }, [isPanning, sheetExpanded]);
 
   // auth: /api/auth/me
   useEffect(() => {
@@ -173,6 +178,7 @@ export default function MapClient({ spots }: Props) {
       ? spotsLocal.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2).length
       : 0;
 
+    // NOTE: disse er placeholders (bedre at gøre ægte senere)
     const seasonNowCount = Math.min(total, Math.max(0, Math.round(total * 0.35)));
     const peakCount = Math.min(total, Math.max(0, Math.round(total * 0.12)));
 
@@ -272,33 +278,31 @@ export default function MapClient({ spots }: Props) {
   }, [search, mapApi, spotsById, onSelectSpot]);
 
   // restore drop after login: ?drop=...
- useEffect(() => {
-  if (restoredDropRef.current) return;
-  const raw = search.get("drop");
-  const parsed = safeParseDrop(raw);
-  if (!parsed) return;
+  useEffect(() => {
+    if (restoredDropRef.current) return;
+    const raw = search.get("drop");
+    const parsed = safeParseDrop(raw);
+    if (!parsed) return;
 
-  restoredDropRef.current = true;
+    restoredDropRef.current = true;
 
-  setMode("forage");
-  setActiveInsight(null);
+    setMode("forage");
+    setActiveInsight(null);
 
-  setDrop({ lat: parsed.lat, lng: parsed.lng });
-  setDropErr(null);
-  setSelectedId(null);
-  setSpotCounts(null);
-  setSheetExpanded(false);
+    setDrop({ lat: parsed.lat, lng: parsed.lng });
+    setDropErr(null);
+    setSelectedId(null);
+    setSpotCounts(null);
+    setSheetExpanded(false);
 
-  if (mapApi) {
-    mapApi.flyTo(parsed.lat, parsed.lng, Math.max(mapApi.getZoom(), 14));
-  }
+    if (mapApi) {
+      mapApi.flyTo(parsed.lat, parsed.lng, Math.max(mapApi.getZoom(), 14));
+    }
 
-  // ✅ ryd ?drop=... fra URL (så den ikke re-trigges)
-  const url = new URL(window.location.href);
-  url.searchParams.delete("drop");
-  window.history.replaceState({}, "", url.toString());
-}, [search, mapApi]);
-
+    const url = new URL(window.location.href);
+    url.searchParams.delete("drop");
+    window.history.replaceState({}, "", url.toString());
+  }, [search, mapApi]);
 
   // selected counts
   useEffect(() => {
@@ -310,10 +314,9 @@ export default function MapClient({ spots }: Props) {
     const ac = new AbortController();
     (async () => {
       try {
-        const res = await fetch(
-          `/api/spots/counts?spot_id=${encodeURIComponent(String(selectedSpot.id))}&fresh=1`,
-          { signal: ac.signal }
-        );
+        const res = await fetch(`/api/spots/counts?spot_id=${encodeURIComponent(String(selectedSpot.id))}&fresh=1`, {
+          signal: ac.signal,
+        });
         const json = await res.json();
         if (!res.ok || !json?.ok) return;
 
@@ -367,9 +370,7 @@ export default function MapClient({ spots }: Props) {
           },
         }));
 
-        setSpotCounts((prev) =>
-          prev ? { ...prev, total: prev.total + 1, qtr: prev.qtr + 1, last30: prev.last30 + 1 } : prev
-        );
+        setSpotCounts((prev) => (prev ? { ...prev, total: prev.total + 1, qtr: prev.qtr + 1, last30: prev.last30 + 1 } : prev));
 
         window.setTimeout(() => setLogOk(false), 1200);
       } catch (e: any) {
@@ -389,10 +390,9 @@ export default function MapClient({ spots }: Props) {
 
     (async () => {
       try {
-        const res = await fetch(
-          `/api/spots/counts-batch?spot_ids=${encodeURIComponent(debouncedVisibleIds.join(","))}`,
-          { signal: ac.signal }
-        );
+        const res = await fetch(`/api/spots/counts-batch?spot_ids=${encodeURIComponent(debouncedVisibleIds.join(","))}`, {
+          signal: ac.signal,
+        });
         const json = await res.json();
         if (!res.ok || !json?.ok || !json.map) return;
 
@@ -432,11 +432,7 @@ export default function MapClient({ spots }: Props) {
     return arr;
   }, [visibleSpots, countsMap, userPos, mode]);
 
-  const sheetTitle = isPanning
-    ? "Finder spots…"
-    : visibleIds.length
-    ? `${visibleIds.length} relevante spots i view`
-    : "Flyt kortet for at finde spots";
+  const sheetTitle = isPanning ? "Finder spots…" : visibleIds.length ? `${visibleIds.length} relevante spots i view` : "Flyt kortet for at finde spots";
 
   const countsForSelected = useMemo(() => {
     if (!selectedSpot?.id) return null;
@@ -475,133 +471,166 @@ export default function MapClient({ spots }: Props) {
     });
   }, [filteredSpots, countsMap, mode, selectedId]);
 
+  // ===== Recommended spot (actionable) =====
+  const recommendedSpot = useMemo(() => {
+    if (!userPos) return null;
+
+    const candidates = filteredSpots;
+    if (!candidates.length) return null;
+
+    let best: { spot: Spot; score: number } | null = null;
+
+    for (const s of candidates) {
+      const dKm = haversineKm(userPos, { lat: s.lat, lng: s.lng });
+      if (dKm > 6) continue;
+
+      const qtr = countsMap[String(s.id)]?.qtr ?? 0;
+
+      // nærhed hårdt + “varmt”-boost
+      const score = (1 / Math.max(0.25, dKm)) * 10 + qtr * 0.35;
+
+      if (!best || score > best.score) best = { spot: s, score };
+    }
+
+    return best?.spot ?? null;
+  }, [userPos, filteredSpots, countsMap]);
+
+  const onGoRecommended = useCallback(() => {
+    if (!recommendedSpot || !mapApi) return;
+
+    setSelectedId(String(recommendedSpot.id));
+    setDrop(null);
+    setDropErr(null);
+    setSpotCounts(null);
+
+    mapApi.flyTo(recommendedSpot.lat, recommendedSpot.lng, Math.max(mapApi.getZoom(), 14));
+    mapApi.panBy?.(0, isDesktopNow() ? -60 : -140);
+
+    if (!isDesktopNow()) setSheetExpanded(false);
+  }, [recommendedSpot, mapApi]);
+
   // login gate handler from DropSpotSheet
   const onRequireAuth = useCallback(
-  (payload: { lat: number; lng: number; name: string; speciesSlug: string | null }) => {
-    const returnTo = `${pathname}${search?.toString() ? `?${search.toString()}` : ""}`;
+    (payload: { lat: number; lng: number; name: string; speciesSlug: string | null }) => {
+      const returnTo = `${pathname}${search?.toString() ? `?${search.toString()}` : ""}`;
 
-    const qs = new URLSearchParams();
-    qs.set("returnTo", returnTo);
-    qs.set("drop", JSON.stringify(payload));
+      const qs = new URLSearchParams();
+      qs.set("returnTo", returnTo);
+      qs.set("drop", JSON.stringify(payload));
 
-    window.location.href = `/${locale}/login?${qs.toString()}`;
-  },
-  [locale, pathname, search]
-);
+      window.location.href = `/${locale}/login?${qs.toString()}`;
+    },
+    [locale, pathname, search]
+  );
 
-  
   // click-to-drop (ONLY in forage)
   const onMapClick = useCallback(
-  (p: { lat: number; lng: number }) => {
-    if (mode !== "forage") return;
+    (p: { lat: number; lng: number }) => {
+      if (mode !== "forage") return;
 
-    if (!isAuthed) {
-      return onRequireAuth({ lat: p.lat, lng: p.lng, name: "Nyt spot", speciesSlug: null });
-    }
+      if (!isAuthed) {
+        return onRequireAuth({ lat: p.lat, lng: p.lng, name: "Nyt spot", speciesSlug: null });
+      }
 
-    setDrop(p);
-    setDropErr(null);
-    setSelectedId(null);
-    setSpotCounts(null);
-    setSheetExpanded(false);
-  },
-  [mode, isAuthed, onRequireAuth]
-);
-
-
-
-const onCreateAndLogFromDrop = useCallback(
-  async ({ name, speciesSlug }: { name: string; speciesSlug: string | null }) => {
-    if (!drop) return;
-    if (dropBusy) return;
-
-    try {
-      setDropBusy(true);
+      setDrop(p);
       setDropErr(null);
+      setSelectedId(null);
+      setSpotCounts(null);
+      setSheetExpanded(false);
+    },
+    [mode, isAuthed, onRequireAuth]
+  );
 
-      const resPlace = await fetch("/api/places/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          lat: drop.lat,
-          lng: drop.lng,
-          name,
-          country: "dk",
-          region: "",
-          habitat: "unknown",
-          description: "",
-          ...(speciesSlug ? { species_slug: speciesSlug } : {}),
-          confidence: 60,
-        }),
-      });
+  const onCreateAndLogFromDrop = useCallback(
+    async ({ name, speciesSlug }: { name: string; speciesSlug: string | null }) => {
+      if (!drop) return;
+      if (dropBusy) return;
 
-      const jPlace = await resPlace.json();
-      if (!resPlace.ok || !jPlace?.ok || !jPlace?.place?.slug) {
-        throw new Error(jPlace?.error ?? "Kunne ikke oprette spot");
-      }
+      try {
+        setDropBusy(true);
+        setDropErr(null);
 
-      const place = jPlace.place as { slug: string; name: string; lat: number; lng: number };
+        const resPlace = await fetch("/api/places/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lat: drop.lat,
+            lng: drop.lng,
+            name,
+            country: "dk",
+            region: "",
+            habitat: "unknown",
+            description: "",
+            ...(speciesSlug ? { species_slug: speciesSlug } : {}),
+            confidence: 60,
+          }),
+        });
 
-      // ✅ Flyt kortet til det nye spot (tydelig feedback)
-      if (mapApi) {
-        mapApi.flyTo(place.lat, place.lng, Math.max(mapApi.getZoom(), 14));
-        mapApi.panBy?.(0, isDesktopNow() ? -60 : -140);
-      }
+        const jPlace = await resPlace.json();
+        if (!resPlace.ok || !jPlace?.ok || !jPlace?.place?.slug) {
+          throw new Error(jPlace?.error ?? "Kunne ikke oprette spot");
+        }
 
-      const resFind = await fetch("/api/finds/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          spot_id: place.slug,
+        const place = jPlace.place as { slug: string; name: string; lat: number; lng: number };
+
+        if (mapApi) {
+          mapApi.flyTo(place.lat, place.lng, Math.max(mapApi.getZoom(), 14));
+          mapApi.panBy?.(0, isDesktopNow() ? -60 : -140);
+        }
+
+        const resFind = await fetch("/api/finds/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            spot_id: place.slug,
+            species_slug: speciesSlug ?? null,
+            observed_at: new Date().toISOString(),
+            visibility: "public_aggregate",
+            country: "DK",
+            geo_precision_km: 1,
+            photo_urls: [],
+          }),
+        });
+
+        const jFind = await resFind.json();
+        if (!resFind.ok || !jFind?.ok) {
+          throw new Error(jFind?.error ?? "Kunne ikke logge fund");
+        }
+
+        const newSpot: Spot = {
+          id: place.slug,
+          lat: Number(place.lat),
+          lng: Number(place.lng),
+          title: place.name ?? "Nyt spot",
           species_slug: speciesSlug ?? null,
-          observed_at: new Date().toISOString(),
-          visibility: "public_aggregate",
-          country: "DK",
-          geo_precision_km: 1,
-          photo_urls: [],
-        }),
-      });
+        };
 
-      const jFind = await resFind.json();
-      if (!resFind.ok || !jFind?.ok) {
-        throw new Error(jFind?.error ?? "Kunne ikke logge fund");
+        setSpotsLocal((prev) => {
+          if (prev.some((s) => String(s.id) === String(newSpot.id))) return prev;
+          return [newSpot, ...prev];
+        });
+
+        setCountsMap((prev) => ({
+          ...prev,
+          [String(newSpot.id)]: {
+            total: Math.max(prev[String(newSpot.id)]?.total ?? 0, 1),
+            qtr: Math.max(prev[String(newSpot.id)]?.qtr ?? 0, 1),
+          },
+        }));
+
+        setSelectedId(String(newSpot.id));
+        setDrop(null);
+
+        setLogOk(true);
+        window.setTimeout(() => setLogOk(false), 1200);
+      } catch (e: any) {
+        setDropErr(e?.message ?? "Ukendt fejl");
+      } finally {
+        setDropBusy(false);
       }
-
-      const newSpot: Spot = {
-        id: place.slug,
-        lat: Number(place.lat),
-        lng: Number(place.lng),
-        title: place.name ?? "Nyt spot",
-        species_slug: speciesSlug ?? null,
-      };
-
-      setSpotsLocal((prev) => {
-        if (prev.some((s) => String(s.id) === String(newSpot.id))) return prev;
-        return [newSpot, ...prev];
-      });
-
-      setCountsMap((prev) => ({
-        ...prev,
-        [String(newSpot.id)]: {
-          total: Math.max(prev[String(newSpot.id)]?.total ?? 0, 1),
-          qtr: Math.max(prev[String(newSpot.id)]?.qtr ?? 0, 1),
-        },
-      }));
-
-      setSelectedId(String(newSpot.id));
-      setDrop(null);
-
-      setLogOk(true);
-      window.setTimeout(() => setLogOk(false), 1200);
-    } catch (e: any) {
-      setDropErr(e?.message ?? "Ukendt fejl");
-    } finally {
-      setDropBusy(false);
-    }
-  },
-  [drop, dropBusy, mapApi] // ✅ vigtig (ellers kan mapApi være stale/null)
-);
-
+    },
+    [drop, dropBusy, mapApi]
+  );
 
   const mobileDockMode: "peek" | "sheet" | "none" = useMemo(() => {
     if (drop) return "none";
@@ -610,9 +639,17 @@ const onCreateAndLogFromDrop = useCallback(
   }, [drop, selectedSpot]);
 
   return (
-    <div className={styles.page} data-sheet-open={sheetExpanded ? "1" : "0"} data-mobile-dock={mobileDockMode}>
-      <MapTopbar mode={mode} onToggleMode={onToggleMode} />
-      <InsightStrip mode={mode} active={activeInsight} insights={insights} onPick={onPickInsight} />
+    <div
+      className={styles.page}
+      data-sheet-open={sheetExpanded ? "1" : "0"}
+      data-mobile-dock={mobileDockMode}
+      data-top-collapsed={topCollapsed ? "1" : "0"}
+    >
+      {/* TOP UI wrapper (no global selectors needed) */}
+      <div className={styles.topWrap}>
+        <MapTopbar mode={mode} onToggleMode={onToggleMode} />
+        <InsightStrip mode={mode} active={activeInsight} insights={insights} onPick={onPickInsight} />
+      </div>
 
       <div className={styles.desktopBody}>
         {/* LEFT */}
@@ -657,6 +694,13 @@ const onCreateAndLogFromDrop = useCallback(
             onPanningChange={setIsPanning}
             onMapClick={onMapClick}
           />
+
+          {/* QUICK CTA (mobile only via CSS) */}
+          {mode === "forage" && recommendedSpot && !drop && !isEmptyProd ? (
+            <button type="button" className={styles.fabCta} onClick={onGoRecommended}>
+              Start sanketur
+            </button>
+          ) : null}
 
           {/* MOBILE dock */}
           <div className={styles.mobileDock}>
