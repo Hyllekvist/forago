@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import styles from "./MapClient.module.css";
 
 import LeafletMap, { type Spot, type LeafletLikeMap } from "./LeafletMap";
@@ -28,7 +28,12 @@ function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
   const dLng = ((b.lng - a.lng) * Math.PI) / 180;
   const s1 = Math.sin(dLat / 2);
   const s2 = Math.sin(dLng / 2);
-  const q = s1 * s1 + Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * s2 * s2;
+  const q =
+    s1 * s1 +
+    Math.cos((a.lat * Math.PI) / 180) *
+      Math.cos((b.lat * Math.PI) / 180) *
+      s2 *
+      s2;
   return 2 * R * Math.asin(Math.sqrt(q));
 }
 
@@ -59,6 +64,7 @@ function safeParseDrop(
 }
 
 export default function MapClient({ spots }: Props) {
+  const router = useRouter();
   const pathname = usePathname();
   const search = useSearchParams();
 
@@ -71,16 +77,19 @@ export default function MapClient({ spots }: Props) {
     return raw === "dk" || raw === "en" ? raw : "dk";
   }, [pathname]);
 
+  const onBack = useCallback(() => {
+    if (typeof window !== "undefined" && window.history.length > 1) router.back();
+    else router.push(`/${locale}/season`);
+  }, [router, locale]);
+
   const [mode, setMode] = useState<Mode>("daily");
   const [activeInsight, setActiveInsight] = useState<InsightKey | null>(null);
 
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [mapApi, setMapApi] = useState<LeafletLikeMap | null>(null);
 
-  // auth gate
   const [isAuthed, setIsAuthed] = useState(false);
 
-  // local spots (for instant create)
   const [spotsLocal, setSpotsLocal] = useState<Spot[]>(spots);
   useEffect(() => setSpotsLocal(spots), [spots]);
 
@@ -98,21 +107,18 @@ export default function MapClient({ spots }: Props) {
   const [spotCounts, setSpotCounts] = useState<SpotCounts | null>(null);
   const [countsMap, setCountsMap] = useState<Record<string, { total: number; qtr: number }>>({});
 
-  // drop state
   const [drop, setDrop] = useState<{ lat: number; lng: number } | null>(null);
   const [dropBusy, setDropBusy] = useState(false);
   const [dropErr, setDropErr] = useState<string | null>(null);
 
   const isEmptyProd = spotsLocal.length === 0;
 
-  // ===== Top UI collapse (more map height on mobile) =====
   const [topCollapsed, setTopCollapsed] = useState(false);
   useEffect(() => {
     const shouldCollapse = isPanning || (!isDesktopNow() && sheetExpanded);
     setTopCollapsed(shouldCollapse);
   }, [isPanning, sheetExpanded]);
 
-  // auth: /api/auth/me
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -131,7 +137,6 @@ export default function MapClient({ spots }: Props) {
     };
   }, []);
 
-  // geo
   useEffect(() => {
     if (!("geolocation" in navigator)) return;
     navigator.geolocation.getCurrentPosition(
@@ -141,13 +146,11 @@ export default function MapClient({ spots }: Props) {
     );
   }, []);
 
-  // debounce visible ids
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedVisibleIds(visibleIds), 250);
     return () => window.clearTimeout(t);
   }, [visibleIds]);
 
-  // auto focus forage
   useEffect(() => {
     if (mode !== "forage") return;
     if (!userPos || !mapApi) return;
@@ -178,7 +181,6 @@ export default function MapClient({ spots }: Props) {
       ? spotsLocal.filter((s) => haversineKm(userPos, { lat: s.lat, lng: s.lng }) <= 2).length
       : 0;
 
-    // NOTE: disse er placeholders (bedre at gøre ægte senere)
     const seasonNowCount = Math.min(total, Math.max(0, Math.round(total * 0.35)));
     const peakCount = Math.min(total, Math.max(0, Math.round(total * 0.12)));
 
@@ -264,7 +266,6 @@ export default function MapClient({ spots }: Props) {
     [mapApi, spotsById]
   );
 
-  // deep link ?spot=
   useEffect(() => {
     if (deepLinkHandledRef.current) return;
     if (!mapApi) return;
@@ -277,7 +278,6 @@ export default function MapClient({ spots }: Props) {
     }
   }, [search, mapApi, spotsById, onSelectSpot]);
 
-  // restore drop after login: ?drop=...
   useEffect(() => {
     if (restoredDropRef.current) return;
     const raw = search.get("drop");
@@ -304,7 +304,6 @@ export default function MapClient({ spots }: Props) {
     window.history.replaceState({}, "", url.toString());
   }, [search, mapApi]);
 
-  // selected counts
   useEffect(() => {
     if (!selectedSpot?.id) {
       setSpotCounts(null);
@@ -314,9 +313,10 @@ export default function MapClient({ spots }: Props) {
     const ac = new AbortController();
     (async () => {
       try {
-        const res = await fetch(`/api/spots/counts?spot_id=${encodeURIComponent(String(selectedSpot.id))}&fresh=1`, {
-          signal: ac.signal,
-        });
+        const res = await fetch(
+          `/api/spots/counts?spot_id=${encodeURIComponent(String(selectedSpot.id))}&fresh=1`,
+          { signal: ac.signal }
+        );
         const json = await res.json();
         if (!res.ok || !json?.ok) return;
 
@@ -333,7 +333,6 @@ export default function MapClient({ spots }: Props) {
     return () => ac.abort();
   }, [selectedSpot?.id]);
 
-  // quick log existing spot
   const onQuickLog = useCallback(
     async (spot: Spot) => {
       if (isLogging) return;
@@ -370,7 +369,9 @@ export default function MapClient({ spots }: Props) {
           },
         }));
 
-        setSpotCounts((prev) => (prev ? { ...prev, total: prev.total + 1, qtr: prev.qtr + 1, last30: prev.last30 + 1 } : prev));
+        setSpotCounts((prev) =>
+          prev ? { ...prev, total: prev.total + 1, qtr: prev.qtr + 1, last30: prev.last30 + 1 } : prev
+        );
 
         window.setTimeout(() => setLogOk(false), 1200);
       } catch (e: any) {
@@ -383,16 +384,16 @@ export default function MapClient({ spots }: Props) {
     [isLogging]
   );
 
-  // batch counts (stable merge)
   useEffect(() => {
     if (!debouncedVisibleIds.length) return;
     const ac = new AbortController();
 
     (async () => {
       try {
-        const res = await fetch(`/api/spots/counts-batch?spot_ids=${encodeURIComponent(debouncedVisibleIds.join(","))}`, {
-          signal: ac.signal,
-        });
+        const res = await fetch(
+          `/api/spots/counts-batch?spot_ids=${encodeURIComponent(debouncedVisibleIds.join(","))}`,
+          { signal: ac.signal }
+        );
         const json = await res.json();
         if (!res.ok || !json?.ok || !json.map) return;
 
@@ -432,7 +433,11 @@ export default function MapClient({ spots }: Props) {
     return arr;
   }, [visibleSpots, countsMap, userPos, mode]);
 
-  const sheetTitle = isPanning ? "Finder spots…" : visibleIds.length ? `${visibleIds.length} relevante spots i view` : "Flyt kortet for at finde spots";
+  const sheetTitle = isPanning
+    ? "Finder spots…"
+    : visibleIds.length
+    ? `${visibleIds.length} relevante spots i view`
+    : "Flyt kortet for at finde spots";
 
   const countsForSelected = useMemo(() => {
     if (!selectedSpot?.id) return null;
@@ -450,7 +455,6 @@ export default function MapClient({ spots }: Props) {
     } satisfies SpotCounts;
   }, [selectedSpot?.id, spotCounts, countsMap]);
 
-  // hide 0-public in daily (after we have counts)
   const spotsForMap = useMemo(() => {
     const hasCounts = Object.keys(countsMap).length > 0;
     if (!hasCounts) return filteredSpots;
@@ -471,7 +475,6 @@ export default function MapClient({ spots }: Props) {
     });
   }, [filteredSpots, countsMap, mode, selectedId]);
 
-  // ===== Recommended spot (actionable) =====
   const recommendedSpot = useMemo(() => {
     if (!userPos) return null;
 
@@ -485,8 +488,6 @@ export default function MapClient({ spots }: Props) {
       if (dKm > 6) continue;
 
       const qtr = countsMap[String(s.id)]?.qtr ?? 0;
-
-      // nærhed hårdt + “varmt”-boost
       const score = (1 / Math.max(0.25, dKm)) * 10 + qtr * 0.35;
 
       if (!best || score > best.score) best = { spot: s, score };
@@ -509,7 +510,6 @@ export default function MapClient({ spots }: Props) {
     if (!isDesktopNow()) setSheetExpanded(false);
   }, [recommendedSpot, mapApi]);
 
-  // login gate handler from DropSpotSheet
   const onRequireAuth = useCallback(
     (payload: { lat: number; lng: number; name: string; speciesSlug: string | null }) => {
       const returnTo = `${pathname}${search?.toString() ? `?${search.toString()}` : ""}`;
@@ -523,7 +523,6 @@ export default function MapClient({ spots }: Props) {
     [locale, pathname, search]
   );
 
-  // click-to-drop (ONLY in forage)
   const onMapClick = useCallback(
     (p: { lat: number; lng: number }) => {
       if (mode !== "forage") return;
@@ -645,14 +644,12 @@ export default function MapClient({ spots }: Props) {
       data-mobile-dock={mobileDockMode}
       data-top-collapsed={topCollapsed ? "1" : "0"}
     >
-      {/* TOP UI wrapper (no global selectors needed) */}
       <div className={styles.topWrap}>
-        <MapTopbar mode={mode} onToggleMode={onToggleMode} />
+        <MapTopbar mode={mode} onToggleMode={onToggleMode} onBack={onBack} />
         <InsightStrip mode={mode} active={activeInsight} insights={insights} onPick={onPickInsight} />
       </div>
 
       <div className={styles.desktopBody}>
-        {/* LEFT */}
         <aside className={styles.desktopLeft}>
           <div className={styles.panelInner}>
             {isEmptyProd ? (
@@ -681,7 +678,6 @@ export default function MapClient({ spots }: Props) {
           </div>
         </aside>
 
-        {/* MAP */}
         <div className={styles.mapShell}>
           <LeafletMap
             spots={spotsForMap}
@@ -695,14 +691,12 @@ export default function MapClient({ spots }: Props) {
             onMapClick={onMapClick}
           />
 
-          {/* QUICK CTA (mobile only via CSS) */}
           {mode === "forage" && recommendedSpot && !drop && !isEmptyProd ? (
             <button type="button" className={styles.fabCta} onClick={onGoRecommended}>
               Start sanketur
             </button>
           ) : null}
 
-          {/* MOBILE dock */}
           <div className={styles.mobileDock}>
             {isEmptyProd ? (
               <div className={styles.sheetWrap}>
@@ -746,7 +740,6 @@ export default function MapClient({ spots }: Props) {
             ) : null}
           </div>
 
-          {/* DROP overlay */}
           {drop ? (
             <DropSpotSheet
               locale={locale}
@@ -755,14 +748,13 @@ export default function MapClient({ spots }: Props) {
               isBusy={dropBusy}
               error={dropErr}
               isAuthed={isAuthed}
-              onRequireAuth={onRequireAuth}
+              onRequireAuth={(payload) => onRequireAuth(payload)}
               onClose={() => setDrop(null)}
               onCreateAndLog={onCreateAndLogFromDrop}
             />
           ) : null}
         </div>
 
-        {/* RIGHT */}
         <aside className={styles.desktopRight}>
           <div className={styles.panelInner}>
             {drop ? (
