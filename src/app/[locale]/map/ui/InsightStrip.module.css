@@ -31,7 +31,7 @@
   text-align:left;
 }
 
-.card[data-active="true"]{
+.card[data-active="1"]{
   border-color: color-mix(in srgb, var(--accent) 35%, var(--chipLine));
   background: color-mix(in srgb, var(--accent) 12%, var(--chipBg));
 }
