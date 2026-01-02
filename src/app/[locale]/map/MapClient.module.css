@@ -6,12 +6,14 @@
   flex-direction: column;
   overflow: hidden;
 
-  /* one place to tune */
+  /* tune */
   --top-offset: 0px;
-  --dock-bottom: calc(var(--bottom-nav-h, 92px) + 18px + env(safe-area-inset-bottom));
+
+  /* bottom-nav kan være 0 på map (Shell sætter den) */
+  --dock-bottom: calc(var(--bottom-nav-h, 0px) + 26px + env(safe-area-inset-bottom));
 }
 
-/* Top UI wrapper (MapTopbar + InsightStrip) */
+/* Top UI wrapper */
 .topWrap{
   position: relative;
   z-index: 80;
@@ -20,16 +22,14 @@
   will-change: transform;
 }
 
-/* Collapse top UI on mobile interaction */
 .page[data-top-collapsed="1"]{
-  --top-offset: 84px; /* juster: 74-92 afhængigt af feel */
+  --top-offset: 84px;
 }
 
 .page[data-top-collapsed="1"] .topWrap{
   opacity: .95;
 }
 
-/* Pull the body up when top is collapsed so map gets the height */
 .desktopBody{
   margin-top: calc(-1 * var(--top-offset));
   transition: margin-top 220ms ease;
@@ -40,7 +40,7 @@
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 1fr; /* mobile default */
+  grid-template-columns: 1fr;
   overflow: hidden;
 }
 
@@ -51,7 +51,7 @@
   overflow: hidden;
 }
 
-/* Leaflet fill */
+/* Leaflet fill (leaflet laver sin egen class) */
 .mapShell :global(.leaflet-container) {
   height: 100% !important;
   width: 100% !important;
@@ -88,10 +88,7 @@
 }
 .emptyHint strong { color: var(--ink); }
 
-/* -----------------------
-   MOBILE dock
-   ----------------------- */
-
+/* MOBILE dock */
 .mobileDock {
   position: absolute;
   inset: 0;
@@ -100,7 +97,6 @@
 }
 .mobileDock > * { pointer-events: auto; }
 
-/* base positions */
 .sheetWrap,
 .peekWrap {
   position: absolute;
@@ -109,27 +105,19 @@
   bottom: var(--dock-bottom);
 }
 
-/* stacking */
 .sheetWrap { z-index: 41; }
 .peekWrap  { z-index: 42; }
 
-/* only show the active dock */
 .page[data-mobile-dock="sheet"] .peekWrap { display: none; }
 .page[data-mobile-dock="peek"] .sheetWrap { display: none; }
 .page[data-mobile-dock="none"] .sheetWrap,
 .page[data-mobile-dock="none"] .peekWrap { display: none; }
 
-/* When sheet is expanded, lift it a bit */
 .page[data-sheet-open="1"]{
-  --dock-bottom: calc(var(--bottom-nav-h, 92px) + 10px + env(safe-area-inset-bottom));
+  /* lidt lavere når sheet er åben */
+  --dock-bottom: calc(var(--bottom-nav-h, 0px) + 18px + env(safe-area-inset-bottom));
 }
 
-/* Peek slightly higher */
-.page[data-mobile-dock="peek"]{
-  --dock-bottom: calc(var(--bottom-nav-h, 92px) + 18px + env(safe-area-inset-bottom));
-}
-
-/* small screens */
 @media (max-width: 420px) {
   .sheetWrap,
   .peekWrap {
@@ -138,16 +126,14 @@
   }
 }
 
-/* ===== Action FAB: Start sanketur ===== */
+/* Action FAB */
 .fabCta{
   position: absolute;
   left: 12px;
   right: 12px;
-
-  /* over dock + med luft */
-  bottom: calc(var(--dock-bottom) + 68px);
-
+  bottom: calc(var(--dock-bottom) + 86px);
   z-index: 60;
+
   height: 46px;
   border-radius: 999px;
 
@@ -174,14 +160,11 @@
   .fabCta{ left: 10px; right: 10px; }
 }
 
-/* -----------------------
-   DESKTOP: 3-column
-   ----------------------- */
-
+/* Desktop */
 @media (min-width: 1024px) {
   .desktopBody {
     grid-template-columns: 360px 1fr 420px;
-    margin-top: 0; /* no collapse pull on desktop */
+    margin-top: 0;
   }
 
   .page{
@@ -200,21 +183,10 @@
     min-width: 0;
   }
 
-  .panelInner {
-    padding: 14px;
-  }
+  .mapShell { min-width: 0; }
 
-  .mapShell {
-    min-width: 0;
-  }
-
-  .mobileDock {
-    display: none;
-  }
-
-  .fabCta{
-    display:none;
-  }
+  .mobileDock { display: none; }
+  .fabCta{ display:none; }
 }
 
 /* Toasts */
@@ -244,14 +216,12 @@
   border-color: color-mix(in srgb, var(--accent) 35%, var(--glassLine));
 }
 
-/* Mobile scroll lock when sheet expanded */
 @media (max-width: 1023px) {
   .page[data-sheet-open="1"] {
     overscroll-behavior: none;
   }
 }
 
-/* hvis DropSpotSheet bruger fixed bottom */
 .dropSheet {
   bottom: var(--dock-bottom);
 }
