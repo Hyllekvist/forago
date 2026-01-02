@@ -90,7 +90,7 @@ function normalizeConfidence(conf: unknown): number | null {
   return 1;
 }
 
-/** ✅ Replace % with qualitative "data quality" */
+/** ✅ Qualitative label (and tone) instead of % */
 function confidenceLabel(
   locale: Locale,
   conf01: number | null
@@ -102,10 +102,7 @@ function confidenceLabel(
     };
   }
   if (conf01 >= 0.8) {
-    return {
-      text: locale === "dk" ? "Høj datakvalitet" : "High data quality",
-      tone: "ok",
-    };
+    return { text: locale === "dk" ? "Høj datakvalitet" : "High data quality", tone: "ok" };
   }
   if (conf01 >= 0.5) {
     return {
@@ -113,10 +110,7 @@ function confidenceLabel(
       tone: "warn",
     };
   }
-  return {
-    text: locale === "dk" ? "Lav datakvalitet" : "Low data quality",
-    tone: "info",
-  };
+  return { text: locale === "dk" ? "Lav datakvalitet" : "Low data quality", tone: "info" };
 }
 
 type SpeciesRow = {
@@ -160,11 +154,7 @@ export async function generateMetadata({
   if (!isLocale(locParam)) return { title: "Forago" };
 
   const supabase = await supabaseServer();
-  const { data: sp } = await supabase
-    .from("species")
-    .select("id, slug")
-    .eq("slug", slug)
-    .maybeSingle();
+  const { data: sp } = await supabase.from("species").select("id, slug").eq("slug", slug).maybeSingle();
   if (!sp) return { title: "Forago" };
 
   const { data: tr } = await supabase
@@ -246,21 +236,16 @@ export default async function SpeciesPage({
   const conf = confidenceLabel(locale, conf01);
 
   const inSeasonNow = from && to ? isInSeason(month, from, to) : false;
-  const seasonText =
-    from && to ? seasonLabel(locale, from, to) : locale === "dk" ? "ukendt" : "unknown";
+  const seasonText = from && to ? seasonLabel(locale, from, to) : locale === "dk" ? "ukendt" : "unknown";
 
   const imageUrl = species.image_path
-    ? supabase.storage
-        .from("species")
-        .getPublicUrl(species.image_path).data.publicUrl +
+    ? supabase.storage.from("species").getPublicUrl(species.image_path).data.publicUrl +
       `?v=${encodeURIComponent(String(species.image_updated_at ?? species.created_at))}`
     : null;
 
   let totalFinds = 0;
   let finds30d = 0;
-  const statsRes = await supabase.rpc("species_find_stats", {
-    p_species_id: species.id,
-  });
+  const statsRes = await supabase.rpc("species_find_stats", { p_species_id: species.id });
   if (!statsRes.error && Array.isArray(statsRes.data) && statsRes.data[0]) {
     totalFinds = Number(statsRes.data[0].total_finds ?? 0);
     finds30d = Number(statsRes.data[0].finds_30d ?? 0);
@@ -308,7 +293,6 @@ export default async function SpeciesPage({
   const features = safeArray<IdFeature>(t?.id_features).slice(0, 6);
   const callouts = safeArray<IdCallout>(t?.id_callouts).slice(0, 6);
 
-  // ✅ Prefer new notes, fallback to old usage_notes
   const notesText = t?.notes ?? t?.usage_notes ?? null;
 
   const sections = danger
@@ -339,6 +323,17 @@ export default async function SpeciesPage({
     return { id: k, label };
   });
 
+  // ✅ Apply confidence tone to chip styling (uses existing CSS classes)
+  const seasonChipClass = `${styles.metaChip} ${
+    inSeasonNow ? styles.metaChipGood : styles.metaChipWarn
+  } ${
+    conf?.tone === "ok"
+      ? styles.metaChipGood
+      : conf?.tone === "warn"
+      ? styles.metaChipWarn
+      : ""
+  }`;
+
   return (
     <main className={styles.page}>
       <Script id="species-jsonld" type="application/ld+json">
@@ -346,13 +341,11 @@ export default async function SpeciesPage({
       </Script>
 
       <div className={styles.shell}>
-        {/* ✅ Mobile/tablet: top-hero */}
         <div className={styles.heroTop}>
           <FieldHero imageUrl={imageUrl} alt={name} />
         </div>
 
         <section className={styles.sheet}>
-          {/* ✅ Desktop: hero i venstre kolonne */}
           <aside className={styles.summary}>
             <div className={styles.heroSide}>
               <FieldHero imageUrl={imageUrl} alt={name} />
@@ -377,16 +370,10 @@ export default async function SpeciesPage({
                     ☠️ {dangerLabel}
                   </span>
                 ) : (
-                  <span className={styles.metaChip}>
-                    {locale === "dk" ? "Ikke giftig" : "Not toxic"}
-                  </span>
+                  <span className={styles.metaChip}>{locale === "dk" ? "Ikke giftig" : "Not toxic"}</span>
                 )}
 
-                <span
-                  className={`${styles.metaChip} ${
-                    inSeasonNow ? styles.metaChipGood : styles.metaChipWarn
-                  }`}
-                >
+                <span className={seasonChipClass}>
                   {inSeasonNow
                     ? locale === "dk"
                       ? "I sæson"
@@ -420,11 +407,7 @@ export default async function SpeciesPage({
                     <div
                       key={i}
                       className={`${styles.callout} ${
-                        c.tone === "warn"
-                          ? styles.calloutWarn
-                          : c.tone === "ok"
-                          ? styles.calloutOk
-                          : styles.calloutInfo
+                        c.tone === "warn" ? styles.calloutWarn : c.tone === "ok" ? styles.calloutOk : styles.calloutInfo
                       }`}
                     >
                       {c.title ? <div className={styles.calloutTitle}>{c.title}</div> : null}
@@ -435,7 +418,6 @@ export default async function SpeciesPage({
               ) : null}
             </header>
 
-            {/* ✅ Desktop TOC */}
             <nav className={styles.toc} aria-label={locale === "dk" ? "Indhold" : "Contents"}>
               <div className={styles.tocTitle}>{locale === "dk" ? "Indhold" : "Contents"}</div>
               <div className={styles.tocLinks}>
@@ -490,18 +472,14 @@ export default async function SpeciesPage({
                 if (key === "identification") {
                   return (
                     <section key={key} id="identification" className={styles.section}>
-                      <h2 className={styles.sectionTitle}>
-                        {locale === "dk" ? "Identifikation" : "Identification"}
-                      </h2>
+                      <h2 className={styles.sectionTitle}>{locale === "dk" ? "Identifikation" : "Identification"}</h2>
                       {t?.identification ? (
                         <div className={styles.paragraph}>
                           <p>{t.identification}</p>
                         </div>
                       ) : (
                         <p className={styles.sectionSub}>
-                          {locale === "dk"
-                            ? "Tilføj identification i species_translations."
-                            : "Add identification in species_translations."}
+                          {locale === "dk" ? "Tilføj identification i species_translations." : "Add identification in species_translations."}
                         </p>
                       )}
                     </section>
@@ -511,9 +489,7 @@ export default async function SpeciesPage({
                 if (key === "lookalikes") {
                   return (
                     <section key={key} id="lookalikes" className={styles.section}>
-                      <h2 className={styles.sectionTitle}>
-                        {locale === "dk" ? "Forvekslinger" : "Look-alikes"}
-                      </h2>
+                      <h2 className={styles.sectionTitle}>{locale === "dk" ? "Forvekslinger" : "Look-alikes"}</h2>
                       {t?.lookalikes ? (
                         <div className={styles.callout}>
                           <p className={styles.calloutText}>{t.lookalikes}</p>
@@ -536,9 +512,7 @@ export default async function SpeciesPage({
                           <p>{t.usage_notes}</p>
                         </div>
                       ) : (
-                        <p className={styles.sectionSub}>
-                          {locale === "dk" ? "Tilføj usage_notes." : "Add usage_notes."}
-                        </p>
+                        <p className={styles.sectionSub}>{locale === "dk" ? "Tilføj usage_notes." : "Add usage_notes."}</p>
                       )}
                     </section>
                   );
