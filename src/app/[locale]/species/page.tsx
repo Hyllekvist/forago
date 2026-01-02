@@ -78,7 +78,6 @@ export default async function SpeciesIndexPage({
     .toLowerCase();
 
   const country = countryForLocale(locale);
-
   const supabase = await supabaseServer();
 
   // Base species list
@@ -139,9 +138,9 @@ export default async function SpeciesIndexPage({
         const tr = trMap.get(r.id);
         const name = (tr?.common_name ?? r.slug).toLowerCase();
         const desc = (tr?.short_description ?? "").toLowerCase();
-        const slug = (r.slug ?? "").toLowerCase();
+        const slug2 = (r.slug ?? "").toLowerCase();
         const qq = q.toLowerCase();
-        return name.includes(qq) || desc.includes(qq) || slug.includes(qq);
+        return name.includes(qq) || desc.includes(qq) || slug2.includes(qq);
       })
     : rows;
 
@@ -151,9 +150,7 @@ export default async function SpeciesIndexPage({
     const k = (r.primary_group || "other").toLowerCase();
     groups.set(k, [...(groups.get(k) ?? []), r]);
   }
-  const groupKeys = Array.from(groups.keys()).sort((a, b) =>
-    a.localeCompare(b)
-  );
+  const groupKeys = Array.from(groups.keys()).sort((a, b) => a.localeCompare(b));
 
   // Helper: public image url
   function imgUrl(r: SpeciesListRow) {
@@ -202,9 +199,7 @@ export default async function SpeciesIndexPage({
       <section className={styles.list}>
         {filtered.length === 0 ? (
           <div className={styles.empty}>
-            <div className={styles.emptyTitle}>
-              {locale === "dk" ? "Ingen matches" : "No matches"}
-            </div>
+            <div className={styles.emptyTitle}>{locale === "dk" ? "Ingen matches" : "No matches"}</div>
             <div className={styles.emptySub}>
               {locale === "dk"
                 ? "Prøv en anden søgning eller fjern filter."
@@ -218,9 +213,7 @@ export default async function SpeciesIndexPage({
               <div key={g} className={styles.groupBlock}>
                 <div className={styles.groupHead}>
                   <h2 className={styles.h2}>{groupLabel(locale, g)}</h2>
-                  <div className={styles.groupCount}>
-                    {fmtCompact(items.length, locale)}
-                  </div>
+                  <div className={styles.groupCount}>{fmtCompact(items.length, locale)}</div>
                 </div>
 
                 <div className={styles.grid}>
@@ -249,11 +242,7 @@ export default async function SpeciesIndexPage({
                     const d30 = stats ? stats.d30 : null;
 
                     return (
-                      <Link
-                        key={r.id}
-                        href={`/${locale}/species/${r.slug}`}
-                        className={styles.card}
-                      >
+                      <Link key={r.id} href={`/${locale}/species/${r.slug}`} className={styles.card}>
                         <div className={styles.media}>
                           {img ? (
                             <>
@@ -280,13 +269,17 @@ export default async function SpeciesIndexPage({
 
                           <div className={styles.mediaShade} aria-hidden="true" />
 
+                          {/* ✅ NEW: badges use same semantic tone system */}
                           <div className={styles.badges}>
                             {dangerLabel ? (
-                              <span className={styles.badgeDanger}>
+                              <span className={styles.badge} data-tone="danger">
                                 ☠ {dangerLabel}
                               </span>
                             ) : null}
-                            <span className={styles.badge}>{g}</span>
+
+                            <span className={styles.badge} data-tone="info">
+                              {g}
+                            </span>
                           </div>
                         </div>
 
