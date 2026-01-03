@@ -1,3 +1,4 @@
+// src/app/[locale]/map/MapClient.tsx
 "use client";
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
@@ -30,10 +31,7 @@ function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
   const s2 = Math.sin(dLng / 2);
   const q =
     s1 * s1 +
-    Math.cos((a.lat * Math.PI) / 180) *
-      Math.cos((b.lat * Math.PI) / 180) *
-      s2 *
-      s2;
+    Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * s2 * s2;
   return 2 * R * Math.asin(Math.sqrt(q));
 }
 
@@ -56,7 +54,11 @@ function safeParseDrop(
       lng,
       name: typeof obj?.name === "string" ? obj.name : undefined,
       speciesSlug:
-        typeof obj?.speciesSlug === "string" ? obj.speciesSlug : obj?.speciesSlug === null ? null : undefined,
+        typeof obj?.speciesSlug === "string"
+          ? obj.speciesSlug
+          : obj?.speciesSlug === null
+            ? null
+            : undefined,
     };
   } catch {
     return null;
@@ -113,11 +115,12 @@ export default function MapClient({ spots }: Props) {
 
   const isEmptyProd = spotsLocal.length === 0;
 
+  // ✅ FIX: Topbar må IKKE kollapse på pan (det er det der “ryger op”)
   const [topCollapsed, setTopCollapsed] = useState(false);
   useEffect(() => {
-    const shouldCollapse = isPanning || (!isDesktopNow() && sheetExpanded);
+    const shouldCollapse = !isDesktopNow() && sheetExpanded;
     setTopCollapsed(shouldCollapse);
-  }, [isPanning, sheetExpanded]);
+  }, [sheetExpanded]);
 
   useEffect(() => {
     let alive = true;
@@ -146,26 +149,24 @@ export default function MapClient({ spots }: Props) {
     );
   }, []);
 
-// Lock scroll on Shell stack to prevent iOS Safari header jump
-useEffect(() => {
-const el =
-  (document.querySelector('[data-shell-stack="1"]') as HTMLElement | null) ??
-  (document.scrollingElement as HTMLElement | null) ??
-  (document.documentElement as HTMLElement);
+  // Lock scroll on Shell stack to prevent iOS Safari header jump
+  useEffect(() => {
+    const el =
+      (document.querySelector('[data-shell-stack="1"]') as HTMLElement | null) ??
+      (document.scrollingElement as HTMLElement | null) ??
+      (document.documentElement as HTMLElement);
 
-  const prevOverflow = el.style.overflow;
-  const prevOverscroll = (el.style as any).overscrollBehavior;
+    const prevOverflow = el.style.overflow;
+    const prevOverscroll = (el.style as any).overscrollBehavior;
 
-  el.style.overflow = "hidden";
-  (el.style as any).overscrollBehavior = "none";
+    el.style.overflow = "hidden";
+    (el.style as any).overscrollBehavior = "none";
 
-  return () => {
-    el.style.overflow = prevOverflow;
-    (el.style as any).overscrollBehavior = prevOverscroll;
-  };
-}, []);
-
-
+    return () => {
+      el.style.overflow = prevOverflow;
+      (el.style as any).overscrollBehavior = prevOverscroll;
+    };
+  }, []);
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedVisibleIds(visibleIds), 250);
@@ -457,8 +458,8 @@ const el =
   const sheetTitle = isPanning
     ? "Finder spots…"
     : visibleIds.length
-    ? `${visibleIds.length} relevante spots i view`
-    : "Flyt kortet for at finde spots";
+      ? `${visibleIds.length} relevante spots i view`
+      : "Flyt kortet for at finde spots";
 
   const countsForSelected = useMemo(() => {
     if (!selectedSpot?.id) return null;
@@ -712,11 +713,11 @@ const el =
             onMapClick={onMapClick}
           />
 
-{mode === "forage" && recommendedSpot && !drop && !isEmptyProd && !selectedId && !sheetExpanded ? (
-  <button type="button" className={styles.fabCta} onClick={onGoRecommended}>
-    Start sanketur
-  </button>
-) : null}
+          {mode === "forage" && recommendedSpot && !drop && !isEmptyProd && !selectedId && !sheetExpanded ? (
+            <button type="button" className={styles.fabCta} onClick={onGoRecommended}>
+              Start sanketur
+            </button>
+          ) : null}
 
           <div className={styles.mobileDock}>
             {isEmptyProd ? (
