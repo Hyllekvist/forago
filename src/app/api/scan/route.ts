@@ -17,21 +17,33 @@ export async function POST(req: Request) {
           name: "Kantarel",
           latin: "Cantharellus cibarius",
           confidence: "high",
-          why: ["Gule, nedløbende ribber (ikke lameller)", "Tragtformet hat", "Frugtagtig duft"],
+          checks: [
+            { id: "ridges", label: "Gule, nedløbende ribber (ikke lameller)" },
+            { id: "funnel", label: "Tragtformet hat" },
+            { id: "smell", label: "Frugtagtig duft" },
+          ],
         },
         {
           slug: "tragtkantarel",
           name: "Tragtkantarel",
           latin: "Craterellus tubaeformis",
           confidence: "medium",
-          why: ["Hul stok", "Mørkere hat", "Ribber mere grålige"],
+          checks: [
+            { id: "hollow", label: "Hul stok" },
+            { id: "darker", label: "Mørkere hat" },
+            { id: "grey", label: "Ribber mere grålige" },
+          ],
         },
         {
           slug: "falsk-kantarel",
           name: "Falsk kantarel",
           latin: "Hygrophoropsis aurantiaca",
           confidence: "low",
-          why: ["Tætte lameller", "Mere orange farve", "Vokser ofte på dødt træ/strøelse"],
+          checks: [
+            { id: "gills", label: "Tætte lameller" },
+            { id: "orange", label: "Mere orange farve" },
+            { id: "wood", label: "Vokser ofte på dødt træ/strøelse" },
+          ],
         },
       ],
     });
