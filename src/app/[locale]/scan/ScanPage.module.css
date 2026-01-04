@@ -220,30 +220,38 @@
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
+
+  /* ✅ læg sheet over bund-nav */
+  bottom: calc(var(--bottom-nav-h, 72px) + env(safe-area-inset-bottom));
 
   z-index: 50;
 
   border-radius: 22px 22px 0 0;
-  border: 1px solid rgba(255,255,255,.10);
+  border: 1px solid color-mix(in srgb, var(--ink, #fff) 12%, transparent);
   border-bottom: none;
 
-  background: linear-gradient(180deg, rgba(18,20,24,.92), rgba(12,14,18,.94));
-  box-shadow: 0 -24px 90px rgba(0,0,0,.75);
+  /* ✅ brug platform vars (virker i light/dark) */
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--card, #111) 92%, transparent),
+    color-mix(in srgb, var(--card, #111) 86%, transparent)
+  );
+
+  box-shadow: 0 -24px 90px rgba(0,0,0,.35);
 
   transform: translateY(105%);
   transition: transform 240ms cubic-bezier(.2,.9,.2,1);
 
-  /* højde: lad preview stadig “eksistere” bagved */
-  max-height: calc(100vh - 120px);
+  /* ✅ max height tager højde for nav */
+  max-height: calc(100vh - (var(--bottom-nav-h, 72px) + env(safe-area-inset-bottom) + 10px));
 
   display: grid;
   grid-template-rows: auto auto 1fr;
 }
 
-.sheet[data-open="1"]{
-  transform: translateY(0);
-}
+.sheet[data-open="1"]{ transform: translateY(0); }
+
+
 
 .sheetHandleRow{
   position: relative;
