@@ -198,17 +198,19 @@
 .open:hover{ opacity: 1; text-decoration:underline; }
 
 
-/* ===== Bottom Sheet ===== */
+/* ===== Bottom Sheet (token + over alt) ===== */
 
 .sheetBackdrop{
   position: fixed;
   inset: 0;
-  background: color-mix(in srgb, var(--bg, #000) 55%, transparent);
-  backdrop-filter: blur(6px);
+  z-index: 999; /* ✅ over bottom-nav */
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+
   opacity: 0;
   pointer-events: none;
   transition: opacity 180ms ease;
-  z-index: 40;
 }
 
 .sheetBackdrop[data-open="1"]{
@@ -220,42 +222,35 @@
   position: fixed;
   left: 0;
   right: 0;
+  bottom: 0;
 
-  /* ✅ læg sheet over bund-nav */
-  bottom: calc(var(--bottom-nav-h, 72px) + env(safe-area-inset-bottom));
+  z-index: 1000; /* ✅ over backdrop + bottom-nav */
 
-  z-index: 50;
-
-  border-radius: 22px 22px 0 0;
-  border: 1px solid color-mix(in srgb, var(--ink, #fff) 12%, transparent);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  border: var(--stroke) solid var(--line);
   border-bottom: none;
 
-  /* ✅ brug platform vars (virker i light/dark) */
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--card, #111) 92%, transparent),
-    color-mix(in srgb, var(--card, #111) 86%, transparent)
-  );
-
-  box-shadow: 0 -24px 90px rgba(0,0,0,.35);
+  /* ✅ theme-safe */
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  box-shadow: var(--shadow-2);
 
   transform: translateY(105%);
-  transition: transform 240ms cubic-bezier(.2,.9,.2,1);
+  transition: transform 260ms cubic-bezier(.2,.9,.2,1);
 
-  /* ✅ max height tager højde for nav */
-  max-height: calc(100vh - (var(--bottom-nav-h, 72px) + env(safe-area-inset-bottom) + 10px));
+  /* ✅ højde: tag højde for topbar/safe-area */
+  max-height: calc(100vh - 88px);
 
   display: grid;
   grid-template-rows: auto auto 1fr;
 }
 
-.sheet[data-open="1"]{ transform: translateY(0); }
-
-
+.sheet[data-open="1"]{
+  transform: translateY(0);
+}
 
 .sheetHandleRow{
   position: relative;
-  padding: 10px 14px 4px;
+  padding: 10px 14px 6px;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -265,8 +260,8 @@
   width: 44px;
   height: 5px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--ink, #fff) 22%, transparent);
-  border: 1px solid color-mix(in srgb, var(--ink, #fff) 10%, transparent);
+  background: color-mix(in srgb, var(--ink) 18%, transparent);
+  border: var(--stroke) solid color-mix(in srgb, var(--ink) 10%, transparent);
 }
 
 .sheetClose{
@@ -277,17 +272,16 @@
   padding: 8px 10px;
   border-radius: 12px;
 
-  border: 1px solid color-mix(in srgb, var(--ink, #fff) 12%, transparent);
-  background: color-mix(in srgb, var(--card, #111) 78%, transparent);
-
-  color: var(--ink, #fff);
-  font-weight: 800;
+  border: var(--stroke) solid var(--tapLine);
+  background: var(--tapBg);
+  color: var(--ink);
+  font-weight: 850;
 }
 
 .sheetHeader{
   padding: 10px 16px 12px;
-  border-top: 1px solid rgba(255,255,255,.06);
-  border-bottom: 1px solid rgba(255,255,255,.06);
+  border-top: var(--stroke) solid var(--line);
+  border-bottom: var(--stroke) solid var(--line);
 }
 
 .sheetTitle{
@@ -300,16 +294,16 @@
   margin-top: 4px;
   opacity: .75;
   font-size: 13px;
+  color: var(--muted);
 }
 
 .sheetBody{
   overflow: auto;
   -webkit-overflow-scrolling: touch;
-
   padding: 12px 16px;
 
-  /* ✅ vigtig: plads til sidste CTA + “Luk”/bar */
-  padding-bottom: calc(22px + env(safe-area-inset-bottom));
+  /* ✅ så sidste CTA altid kan nås */
+  padding-bottom: calc(var(--bottom-nav-h, 92px) + env(safe-area-inset-bottom) + 18px);
 }
 
 @media (prefers-reduced-motion: reduce){
