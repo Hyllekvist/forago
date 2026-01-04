@@ -316,6 +316,85 @@
   padding-bottom: calc(var(--bottom-nav-h, 92px) + env(safe-area-inset-bottom) + 18px);
 }
 
+/* --- Missing classes used by ScanClient.tsx --- */
+
+.filters{
+  display:flex;
+  gap: 8px;
+  padding: 12px;
+  flex-wrap: wrap;
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+
+.filterChip{
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.06);
+  font-weight: 800;
+  font-size: 13px;
+  opacity: .9;
+}
+.filterChip[data-active="true"]{
+  opacity: 1;
+  border-color: rgba(255,255,255,.18);
+  background: rgba(255,255,255,.10);
+}
+
+.progress{
+  padding: 10px 16px 0;
+  color: rgba(255,255,255,.75);
+  font-weight: 650;
+  font-size: 13px;
+}
+
+.results{
+  margin-top: 12px;
+  padding: 0 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.resultsHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+  padding: 10px 2px 0;
+  font-weight: 900;
+}
+
+.count{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width: 26px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.06);
+  font-size: 12px;
+}
+
+.names{ display:grid; gap: 2px; }
+.meta{ font-size: 12px; opacity: .7; }
+
+.scorebar{
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.08);
+  overflow:hidden;
+  border: 1px solid rgba(255,255,255,.08);
+}
+.scorefill{
+  display:block;
+  height: 100%;
+  background: rgba(120,220,180,.55);
+  width: 0%;
+}
+
+
 @media (prefers-reduced-motion: reduce){
   .sheet, .sheetBackdrop{ transition: none !important; }
 }
