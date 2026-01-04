@@ -1,5 +1,6 @@
 "use client";
 
+import { useParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import styles from "./ScanPage.module.css";
@@ -128,7 +129,7 @@ export default function ScanClient() {
                   ))}
                 </ul>
 
-                <a className={styles.open} href={`/species/${c.slug}`}>
+<a className={styles.open} href={`/${locale}/species/${c.slug}`}>
                   Åbn artsside →
                 </a>
               </article>
