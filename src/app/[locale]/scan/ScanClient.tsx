@@ -69,12 +69,7 @@ const params = useParams();
 
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <h1 className={styles.title}>Scan</h1>
-        <p className={styles.sub}>
-          Tag/Upload et billede og få et kvalificeret bud. Spis aldrig baseret på scan alene.
-        </p>
-      </header>
+
 
       <section className={styles.card}>
         <div className={styles.preview}>
