@@ -5,12 +5,17 @@ import { useParams } from "next/navigation";
 import Image from "next/image";
 import styles from "./ScanPage.module.css";
 
+type Checkpoint = {
+  id: string;
+  label: string;
+};
+
 type Candidate = {
   slug: string;
   name: string;
   latin?: string;
   confidence: "high" | "medium" | "low";
-  why: string[];
+  checks: Checkpoint[];
 };
 
 type ScanResponse = {
@@ -44,6 +49,7 @@ export default function ScanClient() {
       setPreviewUrl(null);
       return;
     }
+
     const url = URL.createObjectURL(f);
     setPreviewUrl(url);
   }
@@ -80,7 +86,7 @@ export default function ScanClient() {
     setSheetOpen(false);
   }
 
-  // ESC to close
+  // ESC close
   useEffect(() => {
     if (!sheetOpen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -90,7 +96,7 @@ export default function ScanClient() {
     return () => window.removeEventListener("keydown", onKey);
   }, [sheetOpen]);
 
-  // lock body scroll when sheet open (mobile)
+  // Lock body scroll when sheet open (mobile)
   useEffect(() => {
     if (!sheetOpen) return;
     const prev = document.body.style.overflow;
@@ -100,7 +106,7 @@ export default function ScanClient() {
     };
   }, [sheetOpen]);
 
-  // when sheet opens, scroll results body to top
+  // Reset sheet scroll to top when opened
   useEffect(() => {
     if (!sheetOpen) return;
     requestAnimationFrame(() => {
@@ -122,7 +128,7 @@ export default function ScanClient() {
             </div>
           )}
 
-          {/* controls overlay */}
+          {/* Controls overlay */}
           <div className={styles.controls}>
             <label className={styles.pickBtn}>
               Vælg billede
@@ -144,7 +150,7 @@ export default function ScanClient() {
         {error && <div className={styles.error}>{error}</div>}
       </section>
 
-      {/* Bottom sheet */}
+      {/* Bottom sheet results */}
       {candidates && (
         <>
           <div
@@ -159,6 +165,7 @@ export default function ScanClient() {
             role="dialog"
             aria-modal="true"
             aria-label="Scan resultater"
+            onClick={(e) => e.stopPropagation()}
           >
             <div className={styles.sheetHandleRow}>
               <div className={styles.sheetHandle} />
@@ -169,9 +176,7 @@ export default function ScanClient() {
 
             <div className={styles.sheetHeader}>
               <div className={styles.sheetTitle}>Mulige arter</div>
-              <div className={styles.sheetMeta}>
-                {candidates.length} bud · Verificér altid kendetegn
-              </div>
+              <div className={styles.sheetMeta}>{candidates.length} bud · Verificér altid kendetegn</div>
             </div>
 
             <div ref={sheetBodyRef} className={styles.sheetBody}>
@@ -189,11 +194,17 @@ export default function ScanClient() {
                       </span>
                     </div>
 
-                    <ul className={styles.why}>
-                      {c.why.slice(0, 3).map((w, i) => (
-                        <li key={i}>{w}</li>
+                    {/* ✅ Tjek nu */}
+                    <div className={styles.checks}>
+                      <div className={styles.checksTitle}>Tjek nu</div>
+
+                      {c.checks.map((chk) => (
+                        <label key={chk.id} className={styles.check}>
+                          <input type="checkbox" />
+                          <span>{chk.label}</span>
+                        </label>
                       ))}
-                    </ul>
+                    </div>
 
                     <a className={styles.open} href={`/${locale}/species/${c.slug}`}>
                       Åbn artsside →
