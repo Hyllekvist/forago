@@ -34,15 +34,27 @@ export default function ScanClient() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const sheetBodyRef = useRef<HTMLDivElement | null>(null);
 
+  // ✅ local check state per candidate
+  const [checked, setChecked] = useState<Record<string, Set<string>>>({});
+
   const params = useParams();
   const locale = (params?.locale as string) || "dk";
 
   const canScan = useMemo(() => !!file && !loading, [file, loading]);
 
+  function toggleCheck(slug: string, id: string) {
+    setChecked((prev) => {
+      const next = new Set(prev[slug] ?? []);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return { ...prev, [slug]: next };
+    });
+  }
+
   function onPick(f: File | null) {
     setError(null);
     setCandidates(null);
     setSheetOpen(false);
+    setChecked({}); // reset checks for new image
     setFile(f);
 
     if (!f) {
@@ -61,6 +73,7 @@ export default function ScanClient() {
     setError(null);
     setCandidates(null);
     setSheetOpen(false);
+    setChecked({});
 
     try {
       const form = new FormData();
@@ -113,6 +126,14 @@ export default function ScanClient() {
       sheetBodyRef.current?.scrollTo({ top: 0 });
     });
   }, [sheetOpen]);
+
+  function microText(slug: string, total: number) {
+    const n = checked[slug]?.size ?? 0;
+    if (n === 0) return "Ikke verificeret endnu";
+    if (n === 1) return "Matcher et kendetegn";
+    if (n < total) return "Matcher flere kendetegn";
+    return "Matcher alle viste kendetegn";
+  }
 
   return (
     <main className={styles.page}>
@@ -194,16 +215,29 @@ export default function ScanClient() {
                       </span>
                     </div>
 
+                    {/* ✅ micro feedback */}
+                    <div className={styles.micro}>{microText(c.slug, c.checks.length)}</div>
+
                     {/* ✅ Tjek nu */}
                     <div className={styles.checks}>
                       <div className={styles.checksTitle}>Tjek nu</div>
 
-                      {c.checks.map((chk) => (
-                        <label key={chk.id} className={styles.check}>
-                          <input type="checkbox" />
-                          <span>{chk.label}</span>
-                        </label>
-                      ))}
+                      {c.checks.map((chk) => {
+                        const isOn = checked[c.slug]?.has(chk.id) ?? false;
+                        return (
+                          <label
+                            key={chk.id}
+                            className={[styles.check, isOn ? styles.checkOn : ""].join(" ")}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isOn}
+                              onChange={() => toggleCheck(c.slug, chk.id)}
+                            />
+                            <span>{chk.label}</span>
+                          </label>
+                        );
+                      })}
                     </div>
 
                     <a className={styles.open} href={`/${locale}/species/${c.slug}`}>
