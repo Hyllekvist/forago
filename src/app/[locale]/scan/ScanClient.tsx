@@ -5,10 +5,9 @@ import { useParams } from "next/navigation";
 import Image from "next/image";
 import styles from "./ScanPage.module.css";
 
-type Checkpoint = {
-  id: string;
-  label: string;
-};
+import { REF_ITEMS } from "@/lib/vision/refIndex";
+import type { RefItem, Match, Checkpoint } from "@/lib/vision/types";
+import { l2Normalize, topK } from "@/lib/vision/similarity";
 
 type Candidate = {
   slug: string;
@@ -18,29 +17,45 @@ type Candidate = {
   checks: Checkpoint[];
 };
 
-type ScanResponse = {
-  ok: true;
-  candidates: Candidate[];
-};
+type ScanResponse = { ok: true; candidates: Candidate[] };
+
+type WorkerMsg =
+  | { type: "init"; modelUrl: string }
+  | { type: "embed_url"; id: string; imageUrl: string }
+  | { type: "embed_blob"; id: string; data: ArrayBuffer };
+
+type WorkerReply =
+  | { type: "ready" }
+  | { type: "embed_ok"; id: string; vec: number[] }
+  | { type: "err"; id?: string; error: string };
+
+function bandFromRank(rank: number): Candidate["confidence"] {
+  return rank === 0 ? "high" : rank === 1 ? "medium" : "low";
+}
 
 export default function ScanClient() {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(false);
+  const [modelReady, setModelReady] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // sheet state
   const [sheetOpen, setSheetOpen] = useState(false);
   const sheetBodyRef = useRef<HTMLDivElement | null>(null);
 
-  // ✅ local check state per candidate
   const [checked, setChecked] = useState<Record<string, Set<string>>>({});
 
   const params = useParams();
   const locale = (params?.locale as string) || "dk";
 
-  const canScan = useMemo(() => !!file && !loading, [file, loading]);
+  const workerRef = useRef<Worker | null>(null);
+
+  // in-memory embedding cache (reference)
+  const refVecsRef = useRef<{ slug: string; vec: Float32Array }[] | null>(null);
+
+  const canScan = useMemo(() => !!file && !loading && modelReady, [file, loading, modelReady]);
 
   function toggleCheck(slug: string, id: string) {
     setChecked((prev) => {
@@ -50,20 +65,140 @@ export default function ScanClient() {
     });
   }
 
+  function microText(slug: string, total: number) {
+    const n = checked[slug]?.size ?? 0;
+    if (n === 0) return "Ikke verificeret endnu";
+    if (n === 1) return "Matcher et kendetegn";
+    if (n < total) return "Matcher flere kendetegn";
+    return "Matcher alle viste kendetegn";
+  }
+
+  function closeSheet() {
+    setSheetOpen(false);
+  }
+
+  // init worker + model once
+  useEffect(() => {
+    const w = new Worker(new URL("../../../workers/vision.worker.ts", import.meta.url), { type: "module" });
+    workerRef.current = w;
+
+    const onMsg = (ev: MessageEvent<WorkerReply>) => {
+      if (ev.data.type === "ready") setModelReady(true);
+      if (ev.data.type === "err") setError(ev.data.error);
+    };
+
+    w.addEventListener("message", onMsg);
+
+    const modelUrl = "/models/forago_embed.onnx"; // <- commit din model her
+    const init: WorkerMsg = { type: "init", modelUrl };
+    w.postMessage(init);
+
+    return () => {
+      w.removeEventListener("message", onMsg);
+      w.terminate();
+      workerRef.current = null;
+    };
+  }, []);
+
+  // ESC close
+  useEffect(() => {
+    if (!sheetOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeSheet();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [sheetOpen]);
+
+  // lock body scroll when sheet open
+  useEffect(() => {
+    if (!sheetOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [sheetOpen]);
+
+  useEffect(() => {
+    if (!sheetOpen) return;
+    requestAnimationFrame(() => sheetBodyRef.current?.scrollTo({ top: 0 }));
+  }, [sheetOpen]);
+
   function onPick(f: File | null) {
     setError(null);
     setCandidates(null);
     setSheetOpen(false);
-    setChecked({}); // reset checks for new image
+    setChecked({});
     setFile(f);
 
     if (!f) {
       setPreviewUrl(null);
       return;
     }
-
     const url = URL.createObjectURL(f);
     setPreviewUrl(url);
+  }
+
+  function workerEmbedUrl(imageUrl: string) {
+    return new Promise<Float32Array>((resolve, reject) => {
+      const w = workerRef.current;
+      if (!w) return reject(new Error("NO_WORKER"));
+      const id = crypto.randomUUID();
+
+      const handler = (ev: MessageEvent<WorkerReply>) => {
+        const d = ev.data;
+        if (d.type === "embed_ok" && d.id === id) {
+          w.removeEventListener("message", handler);
+          resolve(l2Normalize(new Float32Array(d.vec)));
+        }
+        if (d.type === "err" && d.id === id) {
+          w.removeEventListener("message", handler);
+          reject(new Error(d.error));
+        }
+      };
+
+      w.addEventListener("message", handler);
+      const msg: WorkerMsg = { type: "embed_url", id, imageUrl };
+      w.postMessage(msg);
+    });
+  }
+
+  function workerEmbedBlob(buf: ArrayBuffer) {
+    return new Promise<Float32Array>((resolve, reject) => {
+      const w = workerRef.current;
+      if (!w) return reject(new Error("NO_WORKER"));
+      const id = crypto.randomUUID();
+
+      const handler = (ev: MessageEvent<WorkerReply>) => {
+        const d = ev.data;
+        if (d.type === "embed_ok" && d.id === id) {
+          w.removeEventListener("message", handler);
+          resolve(l2Normalize(new Float32Array(d.vec)));
+        }
+        if (d.type === "err" && d.id === id) {
+          w.removeEventListener("message", handler);
+          reject(new Error(d.error));
+        }
+      };
+
+      w.addEventListener("message", handler);
+      const msg: WorkerMsg = { type: "embed_blob", id, data: buf };
+      w.postMessage(msg, [buf]);
+    });
+  }
+
+  async function ensureRefVecs(items: RefItem[]) {
+    if (refVecsRef.current) return refVecsRef.current;
+
+    // embed refs (første gang) – cache i memory
+    const vecs: { slug: string; vec: Float32Array }[] = [];
+    for (const it of items) {
+      const v = await workerEmbedUrl(it.imageUrl);
+      vecs.push({ slug: it.slug, vec: v });
+    }
+    refVecsRef.current = vecs;
+    return vecs;
   }
 
   async function runScan() {
@@ -76,63 +211,47 @@ export default function ScanClient() {
     setChecked({});
 
     try {
-      const form = new FormData();
-      form.append("image", file);
+      const refVecs = await ensureRefVecs(REF_ITEMS);
 
-      const res = await fetch("/api/scan", { method: "POST", body: form });
+      const buf = await file.arrayBuffer();
+      const q = await workerEmbedBlob(buf);
+
+      const matches: Match[] = topK(q, refVecs, 3);
+
+      // hydrate via server (senere: Supabase lookup for checks/artdata)
+      const slugs = matches.map((m) => m.slug);
+      const res = await fetch("/api/scan", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ slugs }),
+      });
+
       const json = (await res.json()) as ScanResponse | { ok: false; error: string };
-
-      if (!res.ok || !("ok" in json) || json.ok === false) {
-        throw new Error(("error" in json && json.error) || "Scan fejlede");
+      if (!res.ok || !("ok" in json) || (json as any).ok === false) {
+        throw new Error(("error" in json && (json as any).error) || "Scan fejlede");
       }
 
-      setCandidates(json.candidates);
+      // bevare ranking + band
+      const ordered = slugs.map((slug, i) => {
+        const c = json.candidates.find((x) => x.slug === slug);
+        if (!c) {
+          return {
+            slug,
+            name: slug,
+            confidence: bandFromRank(i),
+            checks: [],
+          } as Candidate;
+        }
+        return { ...c, confidence: bandFromRank(i) };
+      });
+
+      setCandidates(ordered);
       setSheetOpen(true);
     } catch (e: any) {
       setError(e?.message ?? "Scan fejlede");
     } finally {
       setLoading(false);
     }
-  }
-
-  function closeSheet() {
-    setSheetOpen(false);
-  }
-
-  // ESC close
-  useEffect(() => {
-    if (!sheetOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeSheet();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [sheetOpen]);
-
-  // Lock body scroll when sheet open (mobile)
-  useEffect(() => {
-    if (!sheetOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [sheetOpen]);
-
-  // Reset sheet scroll to top when opened
-  useEffect(() => {
-    if (!sheetOpen) return;
-    requestAnimationFrame(() => {
-      sheetBodyRef.current?.scrollTo({ top: 0 });
-    });
-  }, [sheetOpen]);
-
-  function microText(slug: string, total: number) {
-    const n = checked[slug]?.size ?? 0;
-    if (n === 0) return "Ikke verificeret endnu";
-    if (n === 1) return "Matcher et kendetegn";
-    if (n < total) return "Matcher flere kendetegn";
-    return "Matcher alle viste kendetegn";
   }
 
   return (
@@ -145,11 +264,12 @@ export default function ScanClient() {
             <div className={styles.empty}>
               <div className={styles.emptyIcon} />
               <div className={styles.emptyText}>Vælg et billede for at starte</div>
-              <div className={styles.tip}>Tip: tag både helhed + nærbillede af kendetegn</div>
+              <div className={styles.tip}>
+                {modelReady ? "Tip: tag både helhed + nærbillede af kendetegn" : "Loader scan-model…"}
+              </div>
             </div>
           )}
 
-          {/* Controls overlay */}
           <div className={styles.controls}>
             <label className={styles.pickBtn}>
               Vælg billede
@@ -163,7 +283,7 @@ export default function ScanClient() {
             </label>
 
             <button className={styles.scanBtn} onClick={runScan} disabled={!canScan}>
-              {loading ? "Scanner…" : "Kør scan"}
+              {loading ? "Scanner…" : modelReady ? "Kør scan" : "Loader…"}
             </button>
           </div>
         </div>
@@ -171,14 +291,9 @@ export default function ScanClient() {
         {error && <div className={styles.error}>{error}</div>}
       </section>
 
-      {/* Bottom sheet results */}
       {candidates && (
         <>
-          <div
-            className={styles.sheetBackdrop}
-            data-open={sheetOpen ? "1" : "0"}
-            onClick={closeSheet}
-          />
+          <div className={styles.sheetBackdrop} data-open={sheetOpen ? "1" : "0"} onClick={closeSheet} />
 
           <section
             className={styles.sheet}
@@ -215,25 +330,20 @@ export default function ScanClient() {
                       </span>
                     </div>
 
-                    {/* ✅ micro feedback */}
-                    <div className={styles.micro}>{microText(c.slug, c.checks.length)}</div>
+                    <div className={styles.micro}>{microText(c.slug, c.checks.length || 3)}</div>
 
-                    {/* ✅ Tjek nu */}
                     <div className={styles.checks}>
                       <div className={styles.checksTitle}>Tjek nu</div>
 
-                      {c.checks.map((chk) => {
+                      {(c.checks?.length ? c.checks : [
+                        { id: "cap", label: "Tjek hat-form og farve" },
+                        { id: "underside", label: "Tjek underside (ribber/lameller/porer)" },
+                        { id: "stem", label: "Tjek stok (farve, ring, volva)" },
+                      ]).map((chk) => {
                         const isOn = checked[c.slug]?.has(chk.id) ?? false;
                         return (
-                          <label
-                            key={chk.id}
-                            className={[styles.check, isOn ? styles.checkOn : ""].join(" ")}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isOn}
-                              onChange={() => toggleCheck(c.slug, chk.id)}
-                            />
+                          <label key={chk.id} className={[styles.check, isOn ? styles.checkOn : ""].join(" ")}>
+                            <input type="checkbox" checked={isOn} onChange={() => toggleCheck(c.slug, chk.id)} />
                             <span>{chk.label}</span>
                           </label>
                         );
