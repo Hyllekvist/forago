@@ -12,6 +12,20 @@ function normKind(x: string | null): Kind {
   return "all";
 }
 
+type RowAny = Record<string, any>;
+
+function pickName(row: RowAny) {
+  return (
+    row.name ??
+    row.name_da ??
+    row.name_en ??
+    row.title ??
+    row.common_name ??
+    row.display_name ??
+    null
+  );
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -19,30 +33,66 @@ export async function GET(req: Request) {
 
     const supabase = await supabaseServer();
 
-    let q = supabase
-      .from("species")
-      .select("slug,name,latin,image_path,kind")
-      .not("image_path", "is", null);
+    // Hvis du bruger storage public urls, kan du sætte bucket-navn her:
+    // (valgfrit) SPECIES_BUCKET eller NEXT_PUBLIC_SPECIES_BUCKET
+    const BUCKET =
+      process.env.SPECIES_BUCKET ||
+      process.env.NEXT_PUBLIC_SPECIES_BUCKET ||
+      "species";
 
-    if (kind !== "all") q = q.eq("kind", kind);
+    const base = (select: string) => {
+      let q = supabase.from("species").select(select).not("image_path", "is", null);
+      if (kind !== "all") q = q.eq("kind", kind);
+      return q.order("slug", { ascending: true }).limit(5000);
+    };
 
-    const { data, error } = await q.order("slug", { ascending: true }).limit(500);
+    // 1) Prøv med "name"
+    let data: RowAny[] | null = null;
 
-    if (error) {
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    {
+      const { data: d, error } = await base("slug,name,latin,image_path,kind");
+      if (!error) data = d ?? [];
     }
 
-    const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    if (!base) {
-      return NextResponse.json({ ok: false, error: "NO_SUPABASE_URL" }, { status: 500 });
+    // 2) Fallback: prøv med "name_da"
+    if (!data) {
+      const { data: d, error } = await base("slug,name_da,latin,image_path,kind");
+      if (!error) data = d ?? [];
     }
 
-    const refs = (data ?? []).map((s) => ({
-      slug: s.slug,
-      name: s.name,
-      latin: s.latin ?? undefined,
-      image_url: `${base}/storage/v1/object/public/species/${s.image_path}`,
-    }));
+    // 3) Sidste fallback: uden navn-kolonne
+    if (!data) {
+      const { data: d, error } = await base("slug,latin,image_path,kind");
+      if (error) {
+        return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+      }
+      data = d ?? [];
+    }
+
+    const refs = (data ?? []).map((r) => {
+      // Lav public url hvis du bruger Supabase Storage
+      // Hvis dine image_path allerede er en fuld URL, så bliver den bare brugt som fallback
+      let image_url: string | null = null;
+
+      const p = r.image_path as string | null;
+      if (p) {
+        if (p.startsWith("http://") || p.startsWith("https://")) {
+          image_url = p;
+        } else {
+          const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(p);
+          image_url = pub?.publicUrl ?? null;
+        }
+      }
+
+      return {
+        slug: r.slug,
+        kind: r.kind ?? null,
+        latin: r.latin ?? null,
+        image_path: r.image_path ?? null,
+        image_url,
+        name: pickName(r),
+      };
+    });
 
     return NextResponse.json({ ok: true, refs });
   } catch (e: any) {
