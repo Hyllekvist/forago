@@ -1,117 +1,164 @@
-/// <reference lib="webworker" />
+// src/workers/vision.worker.ts
+/* eslint-disable no-restricted-globals */
 
-import * as ort from "onnxruntime-web";
+import type { InferenceSession } from "onnxruntime-web";
 
-type Msg =
-  | { type: "init"; modelUrl: string }
-  | { type: "embed_url"; id: string; imageUrl: string }
-  | { type: "embed_blob"; id: string; data: ArrayBuffer };
+// NOTE:
+// Denne worker kan køre uden ONNX-model (fallback embedding).
+// Når I senere tilføjer en ONNX model, sæt MODEL_URL til fx "/models/vision.onnx"
+// og opdater preprocess + output navne.
 
-type Reply =
-  | { type: "ready" }
-  | { type: "embed_ok"; id: string; vec: number[] }
-  | { type: "err"; id?: string; error: string };
+type InMsg = { type: "embed"; id: string; imageUrl: string; size?: number };
+type OutMsg =
+  | { type: "embed_result"; id: string; vector: number[] }
+  | { type: "error"; id?: string; error: string };
 
-let session: ort.InferenceSession | null = null;
+const MODEL_URL: string | null = null; // <-- når I er klar: "/models/your_model.onnx"
 
-function post(msg: Reply) {
-  (self as any).postMessage(msg);
+let session: InferenceSession | null = null;
+
+async function ensureSession() {
+  if (!MODEL_URL) return null;
+  if (session) return session;
+
+  // dynamisk import for at undgå at Next prøver at optimere/minify den forkert i main bundle
+  const ort = await import("onnxruntime-web");
+
+  // hold jer til wasm i browseren (stabilt)
+  ort.env.wasm.numThreads = 1;
+
+  session = await ort.InferenceSession.create(MODEL_URL, {
+    executionProviders: ["wasm"],
+    graphOptimizationLevel: "all",
+  });
+
+  return session;
 }
 
-async function loadImageToImageDataFromUrl(url: string) {
-  const res = await fetch(url, { cache: "force-cache" });
-  if (!res.ok) throw new Error("REF_IMAGE_FETCH_FAILED");
+async function fetchImageBitmap(url: string) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`FETCH_FAIL ${res.status}`);
   const blob = await res.blob();
-  const bmp = await createImageBitmap(blob);
-  const canvas = new OffscreenCanvas(224, 224);
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("NO_CTX");
-  ctx.drawImage(bmp, 0, 0, 224, 224);
-  return ctx.getImageData(0, 0, 224, 224);
+  return await createImageBitmap(blob);
 }
 
-async function loadImageToImageDataFromBlob(buf: ArrayBuffer) {
-  const blob = new Blob([buf]);
-  const bmp = await createImageBitmap(blob);
-  const canvas = new OffscreenCanvas(224, 224);
+function drawToCanvas(bmp: ImageBitmap, size: number) {
+  const canvas = new OffscreenCanvas(size, size);
   const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("NO_CTX");
-  ctx.drawImage(bmp, 0, 0, 224, 224);
-  return ctx.getImageData(0, 0, 224, 224);
+  if (!ctx) throw new Error("NO_2D_CTX");
+  ctx.clearRect(0, 0, size, size);
+  ctx.drawImage(bmp, 0, 0, size, size);
+  return { canvas, ctx };
 }
 
-function imageDataToTensor(img: ImageData) {
-  // NCHW float32, normalize 0..1
+/**
+ * Fallback embedding:
+ * - downsample til 32x32
+ * - gråskala
+ * - normaliser
+ * Result: 1024 dims
+ */
+function fallbackEmbedFromImageData(img: ImageData) {
   const { data, width, height } = img;
-  const size = width * height;
-  const out = new Float32Array(3 * size);
+  const out = new Float32Array(width * height);
+  let j = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i] / 255;
+    const g = data[i + 1] / 255;
+    const b = data[i + 2] / 255;
+    // luminance
+    out[j++] = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  }
+  // center + scale (rough normalization)
+  let mean = 0;
+  for (let i = 0; i < out.length; i++) mean += out[i];
+  mean /= out.length;
 
-  for (let i = 0; i < size; i++) {
-    const r = data[i * 4 + 0] / 255;
-    const g = data[i * 4 + 1] / 255;
-    const b = data[i * 4 + 2] / 255;
+  let varSum = 0;
+  for (let i = 0; i < out.length; i++) {
+    const d = out[i] - mean;
+    varSum += d * d;
+  }
+  const std = Math.sqrt(varSum / out.length) || 1;
 
-    out[i] = r;
-    out[i + size] = g;
-    out[i + 2 * size] = b;
+  for (let i = 0; i < out.length; i++) out[i] = (out[i] - mean) / std;
+
+  return out;
+}
+
+async function embed(imageUrl: string, size = 224) {
+  const bmp = await fetchImageBitmap(imageUrl);
+
+  // 1) ONNX path (hvis I sætter MODEL_URL)
+  const s = await ensureSession();
+  if (s) {
+    const ort = await import("onnxruntime-web");
+
+    const { ctx } = drawToCanvas(bmp, size);
+    const img = ctx.getImageData(0, 0, size, size);
+    const data = img.data;
+
+    // Simple preprocess: NCHW float32 0..1
+    // (I skal sandsynligvis ændre mean/std + inputName/outputName når model er kendt)
+    const chw = new Float32Array(3 * size * size);
+    const hw = size * size;
+
+    for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+      const r = data[i] / 255;
+      const g = data[i + 1] / 255;
+      const b = data[i + 2] / 255;
+      chw[p] = r;
+      chw[hw + p] = g;
+      chw[2 * hw + p] = b;
+    }
+
+    // input/output navn: prøv typiske defaults, ellers vælg første
+    const inputName = (s as any).inputNames?.[0] ?? "input";
+    const outputName = (s as any).outputNames?.[0] ?? "output";
+
+    const feeds: Record<string, any> = {};
+    feeds[inputName] = new ort.Tensor("float32", chw, [1, 3, size, size]);
+
+    const results = await s.run(feeds);
+    const out = results[outputName]?.data as Float32Array | undefined;
+    if (!out || out.length === 0) throw new Error("EMPTY_MODEL_OUTPUT");
+
+    // normaliser embedding
+    let norm = 0;
+    for (let i = 0; i < out.length; i++) norm += out[i] * out[i];
+    norm = Math.sqrt(norm) || 1;
+
+    const v = new Float32Array(out.length);
+    for (let i = 0; i < out.length; i++) v[i] = out[i] / norm;
+
+    return v;
   }
 
-  return new ort.Tensor("float32", out, [1, 3, height, width]);
+  // 2) fallback path
+  const small = 32;
+  const { ctx } = drawToCanvas(bmp, small);
+  const img = ctx.getImageData(0, 0, small, small);
+  const v = fallbackEmbedFromImageData(img);
+
+  // L2 normalize
+  let norm = 0;
+  for (let i = 0; i < v.length; i++) norm += v[i] * v[i];
+  norm = Math.sqrt(norm) || 1;
+  for (let i = 0; i < v.length; i++) v[i] = v[i] / norm;
+
+  return v;
 }
 
-// prøv at finde første input/output uden at hardcode navn
-function pickIO(s: ort.InferenceSession) {
-  const inputName = s.inputNames[0];
-  const outputName = s.outputNames[0];
-  return { inputName, outputName };
-}
+self.onmessage = async (ev: MessageEvent<InMsg>) => {
+  const msg = ev.data;
+  if (!msg || msg.type !== "embed") return;
 
-async function embed(t: ort.Tensor) {
-  if (!session) throw new Error("NOT_READY");
-  const { inputName, outputName } = pickIO(session);
-  const feeds: Record<string, ort.Tensor> = { [inputName]: t };
-  const res = await session.run(feeds);
-  const out = res[outputName];
-  const vec = Array.from(out.data as any as Float32Array);
-  return vec;
-}
-
-self.onmessage = async (ev: MessageEvent<Msg>) => {
   try {
-    const msg = ev.data;
-
-    if (msg.type === "init") {
-      // CDN WASM (ingen kopiering til public)
-      ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.0/dist/";
-      ort.env.wasm.numThreads = 1;
-
-      // WebGPU hvis muligt; fallback til wasm
-      const providers: ort.InferenceSession.SessionOptions["executionProviders"] = ["webgpu", "wasm"];
-      session = await ort.InferenceSession.create(msg.modelUrl, {
-        executionProviders: providers,
-        graphOptimizationLevel: "all",
-      });
-
-      post({ type: "ready" });
-      return;
-    }
-
-    if (msg.type === "embed_url") {
-      const img = await loadImageToImageDataFromUrl(msg.imageUrl);
-      const tensor = imageDataToTensor(img);
-      const vec = await embed(tensor);
-      post({ type: "embed_ok", id: msg.id, vec });
-      return;
-    }
-
-    if (msg.type === "embed_blob") {
-      const img = await loadImageToImageDataFromBlob(msg.data);
-      const tensor = imageDataToTensor(img);
-      const vec = await embed(tensor);
-      post({ type: "embed_ok", id: msg.id, vec });
-      return;
-    }
+    const vec = await embed(msg.imageUrl, msg.size ?? 224);
+    const out: OutMsg = { type: "embed_result", id: msg.id, vector: Array.from(vec) };
+    self.postMessage(out);
   } catch (e: any) {
-    post({ type: "err", id: (ev.data as any)?.id, error: e?.message ?? "WORKER_ERROR" });
+    const out: OutMsg = { type: "error", id: msg.id, error: e?.message ?? "WORKER_ERROR" };
+    self.postMessage(out);
   }
 };
