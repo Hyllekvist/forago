@@ -1,4 +1,4 @@
-/** @type {import('next').NextConfig} */
+/** @type {import('next').NextConfig} */ 
 const nextConfig = {
   // ORT + import.meta + minifier => build crash
   swcMinify: false,
