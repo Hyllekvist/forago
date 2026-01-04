@@ -24,26 +24,29 @@ export default function ScanClient() {
   const [loading, setLoading] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-const params = useParams();
-  const locale = (params?.locale as string) || "dk";
 
+  const params = useParams();
+  const locale = (params?.locale as string) || "dk";
 
   const canScan = useMemo(() => !!file && !loading, [file, loading]);
 
-  async function onPick(f: File | null) {
+  function onPick(f: File | null) {
     setError(null);
     setCandidates(null);
     setFile(f);
+
     if (!f) {
       setPreviewUrl(null);
       return;
     }
+
     const url = URL.createObjectURL(f);
     setPreviewUrl(url);
   }
 
   async function runScan() {
     if (!file) return;
+
     setLoading(true);
     setError(null);
     setCandidates(null);
@@ -52,7 +55,11 @@ const params = useParams();
       const form = new FormData();
       form.append("image", file);
 
-      const res = await fetch("/api/scan", { method: "POST", body: form });
+      const res = await fetch("/api/scan", {
+        method: "POST",
+        body: form,
+      });
+
       const json = (await res.json()) as ScanResponse | { ok: false; error: string };
 
       if (!res.ok || !("ok" in json) || json.ok === false) {
@@ -69,36 +76,46 @@ const params = useParams();
 
   return (
     <main className={styles.page}>
-
-
       <section className={styles.card}>
         <div className={styles.preview}>
           {previewUrl ? (
-            <Image src={previewUrl} alt="Preview" fill className={styles.previewImg} />
+            <Image
+              src={previewUrl}
+              alt="Preview"
+              fill
+              className={styles.previewImg}
+            />
           ) : (
             <div className={styles.empty}>
               <div className={styles.emptyIcon} />
               <div className={styles.emptyText}>Vælg et billede for at starte</div>
-              <div className={styles.tip}>Tip: tag både helhed + nærbillede af kendetegn</div>
+              <div className={styles.tip}>
+                Tip: tag både helhed + nærbillede af kendetegn
+              </div>
             </div>
           )}
-        </div>
 
-        <div className={styles.controls}>
-          <label className={styles.pickBtn}>
-            Vælg billede
-            <input
-              className={styles.file}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={(e) => onPick(e.target.files?.[0] ?? null)}
-            />
-          </label>
+          {/* ✅ CONTROLS OVERLAY – SKAL LIGGE HER */}
+          <div className={styles.controls}>
+            <label className={styles.pickBtn}>
+              Vælg billede
+              <input
+                className={styles.file}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={(e) => onPick(e.target.files?.[0] ?? null)}
+              />
+            </label>
 
-          <button className={styles.scanBtn} onClick={runScan} disabled={!canScan}>
-            {loading ? "Scanner…" : "Kør scan"}
-          </button>
+            <button
+              className={styles.scanBtn}
+              onClick={runScan}
+              disabled={!canScan}
+            >
+              {loading ? "Scanner…" : "Kør scan"}
+            </button>
+          </div>
         </div>
 
         {error && <div className={styles.error}>{error}</div>}
@@ -112,12 +129,17 @@ const params = useParams();
             {candidates.map((c) => (
               <article key={c.slug} className={styles.resultCard}>
                 <div className={styles.resultTop}>
-                  <div className={styles.names}>
+                  <div>
                     <div className={styles.name}>{c.name}</div>
                     {c.latin && <div className={styles.latin}>{c.latin}</div>}
                   </div>
+
                   <span className={styles.conf} data-conf={c.confidence}>
-                    {c.confidence === "high" ? "Høj" : c.confidence === "medium" ? "Medium" : "Lav"}
+                    {c.confidence === "high"
+                      ? "Høj"
+                      : c.confidence === "medium"
+                      ? "Medium"
+                      : "Lav"}
                   </span>
                 </div>
 
@@ -127,7 +149,10 @@ const params = useParams();
                   ))}
                 </ul>
 
-<a className={styles.open} href={`/${locale}/species/${c.slug}`}>
+                <a
+                  className={styles.open}
+                  href={`/${locale}/species/${c.slug}`}
+                >
                   Åbn artsside →
                 </a>
               </article>
