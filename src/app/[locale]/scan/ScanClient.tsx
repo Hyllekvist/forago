@@ -24,6 +24,9 @@ export default function ScanClient() {
   const [loading, setLoading] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+const params = useParams();
+  const locale = (params?.locale as string) || "dk";
+
 
   const canScan = useMemo(() => !!file && !loading, [file, loading]);
 
