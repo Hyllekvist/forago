@@ -1,4 +1,4 @@
-// src/app/[locale]/scan/page.tsx 
+// src/app/[locale]/scan/page.tsx  
 import type { Metadata } from "next";
 import ScanClient from "./ScanClient";
 
