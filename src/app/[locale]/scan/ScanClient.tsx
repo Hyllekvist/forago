@@ -1,45 +1,122 @@
-"use client"; 
+// src/app/[locale]/scan/ScanClient.tsx
+"use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import styles from "./ScanPage.module.css";
-
-import type { Match, Checkpoint } from "@/lib/vision/types";
-import { l2Normalize, topK } from "@/lib/vision/similarity";
-
-type Ref = { slug: string; name: string; latin?: string; imageUrl: string };
 
 type Candidate = {
   slug: string;
   name: string;
   latin?: string;
   confidence: "high" | "medium" | "low";
-  checks: Checkpoint[];
+  why: string[];
+  score: number; // 0-100
 };
 
-type RefsResponse = { ok: true; refs: Ref[] } | { ok: false; error: string };
-type ScanResponse = { ok: true; candidates: Candidate[] } | { ok: false; error: string };
+type RefItem = {
+  slug: string;
+  name: string;
+  latin?: string;
+  image_url: string; // public url
+};
 
 type WorkerMsg =
-  | { type: "init"; modelUrl: string }
-  | { type: "embed_url"; id: string; imageUrl: string }
-  | { type: "embed_blob"; id: string; data: ArrayBuffer };
+  | { type: "embed"; id: string; imageUrl: string; size?: number }
+  | { type: "embed_result"; id: string; vector: number[] }
+  | { type: "error"; id?: string; error: string };
 
-type WorkerReply =
-  | { type: "ready" }
-  | { type: "embed_ok"; id: string; vec: number[] }
-  | { type: "err"; id?: string; error: string };
-
-function bandFromRank(rank: number): Candidate["confidence"] {
-  return rank === 0 ? "high" : rank === 1 ? "medium" : "low";
+function uid() {
+  // crypto.randomUUID er ikke altid tilgængelig i alle runtime contexts
+  // så vi har fallback.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const c: any = globalThis.crypto;
+  if (c?.randomUUID) return c.randomUUID();
+  return `id_${Math.random().toString(16).slice(2)}_${Date.now().toString(16)}`;
 }
 
-// ✅ build-safe id (undgår crypto.randomUUID TS/compat issues på Vercel)
-function makeId() {
-  const c: any = (globalThis as any).crypto;
-  if (c && typeof c.randomUUID === "function") return c.randomUUID();
-  return `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`;
+function clamp01(x: number) {
+  return Math.max(0, Math.min(1, x));
+}
+
+function cosine(a: Float32Array, b: Float32Array) {
+  const n = Math.min(a.length, b.length);
+  let dot = 0;
+  let na = 0;
+  let nb = 0;
+  for (let i = 0; i < n; i++) {
+    const av = a[i];
+    const bv = b[i];
+    dot += av * bv;
+    na += av * av;
+    nb += bv * bv;
+  }
+  const den = Math.sqrt(na) * Math.sqrt(nb);
+  return den > 0 ? dot / den : 0;
+}
+
+// super simpel, stabil scoring (cosine -1..1 -> 0..100)
+function scoreFromCos(sim: number) {
+  const s = (sim + 1) / 2; // 0..1
+  return Math.round(clamp01(s) * 100);
+}
+
+function confFromScore(score: number): Candidate["confidence"] {
+  if (score >= 72) return "high";
+  if (score >= 55) return "medium";
+  return "low";
+}
+
+function whyFromScore(score: number) {
+  if (score >= 72) return ["Meget tæt visuel match", "Særligt lighed i form/struktur", "Høj samlet lighedsscore"];
+  if (score >= 55) return ["Delvist match", "Nogle kendetegn matcher", "Tjek detaljer (bladform/lameller/stilk)"];
+  return ["Svag match", "Prøv et skarpere nærbillede", "Sørg for god belysning og fokus"];
+}
+
+/**
+ * Minimal IDB cache til embeddings (så refs bliver lynhurtige efter første kørsel)
+ * Key: `ref:${slug}` / Value: number[]
+ */
+const IDB_NAME = "forago_scan";
+const IDB_STORE = "embeds";
+function openDb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbGet(key: string): Promise<number[] | null> {
+  const db = await openDb();
+  return new Promise((resolve) => {
+    const tx = db.transaction(IDB_STORE, "readonly");
+    const store = tx.objectStore(IDB_STORE);
+    const req = store.get(key);
+    req.onsuccess = () => resolve((req.result as number[]) ?? null);
+    req.onerror = () => resolve(null);
+    tx.oncomplete = () => db.close();
+  });
+}
+async function idbSet(key: string, val: number[]): Promise<void> {
+  const db = await openDb();
+  return new Promise((resolve) => {
+    const tx = db.transaction(IDB_STORE, "readwrite");
+    const store = tx.objectStore(IDB_STORE);
+    store.put(val, key);
+    tx.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    tx.onerror = () => {
+      db.close();
+      resolve();
+    };
+  });
 }
 
 export default function ScanClient() {
@@ -49,236 +126,188 @@ export default function ScanClient() {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  const [refs, setRefs] = useState<Ref[] | null>(null);
-  const [modelReady, setModelReady] = useState(false);
-
   const [loading, setLoading] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // sheet
   const [sheetOpen, setSheetOpen] = useState(false);
-  const sheetBodyRef = useRef<HTMLDivElement | null>(null);
+  const resultsRef = useRef<HTMLDivElement | null>(null);
 
-  const [checked, setChecked] = useState<Record<string, Set<string>>>({});
-
+  // worker
   const workerRef = useRef<Worker | null>(null);
-  const refVecsRef = useRef<{ slug: string; vec: Float32Array }[] | null>(null);
+  const pendingRef = useRef(new Map<string, (v: Float32Array) => void>());
 
-  const canScan = useMemo(
-    () => !!file && !loading && modelReady && !!refs?.length,
-    [file, loading, modelReady, refs]
-  );
+  // refs
+  const [refs, setRefs] = useState<RefItem[] | null>(null);
+  const [refsError, setRefsError] = useState<string | null>(null);
 
-  function closeSheet() {
-    setSheetOpen(false);
-  }
-
-  // ✅ cleanup preview blob url
-  useEffect(() => {
-    return () => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-    };
-  }, [previewUrl]);
-
-  // lock body scroll when sheet open
-  useEffect(() => {
-    if (!sheetOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [sheetOpen]);
-
-  // ESC close
-  useEffect(() => {
-    if (!sheetOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeSheet();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [sheetOpen]);
+  const canScan = useMemo(() => !!file && !loading, [file, loading]);
 
   useEffect(() => {
-    if (!sheetOpen) return;
-    requestAnimationFrame(() => sheetBodyRef.current?.scrollTo({ top: 0 }));
-  }, [sheetOpen]);
-
-  // init worker + model once
-  useEffect(() => {
+    // module worker (vigtigt for at undgå “import.meta outside module code” situations)
     const w = new Worker(new URL("../../../workers/vision.worker.ts", import.meta.url), { type: "module" });
     workerRef.current = w;
 
-    const onMsg = (ev: MessageEvent<WorkerReply>) => {
-      if (ev.data.type === "ready") setModelReady(true);
-      if (ev.data.type === "err") setError(ev.data.error);
+    w.onmessage = (ev: MessageEvent<WorkerMsg>) => {
+      const msg = ev.data;
+      if (!msg) return;
+
+      if (msg.type === "embed_result") {
+        const cb = pendingRef.current.get(msg.id);
+        if (cb) {
+          pendingRef.current.delete(msg.id);
+          cb(new Float32Array(msg.vector));
+        }
+      }
+
+      if (msg.type === "error") {
+        // hvis en pending findes – fail den ved at resolve tom vektor
+        if (msg.id) {
+          const cb = pendingRef.current.get(msg.id);
+          if (cb) {
+            pendingRef.current.delete(msg.id);
+            cb(new Float32Array());
+          }
+        }
+      }
     };
-
-    w.addEventListener("message", onMsg);
-
-    const modelUrl = "/models/forago_embed.onnx";
-    const init: WorkerMsg = { type: "init", modelUrl };
-    w.postMessage(init);
 
     return () => {
-      w.removeEventListener("message", onMsg);
       w.terminate();
       workerRef.current = null;
+      pendingRef.current.clear();
     };
   }, []);
 
-  // fetch refs from server (Supabase -> public bucket URLs)
   useEffect(() => {
+    // load refs (én gang) – du kan evt. tilføje kind=plant/mushroom senere
+    let alive = true;
     (async () => {
-      const r = await fetch("/api/scan/refs?kind=mushroom&limit=40", { cache: "no-store" });
-      const j = (await r.json()) as RefsResponse;
-      if (!r.ok || !("ok" in j) || (j as any).ok === false) throw new Error((j as any).error || "REFS_FAILED");
-      setRefs((j as any).refs as Ref[]);
-    })().catch((e: any) => setError(e?.message ?? "REFS_FAILED"));
+      try {
+        setRefsError(null);
+        const res = await fetch("/api/scan/refs", { cache: "no-store" });
+        if (!res.ok) throw new Error("Kunne ikke hente reference-billeder");
+        const json = (await res.json()) as { ok: true; refs: RefItem[] } | { ok: false; error: string };
+
+        if (!alive) return;
+        if (!("ok" in json) || json.ok === false) throw new Error(("error" in json && json.error) || "REFS fejlede");
+        setRefs(json.refs || []);
+      } catch (e: any) {
+        if (!alive) return;
+        setRefsError(e?.message ?? "Kunne ikke hente refs");
+        setRefs([]);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
   }, []);
-
-  function onPick(f: File | null) {
-    setError(null);
-    setCandidates(null);
-    setSheetOpen(false);
-    setChecked({});
-    setFile(f);
-
-    if (!f) {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(null);
-      return;
-    }
-
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    const url = URL.createObjectURL(f);
-    setPreviewUrl(url);
-  }
 
   function workerEmbedUrl(imageUrl: string) {
     return new Promise<Float32Array>((resolve, reject) => {
       const w = workerRef.current;
       if (!w) return reject(new Error("NO_WORKER"));
-      const id = makeId();
 
-      const handler = (ev: MessageEvent<WorkerReply>) => {
-        const d = ev.data;
-        if (d.type === "embed_ok" && d.id === id) {
-          w.removeEventListener("message", handler);
-          resolve(l2Normalize(new Float32Array(d.vec)));
-        }
-        if (d.type === "err" && d.id === id) {
-          w.removeEventListener("message", handler);
-          reject(new Error(d.error));
-        }
-      };
-
-      w.addEventListener("message", handler);
-      const msg: WorkerMsg = { type: "embed_url", id, imageUrl };
-      w.postMessage(msg);
+      const id = uid();
+      pendingRef.current.set(id, resolve);
+      w.postMessage({ type: "embed", id, imageUrl, size: 224 } satisfies WorkerMsg);
     });
   }
 
-  function workerEmbedBlob(buf: ArrayBuffer) {
-    return new Promise<Float32Array>((resolve, reject) => {
-      const w = workerRef.current;
-      if (!w) return reject(new Error("NO_WORKER"));
-      const id = makeId();
-
-      const handler = (ev: MessageEvent<WorkerReply>) => {
-        const d = ev.data;
-        if (d.type === "embed_ok" && d.id === id) {
-          w.removeEventListener("message", handler);
-          resolve(l2Normalize(new Float32Array(d.vec)));
-        }
-        if (d.type === "err" && d.id === id) {
-          w.removeEventListener("message", handler);
-          reject(new Error(d.error));
-        }
-      };
-
-      w.addEventListener("message", handler);
-      const msg: WorkerMsg = { type: "embed_blob", id, data: buf };
-      w.postMessage(msg, [buf]);
-    });
+  function revokePreview() {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
   }
 
-  async function ensureRefVecs() {
-    if (!refs?.length) throw new Error("REFS_NOT_READY");
-    if (refVecsRef.current) return refVecsRef.current;
+  function onPick(f: File | null) {
+    setError(null);
+    setCandidates(null);
+    setSheetOpen(false);
 
-    const vecs: { slug: string; vec: Float32Array }[] = [];
-    for (const it of refs) {
-      const v = await workerEmbedUrl(it.imageUrl);
-      vecs.push({ slug: it.slug, vec: v });
+    setFile(f);
+    revokePreview();
+
+    if (!f) {
+      setPreviewUrl(null);
+      return;
     }
-    refVecsRef.current = vecs;
-    return vecs;
+    const url = URL.createObjectURL(f);
+    setPreviewUrl(url);
   }
 
-  function toggleCheck(slug: string, id: string) {
-    setChecked((prev) => {
-      const next = new Set(prev[slug] ?? []);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return { ...prev, [slug]: next };
-    });
-  }
-
-  function microText(slug: string, total: number) {
-    const n = checked[slug]?.size ?? 0;
-    if (n === 0) return "Ikke verificeret endnu";
-    if (n === 1) return "Matcher et kendetegn";
-    if (n < total) return "Matcher flere kendetegn";
-    return "Matcher alle viste kendetegn";
-  }
+  useEffect(() => {
+    // cleanup når component unmount
+    return () => revokePreview();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function runScan() {
     if (!file) return;
-
     setLoading(true);
     setError(null);
     setCandidates(null);
     setSheetOpen(false);
-    setChecked({});
 
     try {
-      const refVecs = await ensureRefVecs();
+      // 1) lav temp public URL til input (via objectURL) så worker kan fetch via blob:
+      // Worker kan ikke altid læse objectURL direkte på tværs, så vi laver en blob URL “stabilt”
+      const inputUrl = previewUrl || URL.createObjectURL(file);
 
-      const buf = await file.arrayBuffer();
-      const q = await workerEmbedBlob(buf);
+      // 2) embedding for input
+      const inputVec = await workerEmbedUrl(inputUrl);
+      if (!inputVec || inputVec.length === 0) throw new Error("Embedding fejlede (input)");
 
-      const matches: Match[] = topK(q, refVecs, 3);
-      const slugs = matches.map((m) => m.slug);
+      // 3) refs skal være klar
+      const refList = refs ?? [];
+      if (refList.length === 0) throw new Error(refsError || "Ingen reference-billeder endnu");
 
-      const res = await fetch("/api/scan", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ slugs }),
-      });
+      // 4) embeddings for refs (cache i IDB)
+      const refVectors: { ref: RefItem; vec: Float32Array }[] = [];
 
-      const json = (await res.json()) as ScanResponse;
-      if (!res.ok || !("ok" in json) || (json as any).ok === false) {
-        throw new Error((json as any).error || "Scan fejlede");
+      // lille batch, så UI ikke føles “låst”
+      for (const r of refList) {
+        const key = `ref:${r.slug}`;
+        const cached = await idbGet(key);
+        if (cached && cached.length > 0) {
+          refVectors.push({ ref: r, vec: new Float32Array(cached) });
+          continue;
+        }
+        const vec = await workerEmbedUrl(r.image_url);
+        if (vec && vec.length > 0) {
+          refVectors.push({ ref: r, vec });
+          // cache
+          void idbSet(key, Array.from(vec));
+        }
       }
 
-      const hydrated = (json as any).candidates as Candidate[];
+      if (refVectors.length === 0) throw new Error("Ingen reference-embeddings kunne beregnes");
 
-      const ordered = slugs.map((slug, i) => {
-        const c = hydrated.find((x) => x.slug === slug);
-        if (!c) {
-          return {
-            slug,
-            name: slug,
-            confidence: bandFromRank(i),
-            checks: [],
-          } as Candidate;
-        }
-        return { ...c, confidence: bandFromRank(i) };
-      });
+      // 5) match
+      const scored = refVectors
+        .map(({ ref, vec }) => {
+          const sim = cosine(inputVec, vec);
+          const score = scoreFromCos(sim);
+          return { ref, sim, score };
+        })
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 6);
 
-      setCandidates(ordered);
+      const out: Candidate[] = scored.map((x) => ({
+        slug: x.ref.slug,
+        name: x.ref.name,
+        latin: x.ref.latin,
+        score: x.score,
+        confidence: confFromScore(x.score),
+        why: whyFromScore(x.score),
+      }));
+
+      setCandidates(out);
       setSheetOpen(true);
+
+      // 6) scroll så resultater “appear” uden at brugeren skal scrolle
+      requestAnimationFrame(() => {
+        resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
     } catch (e: any) {
       setError(e?.message ?? "Scan fejlede");
     } finally {
@@ -296,109 +325,87 @@ export default function ScanClient() {
             <div className={styles.empty}>
               <div className={styles.emptyIcon} />
               <div className={styles.emptyText}>Vælg et billede for at starte</div>
-              <div className={styles.tip}>
-                {!modelReady
-                  ? "Loader scan-model…"
-                  : refs?.length
-                  ? "Tip: tag både helhed + nærbillede af kendetegn"
-                  : "Loader arts-referencer…"}
-              </div>
+              <div className={styles.tip}>Tip: tag både helhed + nærbillede af kendetegn</div>
             </div>
           )}
-
-          <div className={styles.controls}>
-            <label className={styles.pickBtn}>
-              Vælg billede
-              <input
-                className={styles.file}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={(e) => onPick(e.target.files?.[0] ?? null)}
-              />
-            </label>
-
-            <button className={styles.scanBtn} onClick={runScan} disabled={!canScan}>
-              {loading ? "Scanner…" : modelReady ? "Kør scan" : "Loader…"}
-            </button>
-          </div>
         </div>
 
-        {error && <div className={styles.error}>{error}</div>}
+        <div className={styles.controls}>
+          <label className={styles.pickBtn}>
+            Vælg billede
+            <input
+              className={styles.file}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={(e) => onPick(e.target.files?.[0] ?? null)}
+            />
+          </label>
+
+          <button className={styles.scanBtn} onClick={runScan} disabled={!canScan}>
+            {loading ? "Scanner…" : "Kør scan"}
+          </button>
+        </div>
+
+        {(error || refsError) && <div className={styles.error}>{error || refsError}</div>}
       </section>
 
-      {candidates && (
-        <>
-          <div className={styles.sheetBackdrop} data-open={sheetOpen ? "1" : "0"} onClick={closeSheet} />
+      {/* Anchor for auto-scroll */}
+      <div ref={resultsRef} />
 
-          <section
-            className={styles.sheet}
-            data-open={sheetOpen ? "1" : "0"}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Scan resultater"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className={styles.sheetHandleRow}>
-              <div className={styles.sheetHandle} />
-              <button className={styles.sheetClose} onClick={closeSheet} aria-label="Luk">
-                Luk
-              </button>
-            </div>
+      {/* Sheet (resultater) */}
+      <div
+        aria-hidden={!sheetOpen}
+        className={styles.sheetOverlay}
+        data-open={sheetOpen ? "1" : "0"}
+        onClick={() => setSheetOpen(false)}
+      />
 
-            <div className={styles.sheetHeader}>
-              <div className={styles.sheetTitle}>Mulige arter</div>
-              <div className={styles.sheetMeta}>{candidates.length} bud · Verificér altid kendetegn</div>
-            </div>
+      <section className={styles.sheet} data-open={sheetOpen ? "1" : "0"} role="dialog" aria-label="Scanresultater">
+        <div className={styles.sheetHandleRow}>
+          <button className={styles.sheetHandleBtn} onClick={() => setSheetOpen(false)} aria-label="Luk">
+            <span className={styles.sheetHandle} />
+          </button>
+        </div>
 
-            <div ref={sheetBodyRef} className={styles.sheetBody}>
-              <div className={styles.grid}>
-                {candidates.map((c) => (
-                  <article key={c.slug} className={styles.resultCard}>
-                    <div className={styles.resultTop}>
-                      <div>
-                        <div className={styles.name}>{c.name}</div>
-                        {c.latin && <div className={styles.latin}>{c.latin}</div>}
-                      </div>
+        <div className={styles.sheetInner}>
+          <div className={styles.resultsHead}>Mulige arter</div>
 
+          {candidates ? (
+            <div className={styles.grid}>
+              {candidates.map((c) => (
+                <article key={c.slug} className={styles.resultCard}>
+                  <div className={styles.resultTop}>
+                    <div className={styles.names}>
+                      <div className={styles.name}>{c.name}</div>
+                      {c.latin && <div className={styles.latin}>{c.latin}</div>}
+                    </div>
+
+                    <div className={styles.confWrap}>
+                      <span className={styles.score}>{c.score}</span>
                       <span className={styles.conf} data-conf={c.confidence}>
                         {c.confidence === "high" ? "Høj" : c.confidence === "medium" ? "Medium" : "Lav"}
                       </span>
                     </div>
+                  </div>
 
-                    <div className={styles.micro}>{microText(c.slug, c.checks.length || 3)}</div>
+                  <ul className={styles.why}>
+                    {c.why.slice(0, 3).map((w, i) => (
+                      <li key={i}>{w}</li>
+                    ))}
+                  </ul>
 
-                    <div className={styles.checks}>
-                      <div className={styles.checksTitle}>Tjek nu</div>
-
-                      {(c.checks?.length
-                        ? c.checks
-                        : [
-                            { id: "cap", label: "Tjek hat-form og farve" },
-                            { id: "underside", label: "Tjek underside (ribber/lameller/porer)" },
-                            { id: "stem", label: "Tjek stok (farve, ring, volva)" },
-                          ]
-                      ).map((chk) => {
-                        const isOn = checked[c.slug]?.has(chk.id) ?? false;
-                        return (
-                          <label key={chk.id} className={[styles.check, isOn ? styles.checkOn : ""].join(" ")}>
-                            <input type="checkbox" checked={isOn} onChange={() => toggleCheck(c.slug, chk.id)} />
-                            <span>{chk.label}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-
-                    <a className={styles.open} href={`/${locale}/species/${c.slug}`}>
-                      Åbn artsside →
-                    </a>
-                  </article>
-                ))}
-              </div>
+                  <a className={styles.open} href={`/${locale}/species/${c.slug}`}>
+                    Åbn artsside →
+                  </a>
+                </article>
+              ))}
             </div>
-          </section>
-        </>
-      )}
+          ) : (
+            <div className={styles.tip}>Kør et scan for at se matches.</div>
+          )}
+        </div>
+      </section>
     </main>
   );
 }
