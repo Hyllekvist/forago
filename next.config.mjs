@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // ORT + import.meta + terser => build crash. Slå minify fra indtil ORT er 100% isoleret i worker bundle.
+  // ORT + import.meta + minifier => build crash
   swcMinify: false,
 
   webpack: (config, { dev, isServer }) => {
@@ -19,4 +19,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+export default nextConfig;
