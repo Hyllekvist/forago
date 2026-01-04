@@ -9,7 +9,7 @@
   gap: 0;
 }
 
-/* header ikke brugt (vi skjuler hvis nogen har glemt at fjerne JSX) */
+/* header ikke brugt */
 .header{ display:none; }
 .title{ display:none; }
 .sub{ display:none; }
@@ -115,11 +115,7 @@
   font-weight: 650;
 }
 
-/* (results section findes ikke længere som inline – alt i sheet) */
-.results{ display:none; }
-.resultsHead{ display:none; }
-
-/* Cards grid (genbruges i sheet) */
+/* Grid + cards */
 .grid{
   display:grid;
   grid-template-columns: 1fr;
@@ -161,6 +157,13 @@
 .conf[data-conf="medium"]{ opacity:.95; }
 .conf[data-conf="low"]{ opacity:.85; }
 
+/* ✅ micro feedback */
+.micro{
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: -6px;
+}
+
 /* ✅ Tjek nu */
 .checks{
   display: grid;
@@ -185,6 +188,11 @@
 
   background: var(--panel2);
   border: var(--stroke) solid var(--line);
+}
+
+.checkOn{
+  border-color: var(--goodLine);
+  background: var(--goodBg);
 }
 
 .check input{
@@ -305,7 +313,6 @@
   -webkit-overflow-scrolling: touch;
   padding: 12px 16px;
 
-  /* plads til sidste CTA + bottom nav */
   padding-bottom: calc(var(--bottom-nav-h, 92px) + env(safe-area-inset-bottom) + 18px);
 }
 
