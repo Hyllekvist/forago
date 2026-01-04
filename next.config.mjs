@@ -1,21 +1,22 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
-  poweredByHeader: false,
+  // ORT + import.meta + terser => build crash. Slå minify fra indtil ORT er 100% isoleret i worker bundle.
+  swcMinify: false,
 
-  experimental: {
-    typedRoutes: false,
-  },
+  webpack: (config, { dev, isServer }) => {
+    // Stop minifier i prod client-build (det er dér Terser rammer ort.bundle)
+    if (!dev && !isServer) {
+      config.optimization.minimize = false;
+    }
 
-  images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "hycbxiqfeunpzbgcasfo.supabase.co",
-        pathname: "/storage/v1/object/public/**",
-      },
-    ],
+    // Sørg for .mjs håndteres robust
+    config.module.rules.push({
+      test: /\.mjs$/,
+      type: "javascript/auto",
+    });
+
+    return config;
   },
 };
 
-export default nextConfig;
+module.exports = nextConfig;
