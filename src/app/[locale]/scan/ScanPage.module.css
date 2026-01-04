@@ -196,3 +196,105 @@
   text-decoration:none;
 }
 .open:hover{ opacity: 1; text-decoration:underline; }
+
+
+/* ===== Bottom Sheet ===== */
+
+.sheetBackdrop{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+  z-index: 40;
+}
+
+.sheetBackdrop[data-open="1"]{
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sheet{
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  z-index: 50;
+
+  border-radius: 22px 22px 0 0;
+  border: 1px solid rgba(255,255,255,.10);
+  border-bottom: none;
+
+  background: linear-gradient(180deg, rgba(18,20,24,.92), rgba(12,14,18,.94));
+  box-shadow: 0 -24px 90px rgba(0,0,0,.75);
+
+  transform: translateY(105%);
+  transition: transform 240ms cubic-bezier(.2,.9,.2,1);
+
+  /* højde: lad preview stadig “eksistere” bagved */
+  max-height: calc(100vh - 120px);
+
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+}
+
+.sheet[data-open="1"]{
+  transform: translateY(0);
+}
+
+.sheetHandleRow{
+  position: relative;
+  padding: 10px 14px 4px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.sheetHandle{
+  width: 44px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.22);
+  border: 1px solid rgba(255,255,255,.10);
+}
+
+.sheetClose{
+  position: absolute;
+  right: 10px;
+  top: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.06);
+  font-weight: 750;
+  opacity: .9;
+}
+
+.sheetHeader{
+  padding: 10px 16px 12px;
+  border-top: 1px solid rgba(255,255,255,.06);
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+
+.sheetTitle{
+  font-weight: 900;
+  letter-spacing: -.01em;
+  font-size: 16px;
+}
+
+.sheetMeta{
+  margin-top: 4px;
+  opacity: .75;
+  font-size: 13px;
+}
+
+.sheetBody{
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
+}
+
+/* grid bruges allerede af result cards; vi genbruger din .grid/.resultCard osv */
