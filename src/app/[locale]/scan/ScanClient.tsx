@@ -1,7 +1,7 @@
 "use client";
 
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
 import Image from "next/image";
 import styles from "./ScanPage.module.css";
 
@@ -25,6 +25,10 @@ export default function ScanClient() {
   const [candidates, setCandidates] = useState<Candidate[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // sheet state
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const sheetBodyRef = useRef<HTMLDivElement | null>(null);
+
   const params = useParams();
   const locale = (params?.locale as string) || "dk";
 
@@ -33,13 +37,13 @@ export default function ScanClient() {
   function onPick(f: File | null) {
     setError(null);
     setCandidates(null);
+    setSheetOpen(false);
     setFile(f);
 
     if (!f) {
       setPreviewUrl(null);
       return;
     }
-
     const url = URL.createObjectURL(f);
     setPreviewUrl(url);
   }
@@ -50,16 +54,13 @@ export default function ScanClient() {
     setLoading(true);
     setError(null);
     setCandidates(null);
+    setSheetOpen(false);
 
     try {
       const form = new FormData();
       form.append("image", file);
 
-      const res = await fetch("/api/scan", {
-        method: "POST",
-        body: form,
-      });
-
+      const res = await fetch("/api/scan", { method: "POST", body: form });
       const json = (await res.json()) as ScanResponse | { ok: false; error: string };
 
       if (!res.ok || !("ok" in json) || json.ok === false) {
@@ -67,6 +68,7 @@ export default function ScanClient() {
       }
 
       setCandidates(json.candidates);
+      setSheetOpen(true);
     } catch (e: any) {
       setError(e?.message ?? "Scan fejlede");
     } finally {
@@ -74,28 +76,53 @@ export default function ScanClient() {
     }
   }
 
+  function closeSheet() {
+    setSheetOpen(false);
+  }
+
+  // ESC to close
+  useEffect(() => {
+    if (!sheetOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeSheet();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [sheetOpen]);
+
+  // lock body scroll when sheet open (mobile)
+  useEffect(() => {
+    if (!sheetOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [sheetOpen]);
+
+  // when sheet opens, scroll results body to top
+  useEffect(() => {
+    if (!sheetOpen) return;
+    requestAnimationFrame(() => {
+      sheetBodyRef.current?.scrollTo({ top: 0 });
+    });
+  }, [sheetOpen]);
+
   return (
     <main className={styles.page}>
       <section className={styles.card}>
         <div className={styles.preview}>
           {previewUrl ? (
-            <Image
-              src={previewUrl}
-              alt="Preview"
-              fill
-              className={styles.previewImg}
-            />
+            <Image src={previewUrl} alt="Preview" fill className={styles.previewImg} />
           ) : (
             <div className={styles.empty}>
               <div className={styles.emptyIcon} />
               <div className={styles.emptyText}>Vælg et billede for at starte</div>
-              <div className={styles.tip}>
-                Tip: tag både helhed + nærbillede af kendetegn
-              </div>
+              <div className={styles.tip}>Tip: tag både helhed + nærbillede af kendetegn</div>
             </div>
           )}
 
-          {/* ✅ CONTROLS OVERLAY – SKAL LIGGE HER */}
+          {/* controls overlay */}
           <div className={styles.controls}>
             <label className={styles.pickBtn}>
               Vælg billede
@@ -108,11 +135,7 @@ export default function ScanClient() {
               />
             </label>
 
-            <button
-              className={styles.scanBtn}
-              onClick={runScan}
-              disabled={!canScan}
-            >
+            <button className={styles.scanBtn} onClick={runScan} disabled={!canScan}>
               {loading ? "Scanner…" : "Kør scan"}
             </button>
           </div>
@@ -121,44 +144,66 @@ export default function ScanClient() {
         {error && <div className={styles.error}>{error}</div>}
       </section>
 
+      {/* Bottom sheet */}
       {candidates && (
-        <section className={styles.results}>
-          <div className={styles.resultsHead}>Mulige arter</div>
+        <>
+          <div
+            className={styles.sheetBackdrop}
+            data-open={sheetOpen ? "1" : "0"}
+            onClick={closeSheet}
+          />
 
-          <div className={styles.grid}>
-            {candidates.map((c) => (
-              <article key={c.slug} className={styles.resultCard}>
-                <div className={styles.resultTop}>
-                  <div>
-                    <div className={styles.name}>{c.name}</div>
-                    {c.latin && <div className={styles.latin}>{c.latin}</div>}
-                  </div>
+          <section
+            className={styles.sheet}
+            data-open={sheetOpen ? "1" : "0"}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Scan resultater"
+          >
+            <div className={styles.sheetHandleRow}>
+              <div className={styles.sheetHandle} />
+              <button className={styles.sheetClose} onClick={closeSheet} aria-label="Luk">
+                Luk
+              </button>
+            </div>
 
-                  <span className={styles.conf} data-conf={c.confidence}>
-                    {c.confidence === "high"
-                      ? "Høj"
-                      : c.confidence === "medium"
-                      ? "Medium"
-                      : "Lav"}
-                  </span>
-                </div>
+            <div className={styles.sheetHeader}>
+              <div className={styles.sheetTitle}>Mulige arter</div>
+              <div className={styles.sheetMeta}>
+                {candidates.length} bud · Verificér altid kendetegn
+              </div>
+            </div>
 
-                <ul className={styles.why}>
-                  {c.why.slice(0, 3).map((w, i) => (
-                    <li key={i}>{w}</li>
-                  ))}
-                </ul>
+            <div ref={sheetBodyRef} className={styles.sheetBody}>
+              <div className={styles.grid}>
+                {candidates.map((c) => (
+                  <article key={c.slug} className={styles.resultCard}>
+                    <div className={styles.resultTop}>
+                      <div>
+                        <div className={styles.name}>{c.name}</div>
+                        {c.latin && <div className={styles.latin}>{c.latin}</div>}
+                      </div>
 
-                <a
-                  className={styles.open}
-                  href={`/${locale}/species/${c.slug}`}
-                >
-                  Åbn artsside →
-                </a>
-              </article>
-            ))}
-          </div>
-        </section>
+                      <span className={styles.conf} data-conf={c.confidence}>
+                        {c.confidence === "high" ? "Høj" : c.confidence === "medium" ? "Medium" : "Lav"}
+                      </span>
+                    </div>
+
+                    <ul className={styles.why}>
+                      {c.why.slice(0, 3).map((w, i) => (
+                        <li key={i}>{w}</li>
+                      ))}
+                    </ul>
+
+                    <a className={styles.open} href={`/${locale}/species/${c.slug}`}>
+                      Åbn artsside →
+                    </a>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
+        </>
       )}
     </main>
   );
