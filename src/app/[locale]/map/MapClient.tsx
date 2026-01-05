@@ -464,7 +464,6 @@ const sheetTitle = isPanning
     : "Flyt kortet for at finde spots";
 
 
-
   const countsForSelected = useMemo(() => {
     if (!selectedSpot?.id) return null;
     if (spotCounts) return spotCounts;
