@@ -18,12 +18,8 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, error: "Missing spot_ids" }, { status: 400 });
     }
 
-    const spot_ids = raw
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .filter(isUuid)
-      .slice(0, 200);
+   const spot_ids = raw.split(",").map(s => s.trim()).filter(Boolean).slice(0, 200);
+
 
     if (!spot_ids.length) {
       return NextResponse.json({ ok: true, rows: [], map: {} });
