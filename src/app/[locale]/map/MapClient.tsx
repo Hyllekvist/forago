@@ -11,6 +11,7 @@ import { InsightStrip, type InsightKey } from "./ui/InsightStrip";
 import { MapSheet } from "./ui/MapSheet";
 import { SpotPeekCard } from "./ui/SpotPeekCard";
 import { DropSpotSheet } from "./ui/DropSpotSheet";
+import { LogFindSheet } from "./ui/LogFindSheet";
 
 type Mode = "daily" | "forage";
 type Props = { spots: Spot[] };
@@ -102,6 +103,7 @@ export default function MapClient({ spots }: Props) {
 
   const [isPanning, setIsPanning] = useState(false);
 
+  // toasts (legacy)
   const [isLogging, setIsLogging] = useState(false);
   const [logError, setLogError] = useState<string | null>(null);
   const [logOk, setLogOk] = useState(false);
@@ -113,9 +115,15 @@ export default function MapClient({ spots }: Props) {
   const [dropBusy, setDropBusy] = useState(false);
   const [dropErr, setDropErr] = useState<string | null>(null);
 
+  // ✅ NEW: LogFindSheet state
+  const [logSpot, setLogSpot] = useState<Spot | null>(null);
+  const [logSheetBusy, setLogSheetBusy] = useState(false);
+  const [logSheetErr, setLogSheetErr] = useState<string | null>(null);
+  const [logSheetOk, setLogSheetOk] = useState(false);
+
   const isEmptyProd = spotsLocal.length === 0;
 
-  // ✅ FIX: Topbar må IKKE kollapse på pan (det er det der “ryger op”)
+  // ✅ FIX: Topbar må IKKE kollapse på pan
   const [topCollapsed, setTopCollapsed] = useState(false);
   useEffect(() => {
     const shouldCollapse = !isDesktopNow() && sheetExpanded;
@@ -250,6 +258,12 @@ export default function MapClient({ spots }: Props) {
     setDrop(null);
     setDropErr(null);
     setDropBusy(false);
+
+    // close sheets
+    setLogSpot(null);
+    setLogSheetErr(null);
+    setLogSheetOk(false);
+    setLogSheetBusy(false);
   }, [userPos]);
 
   const onPickInsight = useCallback(
@@ -261,6 +275,11 @@ export default function MapClient({ spots }: Props) {
       setSpotCounts(null);
       setDrop(null);
       setDropErr(null);
+
+      // close log sheet
+      setLogSpot(null);
+      setLogSheetErr(null);
+      setLogSheetOk(false);
 
       if (k === "nearby" && userPos && mapApi) {
         mapApi.flyTo(userPos.lat, userPos.lng, 13);
@@ -278,6 +297,11 @@ export default function MapClient({ spots }: Props) {
 
       setDrop(null);
       setDropErr(null);
+
+      // close log sheet if switching
+      setLogSpot(null);
+      setLogSheetErr(null);
+      setLogSheetOk(false);
 
       const s = spotsById.get(sid);
       if (!s || !mapApi) return;
@@ -317,6 +341,11 @@ export default function MapClient({ spots }: Props) {
     setSpotCounts(null);
     setSheetExpanded(false);
 
+    // close log sheet
+    setLogSpot(null);
+    setLogSheetErr(null);
+    setLogSheetOk(false);
+
     if (mapApi) {
       mapApi.flyTo(parsed.lat, parsed.lng, Math.max(mapApi.getZoom(), 14));
     }
@@ -355,6 +384,7 @@ export default function MapClient({ spots }: Props) {
     return () => ac.abort();
   }, [selectedSpot?.id]);
 
+  // (Legacy) quick log — beholdes hvis du stadig vil bruge toast på andre steder
   const onQuickLog = useCallback(
     async (spot: Spot) => {
       if (isLogging) return;
@@ -457,12 +487,11 @@ export default function MapClient({ spots }: Props) {
 
   const sheetItems = useMemo(() => sortedVisibleSpots.slice(0, 20), [sortedVisibleSpots]);
 
-const sheetTitle = isPanning
-  ? "Finder spots…"
-  : visibleIds.length
-    ? `${Math.min(visibleIds.length, 20)} relevante spots i view`
-    : "Flyt kortet for at finde spots";
-
+  const sheetTitle = isPanning
+    ? "Finder spots…"
+    : visibleIds.length
+      ? `${Math.min(visibleIds.length, 20)} relevante spots i view`
+      : "Flyt kortet for at finde spots";
 
   const countsForSelected = useMemo(() => {
     if (!selectedSpot?.id) return null;
@@ -529,6 +558,11 @@ const sheetTitle = isPanning
     setDropErr(null);
     setSpotCounts(null);
 
+    // close log sheet
+    setLogSpot(null);
+    setLogSheetErr(null);
+    setLogSheetOk(false);
+
     mapApi.flyTo(recommendedSpot.lat, recommendedSpot.lng, Math.max(mapApi.getZoom(), 14));
     mapApi.panBy?.(0, isDesktopNow() ? -60 : -140);
 
@@ -548,9 +582,22 @@ const sheetTitle = isPanning
     [locale, pathname, search]
   );
 
+  // ✅ NEW: require auth for log sheet (no drop payload)
+  const onRequireAuthForLog = useCallback(() => {
+    const returnTo = `${pathname}${search?.toString() ? `?${search.toString()}` : ""}`;
+    const qs = new URLSearchParams();
+    qs.set("returnTo", returnTo);
+    window.location.href = `/${locale}/login?${qs.toString()}`;
+  }, [locale, pathname, search]);
+
   const onMapClick = useCallback(
     (p: { lat: number; lng: number }) => {
       if (mode !== "forage") return;
+
+      // if log sheet open, close it and let user drop new
+      setLogSpot(null);
+      setLogSheetErr(null);
+      setLogSheetOk(false);
 
       if (!isAuthed) {
         return onRequireAuth({ lat: p.lat, lng: p.lng, name: "Nyt spot", speciesSlug: null });
@@ -563,6 +610,71 @@ const sheetTitle = isPanning
       setSheetExpanded(false);
     },
     [mode, isAuthed, onRequireAuth]
+  );
+
+  // ✅ NEW: open log sheet
+  const onOpenLogSheet = useCallback((spot: Spot) => {
+    setLogSpot(spot);
+    setLogSheetErr(null);
+    setLogSheetOk(false);
+
+    // drop flow must close
+    setDrop(null);
+    setDropErr(null);
+
+    // keep selectedId (we’re logging on selected spot)
+  }, []);
+
+  // ✅ NEW: submit log from sheet
+  const onLogFromSheet = useCallback(
+    async ({ spotId, speciesSlug }: { spotId: string; speciesSlug: string | null }) => {
+      if (logSheetBusy) return;
+
+      try {
+        setLogSheetBusy(true);
+        setLogSheetErr(null);
+        setLogSheetOk(false);
+
+        const res = await fetch("/api/finds/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            spot_id: String(spotId),
+            species_slug: speciesSlug ?? null,
+            observed_at: new Date().toISOString(),
+            visibility: "public_aggregate",
+            country: "DK",
+            geo_precision_km: 1,
+            photo_urls: [],
+          }),
+        });
+
+        const json = await res.json();
+        if (!res.ok || !json?.ok) throw new Error(json?.error ?? "Kunne ikke logge fund");
+
+        setLogSheetOk(true);
+
+        setCountsMap((prev) => ({
+          ...prev,
+          [String(spotId)]: {
+            total: (prev[String(spotId)]?.total ?? 0) + 1,
+            qtr: (prev[String(spotId)]?.qtr ?? 0) + 1,
+          },
+        }));
+
+        setSpotCounts((prev) =>
+          prev ? { ...prev, total: prev.total + 1, qtr: prev.qtr + 1, last30: prev.last30 + 1 } : prev
+        );
+
+        window.setTimeout(() => setLogSheetOk(false), 1200);
+        window.setTimeout(() => setLogSpot(null), 600);
+      } catch (e: any) {
+        setLogSheetErr(e?.message ?? "Ukendt fejl");
+      } finally {
+        setLogSheetBusy(false);
+      }
+    },
+    [logSheetBusy]
   );
 
   const onCreateAndLogFromDrop = useCallback(
@@ -658,48 +770,47 @@ const sheetTitle = isPanning
 
   const mobileDockMode: "peek" | "sheet" | "none" = useMemo(() => {
     if (drop) return "none";
+    if (logSpot) return "none"; // log sheet overlays
     if (selectedSpot) return "peek";
     return "sheet";
-  }, [drop, selectedSpot]);
+  }, [drop, logSpot, selectedSpot]);
 
-// ✅ FETCH SPOTS FOR CURRENT VIEW (bbox/zoom) — kører på moveend/zoomend via visibleIds
-useEffect(() => {
-  if (!mapApi) return;
+  // ✅ FETCH SPOTS FOR CURRENT VIEW (bbox/zoom)
+  useEffect(() => {
+    if (!mapApi) return;
 
-  const zoom = mapApi.getZoom();
+    const zoom = mapApi.getZoom();
 
-  // ✅ vigtig: ikke hent spots når man er zoomet for langt ud
-  if (zoom < 10) return;
+    // ✅ vigtig: ikke hent spots når man er zoomet for langt ud
+    if (zoom < 10) return;
 
-  const [w, s, e, n] = mapApi.getBoundsBbox();
-  const bbox = `${s},${w},${n},${e}`;
+    const [w, s, e, n] = mapApi.getBoundsBbox();
+    const bbox = `${s},${w},${n},${e}`;
 
-  const ac = new AbortController();
+    const ac = new AbortController();
 
-  (async () => {
-    try {
-      const r = await fetch(
-        `/api/spots/map?bbox=${encodeURIComponent(bbox)}&zoom=${encodeURIComponent(String(zoom))}`,
-        { signal: ac.signal, cache: "no-store" }
-      );
-      const j = await r.json();
-      if (!r.ok || !j?.ok || !Array.isArray(j.items)) return;
+    (async () => {
+      try {
+        const r = await fetch(
+          `/api/spots/map?bbox=${encodeURIComponent(bbox)}&zoom=${encodeURIComponent(String(zoom))}`,
+          { signal: ac.signal, cache: "no-store" }
+        );
+        const j = await r.json();
+        if (!r.ok || !j?.ok || !Array.isArray(j.items)) return;
 
-      const incoming = j.items as Spot[];
+        const incoming = j.items as Spot[];
 
-      setSpotsLocal((prev) => {
-        const m = new Map<string, Spot>();
-        for (const p of prev) m.set(String(p.id), p);
-        for (const s of incoming) m.set(String(s.id), s);
-        return Array.from(m.values());
-      });
-    } catch {}
-  })();
+        setSpotsLocal((prev) => {
+          const m = new Map<string, Spot>();
+          for (const p of prev) m.set(String(p.id), p);
+          for (const s of incoming) m.set(String(s.id), s);
+          return Array.from(m.values());
+        });
+      } catch {}
+    })();
 
-  return () => ac.abort();
-}, [mapApi, visibleIds]);
-
-
+    return () => ac.abort();
+  }, [mapApi, visibleIds]);
 
   return (
     <div
@@ -730,13 +841,14 @@ useEffect(() => {
                 expanded
                 onToggle={() => {}}
                 title={sheetTitle}
-                  items={sheetItems}
-
+                items={sheetItems}
                 selectedId={selectedId}
                 onSelect={onSelectSpot}
                 onLog={(id) => {
                   const s = spotsById.get(String(id));
-                  if (s && mode === "forage") void onQuickLog(s);
+                  if (!s) return;
+                  // ✅ NEW: open sheet (only in forage)
+                  if (mode === "forage") onOpenLogSheet(s);
                 }}
               />
             )}
@@ -756,7 +868,7 @@ useEffect(() => {
             onMapClick={onMapClick}
           />
 
-          {mode === "forage" && recommendedSpot && !drop && !isEmptyProd && !selectedId && !sheetExpanded ? (
+          {mode === "forage" && recommendedSpot && !drop && !logSpot && !isEmptyProd && !selectedId && !sheetExpanded ? (
             <button type="button" className={styles.fabCta} onClick={onGoRecommended}>
               Start sanketur
             </button>
@@ -780,10 +892,13 @@ useEffect(() => {
                   mode={mode}
                   userPos={userPos}
                   counts={countsForSelected}
-                  isLogging={isLogging}
-                  logOk={logOk}
+                  isLogging={isLogging || logSheetBusy}
+                  logOk={logOk || logSheetOk}
                   onClose={() => setSelectedId(null)}
-                  onLog={() => void onQuickLog(selectedSpot)}
+                  onLog={() => {
+                    if (mode !== "forage") return;
+                    onOpenLogSheet(selectedSpot);
+                  }}
                 />
               </div>
             ) : mobileDockMode === "sheet" ? (
@@ -793,19 +908,35 @@ useEffect(() => {
                   expanded={sheetExpanded}
                   onToggle={() => setSheetExpanded((v) => !v)}
                   title={sheetTitle}
-                    items={sheetItems}
-
+                  items={sheetItems}
                   selectedId={selectedId}
                   onSelect={onSelectSpot}
                   onLog={(id) => {
                     const s = spotsById.get(String(id));
-                    if (s && mode === "forage") void onQuickLog(s);
+                    if (!s) return;
+                    if (mode === "forage") onOpenLogSheet(s);
                   }}
                 />
               </div>
             ) : null}
           </div>
 
+          {/* ✅ NEW: LogFindSheet overlay */}
+          {logSpot ? (
+            <LogFindSheet
+              locale={locale}
+              spot={logSpot}
+              isAuthed={isAuthed}
+              isBusy={logSheetBusy}
+              error={logSheetErr}
+              ok={logSheetOk}
+              onRequireAuth={onRequireAuthForLog}
+              onClose={() => setLogSpot(null)}
+              onLog={onLogFromSheet}
+            />
+          ) : null}
+
+          {/* DropSpotSheet overlay */}
           {drop ? (
             <DropSpotSheet
               locale={locale}
@@ -837,10 +968,13 @@ useEffect(() => {
                 mode={mode}
                 userPos={userPos}
                 counts={countsForSelected}
-                isLogging={isLogging}
-                logOk={logOk}
+                isLogging={isLogging || logSheetBusy}
+                logOk={logOk || logSheetOk}
                 onClose={() => setSelectedId(null)}
-                onLog={() => void onQuickLog(selectedSpot)}
+                onLog={() => {
+                  if (mode !== "forage") return;
+                  onOpenLogSheet(selectedSpot);
+                }}
               />
             ) : (
               <div className={styles.emptyHint}>
@@ -855,6 +989,7 @@ useEffect(() => {
         </aside>
       </div>
 
+      {/* legacy toasts (ok at keep) */}
       {logError ? <div className={styles.toastError}>{logError}</div> : null}
       {isLogging ? <div className={styles.toastInfo}>Logger fund…</div> : null}
     </div>
