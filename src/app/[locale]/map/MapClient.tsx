@@ -667,6 +667,10 @@ useEffect(() => {
   if (!mapApi) return;
 
   const zoom = mapApi.getZoom();
+
+  // ✅ vigtig: ikke hent spots når man er zoomet for langt ud
+  if (zoom < 10) return;
+
   const [w, s, e, n] = mapApi.getBoundsBbox();
   const bbox = `${s},${w},${n},${e}`;
 
@@ -689,13 +693,12 @@ useEffect(() => {
         for (const s of incoming) m.set(String(s.id), s);
         return Array.from(m.values());
       });
-    } catch {
-      // ignore
-    }
+    } catch {}
   })();
 
   return () => ac.abort();
 }, [mapApi, visibleIds]);
+
 
 
   return (
