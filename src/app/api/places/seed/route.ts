@@ -46,12 +46,24 @@ function seedRank(tags: Record<string, any>) {
   return 25;
 }
 
-function cleanName(tags: Record<string, any>, fallback: string) {
-  const n = typeof tags.name === "string" ? tags.name.trim() : "";
-  return n || fallback;
+function pickName(tags: Record<string, any>) {
+  const cand = [
+    tags["name:da"],
+    tags.name,
+    tags["official_name"],
+    tags["short_name"],
+    tags["loc_name"],
+  ];
+  for (const v of cand) {
+    if (typeof v === "string") {
+      const t = v.trim();
+      if (t) return t;
+    }
+  }
+  return "";
 }
 
-function gridKey(lat: number, lng: number, meters = 350) {
+function gridKey(lat: number, lng: number, meters = 900) {
   // ~111_320m per grad lat. lon skaleres med cos(lat)
   const dLat = meters / 111_320;
   const dLng = meters / (111_320 * Math.cos((lat * Math.PI) / 180));
@@ -100,8 +112,8 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, error: "Missing/invalid bbox" }, { status: 400 });
     }
 
-    // seed først ved zoom >= 12
-    if (!Number.isFinite(zoom) || zoom < 12) {
+    // ✅ seed først ved zoom >= 13 (mindre aggressiv)
+    if (!Number.isFinite(zoom) || zoom < 13) {
       return NextResponse.json({ ok: true, inserted: 0, reason: "zoom_too_low" });
     }
 
@@ -127,10 +139,11 @@ out center tags qt;
     }
 
     const seenCells = new Set<string>();
+    const seenSource = new Set<string>();
     const rows: any[] = [];
 
     for (const el of elements) {
-      // noise-killer #1: drop nodes
+      // drop nodes (støj)
       const t = String(el?.type ?? "");
       if (t === "node") continue;
 
@@ -144,15 +157,20 @@ out center tags qt;
       const category = osmCategory(tags);
       if (category === "unknown") continue;
 
-      // spatial dedupe
-      const cell = gridKey(lat, lng, 350);
-      if (seenCells.has(cell)) continue;
-      seenCells.add(cell);
+      // ✅ kræv “rigtigt” navn (drop fallback Skov/Naturspot)
+      const name = pickName(tags);
+      if (!name) continue;
 
       const source_id = `${String(el?.type ?? "x")}/${String(el?.id ?? "")}`;
       if (!source_id.includes("/") || source_id.endsWith("/")) continue;
+      if (seenSource.has(source_id)) continue;
+      seenSource.add(source_id);
 
-      const name = cleanName(tags, category === "forest" ? "Skov" : "Naturspot");
+      // spatial dedupe (stærkere)
+      const cell = gridKey(lat, lng, 900);
+      if (seenCells.has(cell)) continue;
+      seenCells.add(cell);
+
       const slug = `osm-${source_id.replace("/", "-")}`;
 
       rows.push({
@@ -171,7 +189,8 @@ out center tags qt;
         seed_rank: seedRank(tags),
       });
 
-      if (rows.length >= 200) break;
+      // ✅ lavere cap
+      if (rows.length >= 60) break;
     }
 
     if (!rows.length) {
@@ -180,12 +199,11 @@ out center tags qt;
 
     const supabase = await supabaseServer();
 
-    // upsert på slug (places_slug_key)
     const { data: up, error } = await supabase
       .from("places")
       .upsert(rows, { onConflict: "slug" })
       .select("slug")
-      .limit(200);
+      .limit(60);
 
     if (error) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
@@ -193,9 +211,6 @@ out center tags qt;
 
     return NextResponse.json({ ok: true, inserted: up?.length ?? 0, candidates: rows.length });
   } catch (e: any) {
-    return NextResponse.json(
-      { ok: false, error: e?.message ?? "Unknown error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, error: e?.message ?? "Unknown error" }, { status: 500 });
   }
 }
