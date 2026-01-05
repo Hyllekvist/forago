@@ -173,6 +173,28 @@ export default function MapClient({ spots }: Props) {
     return () => window.clearTimeout(t);
   }, [visibleIds]);
 
+  const lastSeedRef = useRef<string>("");
+
+useEffect(() => {
+  if (!mapApi) return;
+
+  const zoom = mapApi.getZoom();
+  const [w, s, e, n] = mapApi.getBoundsBbox();
+  const bbox = `${s},${w},${n},${e}`;
+
+  // undgå at spamme samme bbox
+  const key = `${Math.round(zoom)}:${bbox}`;
+  if (lastSeedRef.current === key) return;
+  lastSeedRef.current = key;
+
+  // seed kun i sankemode (valgfrit)
+  if (mode !== "forage") return;
+
+  fetch(`/api/places/seed?bbox=${encodeURIComponent(bbox)}&zoom=${encodeURIComponent(String(zoom))}`)
+    .catch(() => {});
+}, [mapApi, mode, debouncedVisibleIds]);
+
+
   useEffect(() => {
     if (mode !== "forage") return;
     if (!userPos || !mapApi) return;
