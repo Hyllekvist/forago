@@ -171,7 +171,7 @@ out center tags qt;
 
     const { data: up, error } = await supabase
       .from("places")
-      .upsert(capped, { onConflict: "source,source_id" })
+.upsert(capped, { onConflict: "slug" })
       .select("slug")
       .limit(250);
 
