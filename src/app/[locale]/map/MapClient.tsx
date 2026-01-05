@@ -659,7 +659,7 @@ export default function MapClient({ spots }: Props) {
     return "sheet";
   }, [drop, selectedSpot]);
 
- // ✅ SEED FLOW (erstat din nuværende seed-useEffect)
+// ✅ SEED + MAP REFRESH (max 20 spots, replace - ikke merge)
 const seedLastAtRef = useRef<number>(0);
 const seedLastKeyRef = useRef<string>("");
 
@@ -667,52 +667,59 @@ useEffect(() => {
   if (!mapApi) return;
 
   const zoom = mapApi.getZoom();
-  if (zoom < 12) return;
-
-  // throttle: max 1 seed / 60s
-  const now = Date.now();
-  if (now - seedLastAtRef.current < 60_000) return;
+  if (zoom < 12) {
+    // vigtigt: ved zoom-out skal vi tømme (ellers hænger gamle spots ved)
+    setSpotsLocal([]);
+    setSelectedId(null);
+    setVisibleIds([]);
+    return;
+  }
 
   const [w, s, e, n] = mapApi.getBoundsBbox();
   const bbox = `${s},${w},${n},${e}`;
 
+  // nøgle for “samme view”
   const key = `${Math.round(zoom)}:${s.toFixed(3)},${w.toFixed(3)},${n.toFixed(3)},${e.toFixed(3)}`;
   if (seedLastKeyRef.current === key) return;
-
-  seedLastAtRef.current = now;
   seedLastKeyRef.current = key;
+
+  // throttle seed: max 1 gang / 60s
+  const now = Date.now();
+  const canSeed = now - seedLastAtRef.current >= 60_000;
+  if (canSeed) seedLastAtRef.current = now;
+
+  const ac = new AbortController();
 
   (async () => {
     try {
-      const rSeed = await fetch(
-        `/api/places/seed?bbox=${encodeURIComponent(bbox)}&zoom=${encodeURIComponent(String(zoom))}`,
-        { cache: "no-store" }
-      );
-      const jSeed = await rSeed.json();
+      // 1) seed (fail-soft)
+      if (canSeed) {
+        await fetch(
+          `/api/places/seed?bbox=${encodeURIComponent(bbox)}&zoom=${encodeURIComponent(String(zoom))}`,
+          { cache: "no-store", signal: ac.signal }
+        ).catch(() => {});
+      }
 
-      // uanset inserted, så reload bbox-spots (det er billigt og stabilt)
+      // 2) hent “max 10/20” fra /api/spots/map og REPLACE
       const rMap = await fetch(
-        `/api/spots/map?bbox=${encodeURIComponent(bbox)}&limit=900`,
-        { cache: "no-store" }
+        `/api/spots/map?bbox=${encodeURIComponent(bbox)}&zoom=${encodeURIComponent(String(zoom))}`,
+        { cache: "no-store", signal: ac.signal }
       );
+
       const jMap = await rMap.json();
 
       if (jMap?.ok && Array.isArray(jMap.items)) {
-        const incoming = jMap.items as Spot[];
-
-        setSpotsLocal((prev) => {
-          const m = new Map<string, Spot>();
-          for (const p of prev) m.set(String(p.id), p);
-          for (const s of incoming) m.set(String(s.id), s);
-          return Array.from(m.values());
-        });
+        // 🔥 vigtigste ændring: REPLACE (ikke merge)
+        setSpotsLocal(jMap.items as Spot[]);
       }
-
-      // hvis du stadig vil: kun når inserted>0
-      // if (jSeed?.ok && Number(jSeed?.inserted ?? 0) > 0) router.refresh();
-    } catch {}
+    } catch {
+      // ignore
+    }
   })();
-}, [mapApi, debouncedVisibleIds]);
+
+  return () => ac.abort();
+  // kør når view ændrer sig -> visibleIds ændres ved moveend/zoomend i LeafletMap
+}, [mapApi, debouncedVisibleIds]); 
 
   return (
     <div
