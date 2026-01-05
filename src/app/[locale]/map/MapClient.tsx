@@ -457,10 +457,12 @@ export default function MapClient({ spots }: Props) {
 
   const sheetItems = useMemo(() => sortedVisibleSpots.slice(0, 20), [sortedVisibleSpots]);
 
-  const sheetTitle = isPanning
-    ? "Finder spots…"
-   : visibleIds.length
-  ? `${Math.min(visibleIds.length, 20)} relevante spots i view`
+const sheetTitle = isPanning
+  ? "Finder spots…"
+  : visibleIds.length
+    ? `${Math.min(visibleIds.length, 20)} relevante spots i view`
+    : "Flyt kortet for at finde spots";
+
 
 
   const countsForSelected = useMemo(() => {
