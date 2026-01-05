@@ -12,6 +12,10 @@ function parseBbox(raw: string | null) {
   if (![s, w, n, e].every(Number.isFinite)) return null;
   if (n <= s || e <= w) return null;
 
+  // sanity clamp (undgå kæmpe requests)
+  const maxSpan = 0.25; // ~27km i lat (MVP-safety)
+  if (Math.abs(n - s) > maxSpan || Math.abs(e - w) > maxSpan) return null;
+
   return { s, w, n, e };
 }
 
@@ -47,9 +51,43 @@ function cleanName(tags: Record<string, any>, fallback: string) {
   return n || fallback;
 }
 
-function safeBboxKey(b: { s: number; w: number; n: number; e: number }, zoom: number) {
-  // bruges kun til debug/telemetry i respons hvis du vil – ikke nødvendigt
-  return `${Math.round(zoom)}:${b.s.toFixed(4)},${b.w.toFixed(4)},${b.n.toFixed(4)},${b.e.toFixed(4)}`;
+function gridKey(lat: number, lng: number, meters = 350) {
+  // ~111_320m per grad lat. lon skaleres med cos(lat)
+  const dLat = meters / 111_320;
+  const dLng = meters / (111_320 * Math.cos((lat * Math.PI) / 180));
+  const a = Math.round(lat / dLat);
+  const b = Math.round(lng / dLng);
+  return `${a}:${b}`;
+}
+
+const OVERPASS = [
+  "https://overpass-api.de/api/interpreter",
+  "https://overpass.kumi.systems/api/interpreter",
+  "https://overpass.nchc.org.tw/api/interpreter",
+];
+
+async function fetchOverpass(query: string) {
+  const body = `data=${encodeURIComponent(query)}`;
+
+  for (const url of OVERPASS) {
+    try {
+      const r = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+        body,
+      });
+      if (!r.ok) continue;
+
+      try {
+        return await r.json();
+      } catch {
+        continue;
+      }
+    } catch {
+      continue;
+    }
+  }
+  return null;
 }
 
 export async function GET(req: Request) {
@@ -62,15 +100,16 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, error: "Missing/invalid bbox" }, { status: 400 });
     }
 
-    // beskyt Overpass + jer selv: seed først ved zoom >= 12
+    // Seed først ved zoom >= 12
     if (!Number.isFinite(zoom) || zoom < 12) {
       return NextResponse.json({ ok: true, inserted: 0, reason: "zoom_too_low" });
     }
 
-    const supabase = await supabaseServer();
-
+    // Overpass query:
+    // - inkluderer ways/relations (arealer/linjer) + center
+    // - vi dropper nodes i vores own mapping (noise-killer)
     const query = `
-[out:json][timeout:25];
+[out:json][timeout:20];
 (
   nwr["natural"~"wood|heath|wetland|scrub|water|beach"](${bbox.s},${bbox.w},${bbox.n},${bbox.e});
   nwr["landuse"~"forest|meadow"](${bbox.s},${bbox.w},${bbox.n},${bbox.e});
@@ -80,106 +119,88 @@ export async function GET(req: Request) {
 out center tags qt;
 `.trim();
 
-    const overpassUrl = "https://overpass-api.de/api/interpreter";
-
-    let r: Response;
-    try {
-      r = await fetch(overpassUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
-        body: `data=${encodeURIComponent(query)}`,
-        // Next runtime: node – abort kan bruges hvis du vil senere
-      });
-    } catch {
-      // fail soft
-      return NextResponse.json({
-        ok: true,
-        inserted: 0,
-        reason: "overpass_fetch_failed",
-        key: safeBboxKey(bbox, zoom),
-      });
-    }
-
-    if (!r.ok) {
-      // fail soft (rate limit/timeout osv.)
-      return NextResponse.json({
-        ok: true,
-        inserted: 0,
-        reason: "overpass_unavailable",
-        status: r.status,
-        key: safeBboxKey(bbox, zoom),
-      });
-    }
-
-    let json: any;
-    try {
-      json = await r.json();
-    } catch {
-      return NextResponse.json({
-        ok: true,
-        inserted: 0,
-        reason: "overpass_invalid_json",
-        key: safeBboxKey(bbox, zoom),
-      });
+    const json = await fetchOverpass(query);
+    if (!json) {
+      return NextResponse.json({ ok: true, inserted: 0, reason: "overpass_all_down" });
     }
 
     const elements: any[] = Array.isArray(json?.elements) ? json.elements : [];
-
-    const rows = elements
-      .map((el) => {
-        const lat = Number(el?.lat ?? el?.center?.lat);
-        const lng = Number(el?.lon ?? el?.center?.lon);
-        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-
-        const tags = (el?.tags ?? {}) as Record<string, any>;
-
-        // noise-killer
-        if (tags.amenity || tags.shop || tags.building) return null;
-
-        const category = osmCategory(tags);
-        if (category === "unknown") return null;
-
-        const source_id = `${String(el?.type ?? "x")}/${String(el?.id ?? "")}`;
-        if (!source_id.includes("/") || source_id.endsWith("/")) return null;
-
-        const name = cleanName(tags, category === "forest" ? "Skov" : "Naturspot");
-        const slug = `osm-${source_id.replace("/", "-")}`;
-
-        return {
-          slug,
-          name,
-          lat,
-          lng,
-          country: "dk",
-          region: "",
-          habitat: category,
-          description: "",
-          source: "seed_osm",
-          source_id,
-          category,
-          is_seeded: true,
-          seed_rank: seedRank(tags),
-        };
-      })
-      .filter(Boolean) as any[];
-
-    const capped = rows.slice(0, 250);
-
-    if (!capped.length) {
-      return NextResponse.json({ ok: true, inserted: 0, reason: "no_candidates" });
+    if (!elements.length) {
+      return NextResponse.json({ ok: true, inserted: 0, reason: "overpass_empty" });
     }
 
+    const supabase = await supabaseServer();
+
+    const seenCells = new Set<string>();
+    const rows: any[] = [];
+
+    for (const el of elements) {
+      // ✅ noise-killer #1: drop nodes (de eksploderer antallet)
+      const t = String(el?.type ?? "");
+      if (t === "node") continue;
+
+      const lat = Number(el?.lat ?? el?.center?.lat);
+      const lng = Number(el?.lon ?? el?.center?.lon);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+
+      const tags = (el?.tags ?? {}) as Record<string, any>;
+
+      // ✅ noise-killer #2: skip “amenity/shop/building”
+      if (tags.amenity || tags.shop || tags.building) continue;
+
+      const category = osmCategory(tags);
+      if (category === "unknown") continue;
+
+      // ✅ spatial dedupe (behold max 1 pr grid)
+      const cell = gridKey(lat, lng, 350);
+      if (seenCells.has(cell)) continue;
+      seenCells.add(cell);
+
+      const source_id = `${String(el?.type ?? "x")}/${String(el?.id ?? "")}`;
+      if (!source_id.includes("/") || source_id.endsWith("/")) continue;
+
+      const name = cleanName(tags, category === "forest" ? "Skov" : "Naturspot");
+      const slug = `osm-${source_id.replace("/", "-")}`;
+
+      rows.push({
+        slug,
+        name,
+        lat,
+        lng,
+        country: "dk",
+        region: "",
+        habitat: category,
+        description: "",
+        source: "seed_osm",
+        source_id,
+        category,
+        is_seeded: true,
+        seed_rank: seedRank(tags),
+      });
+
+      if (rows.length >= 200) break; // hård cap per request
+    }
+
+    if (!rows.length) {
+      return NextResponse.json({ ok: true, inserted: 0, reason: "no_candidates_after_filters" });
+    }
+
+    // ✅ Upsert på slug (matches places_slug_key unique)
     const { data: up, error } = await supabase
       .from("places")
-.upsert(capped, { onConflict: "slug" })
+      .upsert(rows, { onConflict: "slug" })
       .select("slug")
-      .limit(250);
+      .limit(200);
 
     if (error) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true, inserted: up?.length ?? 0 });
+    return NextResponse.json({
+      ok: true,
+      inserted: up?.length ?? 0,
+      candidates: rows.length,
+    });
   } catch (e: any) {
     return NextResponse.json(
       { ok: false, error: e?.message ?? "Unknown error" },
