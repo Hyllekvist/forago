@@ -173,26 +173,29 @@ export default function MapClient({ spots }: Props) {
     return () => window.clearTimeout(t);
   }, [visibleIds]);
 
-  const lastSeedRef = useRef<string>("");
+  const seededOnceRef = useRef(false);
 
 useEffect(() => {
   if (!mapApi) return;
+  if (seededOnceRef.current) return; // 🔴 STOP spam
+  seededOnceRef.current = true;
 
   const zoom = mapApi.getZoom();
+  if (zoom < 12) return;
+
   const [w, s, e, n] = mapApi.getBoundsBbox();
   const bbox = `${s},${w},${n},${e}`;
 
-  // undgå at spamme samme bbox
-  const key = `${Math.round(zoom)}:${bbox}`;
-  if (lastSeedRef.current === key) return;
-  lastSeedRef.current = key;
-
-  // seed kun i sankemode (valgfrit)
-  if (mode !== "forage") return;
-
-  fetch(`/api/places/seed?bbox=${encodeURIComponent(bbox)}&zoom=${encodeURIComponent(String(zoom))}`)
+  fetch(`/api/places/seed?bbox=${encodeURIComponent(bbox)}&zoom=${zoom}`)
+    .then((r) => r.json())
+    .then((j) => {
+      if (j?.ok && j?.inserted > 0) {
+        router.refresh();
+      }
+    })
     .catch(() => {});
-}, [mapApi, mode, debouncedVisibleIds]);
+}, [mapApi, router]);
+
 
 
   useEffect(() => {
