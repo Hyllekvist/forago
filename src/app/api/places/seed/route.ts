@@ -1,18 +1,17 @@
+// src/app/api/places/seed/route.ts
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
-
-function clamp(n: number, a: number, b: number) {
-  return Math.max(a, Math.min(b, n));
-}
 
 function parseBbox(raw: string | null) {
   // bbox = south,west,north,east
   if (!raw) return null;
   const parts = raw.split(",").map((x) => Number(x.trim()));
   if (parts.length !== 4) return null;
+
   const [s, w, n, e] = parts;
   if (![s, w, n, e].every(Number.isFinite)) return null;
   if (n <= s || e <= w) return null;
+
   return { s, w, n, e };
 }
 
@@ -36,7 +35,6 @@ function osmCategory(tags: Record<string, any>) {
 }
 
 function seedRank(tags: Record<string, any>) {
-  // grov prioritering: forest/wetland/heath/coast lidt højere end park
   const cat = osmCategory(tags);
   if (cat === "wetland" || cat === "heath" || cat === "forest") return 80;
   if (cat === "coast" || cat === "waterway" || cat === "meadow") return 65;
@@ -49,22 +47,28 @@ function cleanName(tags: Record<string, any>, fallback: string) {
   return n || fallback;
 }
 
+function safeBboxKey(b: { s: number; w: number; n: number; e: number }, zoom: number) {
+  // bruges kun til debug/telemetry i respons hvis du vil – ikke nødvendigt
+  return `${Math.round(zoom)}:${b.s.toFixed(4)},${b.w.toFixed(4)},${b.n.toFixed(4)},${b.e.toFixed(4)}`;
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const bbox = parseBbox(searchParams.get("bbox"));
     const zoom = Number(searchParams.get("zoom") ?? "0");
 
-    if (!bbox) return NextResponse.json({ ok: false, error: "Missing/invalid bbox" }, { status: 400 });
+    if (!bbox) {
+      return NextResponse.json({ ok: false, error: "Missing/invalid bbox" }, { status: 400 });
+    }
 
-    // beskyt overpass + jer selv: tillad kun seed ved zoom >= 12 og begræns bbox-størrelse
+    // beskyt Overpass + jer selv: seed først ved zoom >= 12
     if (!Number.isFinite(zoom) || zoom < 12) {
       return NextResponse.json({ ok: true, inserted: 0, reason: "zoom_too_low" });
     }
 
     const supabase = await supabaseServer();
 
-    // OSM Overpass: kun natur/habitat
     const query = `
 [out:json][timeout:25];
 (
@@ -77,21 +81,50 @@ out center tags qt;
 `.trim();
 
     const overpassUrl = "https://overpass-api.de/api/interpreter";
-    const r = await fetch(overpassUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
-      body: `data=${encodeURIComponent(query)}`,
-    });
 
-    if (!r.ok) {
-      const txt = await r.text().catch(() => "");
-      return NextResponse.json({ ok: false, error: `Overpass error: ${r.status}`, detail: txt.slice(0, 300) }, { status: 502 });
+    let r: Response;
+    try {
+      r = await fetch(overpassUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+        body: `data=${encodeURIComponent(query)}`,
+        // Next runtime: node – abort kan bruges hvis du vil senere
+      });
+    } catch {
+      // fail soft
+      return NextResponse.json({
+        ok: true,
+        inserted: 0,
+        reason: "overpass_fetch_failed",
+        key: safeBboxKey(bbox, zoom),
+      });
     }
 
-    const json = await r.json();
+    if (!r.ok) {
+      // fail soft (rate limit/timeout osv.)
+      return NextResponse.json({
+        ok: true,
+        inserted: 0,
+        reason: "overpass_unavailable",
+        status: r.status,
+        key: safeBboxKey(bbox, zoom),
+      });
+    }
+
+    let json: any;
+    try {
+      json = await r.json();
+    } catch {
+      return NextResponse.json({
+        ok: true,
+        inserted: 0,
+        reason: "overpass_invalid_json",
+        key: safeBboxKey(bbox, zoom),
+      });
+    }
+
     const elements: any[] = Array.isArray(json?.elements) ? json.elements : [];
 
-    // map til places upsert rows
     const rows = elements
       .map((el) => {
         const lat = Number(el?.lat ?? el?.center?.lat);
@@ -99,19 +132,17 @@ out center tags qt;
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
 
         const tags = (el?.tags ?? {}) as Record<string, any>;
+
+        // noise-killer
+        if (tags.amenity || tags.shop || tags.building) return null;
+
         const category = osmCategory(tags);
         if (category === "unknown") return null;
-
-        // noise-killer: skip hvis det ligner “amenity/shop/building”
-        if (tags.amenity || tags.shop || tags.building) return null;
 
         const source_id = `${String(el?.type ?? "x")}/${String(el?.id ?? "")}`;
         if (!source_id.includes("/") || source_id.endsWith("/")) return null;
 
         const name = cleanName(tags, category === "forest" ? "Skov" : "Naturspot");
-
-        // slug: deterministic ud fra source_id (så vi ikke laver duplicates)
-        // (slug behøver ikke være “pænt” for seeded)
         const slug = `osm-${source_id.replace("/", "-")}`;
 
         return {
@@ -121,7 +152,7 @@ out center tags qt;
           lng,
           country: "dk",
           region: "",
-          habitat: category, // bruger habitat feltet til samme taksonomi i MVP
+          habitat: category,
           description: "",
           source: "seed_osm",
           source_id,
@@ -132,22 +163,27 @@ out center tags qt;
       })
       .filter(Boolean) as any[];
 
-    // cap for safety
     const capped = rows.slice(0, 250);
 
-    if (!capped.length) return NextResponse.json({ ok: true, inserted: 0 });
+    if (!capped.length) {
+      return NextResponse.json({ ok: true, inserted: 0, reason: "no_candidates" });
+    }
 
-    // upsert på (source, source_id) kræver din unique index fra migrationen
     const { data: up, error } = await supabase
       .from("places")
       .upsert(capped, { onConflict: "source,source_id" })
       .select("slug")
       .limit(250);
 
-    if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    if (error) {
+      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    }
 
     return NextResponse.json({ ok: true, inserted: up?.length ?? 0 });
   } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message ?? "Unknown error" }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: e?.message ?? "Unknown error" },
+      { status: 500 }
+    );
   }
 }
