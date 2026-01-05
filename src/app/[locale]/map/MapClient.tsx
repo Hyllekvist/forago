@@ -659,67 +659,41 @@ export default function MapClient({ spots }: Props) {
     return "sheet";
   }, [drop, selectedSpot]);
 
-// ✅ SEED + MAP REFRESH (max 20 spots, replace - ikke merge)
-const seedLastAtRef = useRef<number>(0);
-const seedLastKeyRef = useRef<string>("");
-
+// ✅ FETCH SPOTS FOR CURRENT VIEW (bbox/zoom) — kører på moveend/zoomend via visibleIds
 useEffect(() => {
   if (!mapApi) return;
 
   const zoom = mapApi.getZoom();
-  if (zoom < 12) {
-    // vigtigt: ved zoom-out skal vi tømme (ellers hænger gamle spots ved)
-    setSpotsLocal([]);
-    setSelectedId(null);
-    setVisibleIds([]);
-    return;
-  }
-
   const [w, s, e, n] = mapApi.getBoundsBbox();
   const bbox = `${s},${w},${n},${e}`;
-
-  // nøgle for “samme view”
-  const key = `${Math.round(zoom)}:${s.toFixed(3)},${w.toFixed(3)},${n.toFixed(3)},${e.toFixed(3)}`;
-  if (seedLastKeyRef.current === key) return;
-  seedLastKeyRef.current = key;
-
-  // throttle seed: max 1 gang / 60s
-  const now = Date.now();
-  const canSeed = now - seedLastAtRef.current >= 60_000;
-  if (canSeed) seedLastAtRef.current = now;
 
   const ac = new AbortController();
 
   (async () => {
     try {
-      // 1) seed (fail-soft)
-      if (canSeed) {
-        await fetch(
-          `/api/places/seed?bbox=${encodeURIComponent(bbox)}&zoom=${encodeURIComponent(String(zoom))}`,
-          { cache: "no-store", signal: ac.signal }
-        ).catch(() => {});
-      }
-
-      // 2) hent “max 10/20” fra /api/spots/map og REPLACE
-      const rMap = await fetch(
+      const r = await fetch(
         `/api/spots/map?bbox=${encodeURIComponent(bbox)}&zoom=${encodeURIComponent(String(zoom))}`,
-        { cache: "no-store", signal: ac.signal }
+        { signal: ac.signal, cache: "no-store" }
       );
+      const j = await r.json();
+      if (!r.ok || !j?.ok || !Array.isArray(j.items)) return;
 
-      const jMap = await rMap.json();
+      const incoming = j.items as Spot[];
 
-      if (jMap?.ok && Array.isArray(jMap.items)) {
-        // 🔥 vigtigste ændring: REPLACE (ikke merge)
-        setSpotsLocal(jMap.items as Spot[]);
-      }
+      setSpotsLocal((prev) => {
+        const m = new Map<string, Spot>();
+        for (const p of prev) m.set(String(p.id), p);
+        for (const s of incoming) m.set(String(s.id), s);
+        return Array.from(m.values());
+      });
     } catch {
       // ignore
     }
   })();
 
   return () => ac.abort();
-  // kør når view ændrer sig -> visibleIds ændres ved moveend/zoomend i LeafletMap
-}, [mapApi, debouncedVisibleIds]); 
+}, [mapApi, visibleIds]);
+
 
   return (
     <div
