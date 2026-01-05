@@ -18,11 +18,13 @@ export default async function MapPage({ params }: { params: { locale: string } }
   const locParam = params?.locale;
   if (!locParam || !isLocale(locParam)) return notFound();
 
+  // ✅ Vigtigt:
+  // - Ingen Supabase-kald her (undgår 500 på document request)
+  // - Client står for at hente spots via /api/spots/map + /api/places/seed
+
   const isProd = process.env.NODE_ENV === "production";
 
-  // ✅ Client fetcher spots pr bbox/zoom via /api/spots/map
-  // Dev kan stadig få noget “at kigge på” via dummy
-  const spots: Spot[] = isProd ? [] : DUMMY_SPOTS;
+  const initialSpots: Spot[] = isProd ? [] : (DUMMY_SPOTS as Spot[]);
 
-  return <MapClient spots={spots} />;
+  return <MapClient spots={initialSpots} />;
 }
