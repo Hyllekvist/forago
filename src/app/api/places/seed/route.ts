@@ -13,7 +13,7 @@ function parseBbox(raw: string | null) {
   if (n <= s || e <= w) return null;
 
   // safety: undgå kæmpe bbox (overpass kan dø)
-  const maxSpan = 0.25; // ~27 km i lat
+  const maxSpan = 0.18; // strammere end før (~20 km lat)
   if (Math.abs(n - s) > maxSpan || Math.abs(e - w) > maxSpan) return null;
 
   return { s, w, n, e };
@@ -25,8 +25,7 @@ function osmCategory(tags: Record<string, any>) {
   const waterway = String(tags.waterway ?? "");
   const leisure = String(tags.leisure ?? "");
 
-  if (natural === "wood") return "forest";
-  if (landuse === "forest") return "forest";
+  if (natural === "wood" || landuse === "forest") return "forest";
   if (landuse === "meadow") return "meadow";
   if (natural === "heath") return "heath";
   if (natural === "wetland") return "wetland";
@@ -40,31 +39,20 @@ function osmCategory(tags: Record<string, any>) {
 
 function seedRank(tags: Record<string, any>) {
   const cat = osmCategory(tags);
-  if (cat === "wetland" || cat === "heath" || cat === "forest") return 80;
-  if (cat === "coast" || cat === "waterway" || cat === "meadow") return 65;
-  if (cat === "park" || cat === "scrub") return 45;
+  if (cat === "wetland" || cat === "heath") return 85;
+  if (cat === "coast" || cat === "waterway") return 75;
+  if (cat === "forest" || cat === "meadow") return 55;
+  if (cat === "park" || cat === "scrub") return 40;
   return 25;
 }
 
-function pickName(tags: Record<string, any>) {
-  const cand = [
-    tags["name:da"],
-    tags.name,
-    tags["official_name"],
-    tags["short_name"],
-    tags["loc_name"],
-  ];
-  for (const v of cand) {
-    if (typeof v === "string") {
-      const t = v.trim();
-      if (t) return t;
-    }
-  }
-  return "";
+function cleanName(tags: Record<string, any>) {
+  const da = typeof tags["name:da"] === "string" ? tags["name:da"].trim() : "";
+  const n = typeof tags.name === "string" ? tags.name.trim() : "";
+  return da || n || "";
 }
 
-function gridKey(lat: number, lng: number, meters = 900) {
-  // ~111_320m per grad lat. lon skaleres med cos(lat)
+function gridKey(lat: number, lng: number, meters = 1200) {
   const dLat = meters / 111_320;
   const dLng = meters / (111_320 * Math.cos((lat * Math.PI) / 180));
   const a = Math.round(lat / dLat);
@@ -80,7 +68,6 @@ const OVERPASS = [
 
 async function fetchOverpass(query: string) {
   const body = `data=${encodeURIComponent(query)}`;
-
   for (const url of OVERPASS) {
     try {
       const r = await fetch(url, {
@@ -89,7 +76,6 @@ async function fetchOverpass(query: string) {
         body,
       });
       if (!r.ok) continue;
-
       try {
         return await r.json();
       } catch {
@@ -102,6 +88,12 @@ async function fetchOverpass(query: string) {
   return null;
 }
 
+function capForZoom(z: number) {
+  if (z >= 15) return 80;
+  if (z >= 14) return 60;
+  return 40; // z >= 13
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -112,7 +104,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, error: "Missing/invalid bbox" }, { status: 400 });
     }
 
-    // ✅ seed først ved zoom >= 13 (mindre aggressiv)
+    // ✅ seed først ved zoom >= 13 (strammere)
     if (!Number.isFinite(zoom) || zoom < 13) {
       return NextResponse.json({ ok: true, inserted: 0, reason: "zoom_too_low" });
     }
@@ -139,11 +131,11 @@ out center tags qt;
     }
 
     const seenCells = new Set<string>();
-    const seenSource = new Set<string>();
     const rows: any[] = [];
+    const cap = capForZoom(zoom);
 
     for (const el of elements) {
-      // drop nodes (støj)
+      // drop nodes (for meget støj)
       const t = String(el?.type ?? "");
       if (t === "node") continue;
 
@@ -157,21 +149,24 @@ out center tags qt;
       const category = osmCategory(tags);
       if (category === "unknown") continue;
 
-      // ✅ kræv “rigtigt” navn (drop fallback Skov/Naturspot)
-      const name = pickName(tags);
-      if (!name) continue;
+      // ✅ Kræv navn for de fleste kategorier → stop “Skov/Naturspot spam”
+      const nm = cleanName(tags);
+      const mustHaveName = category !== "forest" && category !== "meadow";
+      if (mustHaveName && !nm) continue;
 
-      const source_id = `${String(el?.type ?? "x")}/${String(el?.id ?? "")}`;
-      if (!source_id.includes("/") || source_id.endsWith("/")) continue;
-      if (seenSource.has(source_id)) continue;
-      seenSource.add(source_id);
+      // ✅ Forest/meadow uden navn: kun hvis zoom meget tæt på
+      if (!nm && (category === "forest" || category === "meadow") && zoom < 15) continue;
 
-      // spatial dedupe (stærkere)
-      const cell = gridKey(lat, lng, 900);
+      // spatial dedupe (grovere)
+      const cell = gridKey(lat, lng, 1200);
       if (seenCells.has(cell)) continue;
       seenCells.add(cell);
 
+      const source_id = `${String(el?.type ?? "x")}/${String(el?.id ?? "")}`;
+      if (!source_id.includes("/") || source_id.endsWith("/")) continue;
+
       const slug = `osm-${source_id.replace("/", "-")}`;
+      const name = nm || (category === "forest" ? "Skov" : "Naturspot");
 
       rows.push({
         slug,
@@ -189,8 +184,7 @@ out center tags qt;
         seed_rank: seedRank(tags),
       });
 
-      // ✅ lavere cap
-      if (rows.length >= 60) break;
+      if (rows.length >= cap) break;
     }
 
     if (!rows.length) {
@@ -203,14 +197,16 @@ out center tags qt;
       .from("places")
       .upsert(rows, { onConflict: "slug" })
       .select("slug")
-      .limit(60);
+      .limit(cap);
 
     if (error) {
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+      // fail-soft
+      return NextResponse.json({ ok: true, inserted: 0, reason: "db_error", db_error: error.message });
     }
 
-    return NextResponse.json({ ok: true, inserted: up?.length ?? 0, candidates: rows.length });
+    return NextResponse.json({ ok: true, inserted: up?.length ?? 0, candidates: rows.length, cap });
   } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message ?? "Unknown error" }, { status: 500 });
+    return NextResponse.json({ ok: true, inserted: 0, reason: "exception", error: e?.message ?? "Unknown error" });
   }
 }
+
