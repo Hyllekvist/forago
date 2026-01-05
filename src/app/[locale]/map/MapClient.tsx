@@ -455,11 +455,13 @@ export default function MapClient({ spots }: Props) {
     return arr;
   }, [visibleSpots, countsMap, userPos, mode]);
 
+  const sheetItems = useMemo(() => sortedVisibleSpots.slice(0, 20), [sortedVisibleSpots]);
+
   const sheetTitle = isPanning
     ? "Finder spots…"
-    : visibleIds.length
-      ? `${visibleIds.length} relevante spots i view`
-      : "Flyt kortet for at finde spots";
+   : visibleIds.length
+  ? `${Math.min(visibleIds.length, 20)} relevante spots i view`
+
 
   const countsForSelected = useMemo(() => {
     if (!selectedSpot?.id) return null;
@@ -724,7 +726,8 @@ useEffect(() => {
                 expanded
                 onToggle={() => {}}
                 title={sheetTitle}
-                items={sortedVisibleSpots}
+                  items={sheetItems}
+
                 selectedId={selectedId}
                 onSelect={onSelectSpot}
                 onLog={(id) => {
@@ -786,7 +789,8 @@ useEffect(() => {
                   expanded={sheetExpanded}
                   onToggle={() => setSheetExpanded((v) => !v)}
                   title={sheetTitle}
-                  items={sortedVisibleSpots}
+                    items={sheetItems}
+
                   selectedId={selectedId}
                   onSelect={onSelectSpot}
                   onLog={(id) => {
