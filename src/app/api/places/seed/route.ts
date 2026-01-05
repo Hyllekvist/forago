@@ -12,8 +12,8 @@ function parseBbox(raw: string | null) {
   if (![s, w, n, e].every(Number.isFinite)) return null;
   if (n <= s || e <= w) return null;
 
-  // sanity clamp (undgå kæmpe requests)
-  const maxSpan = 0.25; // ~27km i lat (MVP-safety)
+  // safety: undgå kæmpe bbox (overpass kan dø)
+  const maxSpan = 0.25; // ~27 km i lat
   if (Math.abs(n - s) > maxSpan || Math.abs(e - w) > maxSpan) return null;
 
   return { s, w, n, e };
@@ -100,14 +100,11 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, error: "Missing/invalid bbox" }, { status: 400 });
     }
 
-    // Seed først ved zoom >= 12
+    // seed først ved zoom >= 12
     if (!Number.isFinite(zoom) || zoom < 12) {
       return NextResponse.json({ ok: true, inserted: 0, reason: "zoom_too_low" });
     }
 
-    // Overpass query:
-    // - inkluderer ways/relations (arealer/linjer) + center
-    // - vi dropper nodes i vores own mapping (noise-killer)
     const query = `
 [out:json][timeout:20];
 (
@@ -129,13 +126,11 @@ out center tags qt;
       return NextResponse.json({ ok: true, inserted: 0, reason: "overpass_empty" });
     }
 
-    const supabase = await supabaseServer();
-
     const seenCells = new Set<string>();
     const rows: any[] = [];
 
     for (const el of elements) {
-      // ✅ noise-killer #1: drop nodes (de eksploderer antallet)
+      // noise-killer #1: drop nodes
       const t = String(el?.type ?? "");
       if (t === "node") continue;
 
@@ -144,14 +139,12 @@ out center tags qt;
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
 
       const tags = (el?.tags ?? {}) as Record<string, any>;
-
-      // ✅ noise-killer #2: skip “amenity/shop/building”
       if (tags.amenity || tags.shop || tags.building) continue;
 
       const category = osmCategory(tags);
       if (category === "unknown") continue;
 
-      // ✅ spatial dedupe (behold max 1 pr grid)
+      // spatial dedupe
       const cell = gridKey(lat, lng, 350);
       if (seenCells.has(cell)) continue;
       seenCells.add(cell);
@@ -178,14 +171,16 @@ out center tags qt;
         seed_rank: seedRank(tags),
       });
 
-      if (rows.length >= 200) break; // hård cap per request
+      if (rows.length >= 200) break;
     }
 
     if (!rows.length) {
       return NextResponse.json({ ok: true, inserted: 0, reason: "no_candidates_after_filters" });
     }
 
-    // ✅ Upsert på slug (matches places_slug_key unique)
+    const supabase = await supabaseServer();
+
+    // upsert på slug (places_slug_key)
     const { data: up, error } = await supabase
       .from("places")
       .upsert(rows, { onConflict: "slug" })
@@ -196,11 +191,7 @@ out center tags qt;
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({
-      ok: true,
-      inserted: up?.length ?? 0,
-      candidates: rows.length,
-    });
+    return NextResponse.json({ ok: true, inserted: up?.length ?? 0, candidates: rows.length });
   } catch (e: any) {
     return NextResponse.json(
       { ok: false, error: e?.message ?? "Unknown error" },
