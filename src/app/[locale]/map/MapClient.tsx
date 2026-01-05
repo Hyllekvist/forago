@@ -173,31 +173,6 @@ export default function MapClient({ spots }: Props) {
     return () => window.clearTimeout(t);
   }, [visibleIds]);
 
-  const seededOnceRef = useRef(false);
-
-useEffect(() => {
-  if (!mapApi) return;
-  if (seededOnceRef.current) return; // 🔴 STOP spam
-  seededOnceRef.current = true;
-
-  const zoom = mapApi.getZoom();
-  if (zoom < 12) return;
-
-  const [w, s, e, n] = mapApi.getBoundsBbox();
-  const bbox = `${s},${w},${n},${e}`;
-
-  fetch(`/api/places/seed?bbox=${encodeURIComponent(bbox)}&zoom=${zoom}`)
-    .then((r) => r.json())
-    .then((j) => {
-      if (j?.ok && j?.inserted > 0) {
-        router.refresh();
-      }
-    })
-    .catch(() => {});
-}, [mapApi, router]);
-
-
-
   useEffect(() => {
     if (mode !== "forage") return;
     if (!userPos || !mapApi) return;
@@ -683,6 +658,45 @@ useEffect(() => {
     if (selectedSpot) return "peek";
     return "sheet";
   }, [drop, selectedSpot]);
+
+  // ============================
+  // ✅ SEED FLOW (vigtigt)
+  // ============================
+  const seedLastAtRef = useRef<number>(0);
+  const seedLastKeyRef = useRef<string>("");
+
+  useEffect(() => {
+    if (!mapApi) return;
+
+    const zoom = mapApi.getZoom();
+    if (zoom < 12) return;
+
+    // throttle: max 1 seed / 60s
+    const now = Date.now();
+    if (now - seedLastAtRef.current < 60_000) return;
+
+    const [w, s, e, n] = mapApi.getBoundsBbox();
+    const bbox = `${s},${w},${n},${e}`;
+
+    // dedupe: samme view igen og igen
+    const key = `${Math.round(zoom)}:${s.toFixed(3)},${w.toFixed(3)},${n.toFixed(3)},${e.toFixed(3)}`;
+    if (seedLastKeyRef.current === key) return;
+
+    seedLastAtRef.current = now;
+    seedLastKeyRef.current = key;
+
+    fetch(`/api/places/seed?bbox=${encodeURIComponent(bbox)}&zoom=${encodeURIComponent(String(zoom))}`)
+      .then((r) => r.json())
+      .then((j) => {
+        const inserted = Number(j?.inserted ?? 0);
+        if (j?.ok && inserted > 0) {
+          // spots_map er view over places → refresh giver nye pins
+          router.refresh();
+        }
+      })
+      .catch(() => {});
+  }, [mapApi, router, debouncedVisibleIds]);
+  // ============================
 
   return (
     <div
